@@ -215,8 +215,10 @@ int nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz) {
 	buf[2] = 1;
 	buf[3] = 1;
 	buf[7] = 4;
-	buf[10] = memtype <= 7 ? memOCMHz * 1000 : memOCMHz * 1000 * 2;
-	NvSetPstates(hdlGPU[idxGPU], buf) ?
+	//buf[10] = memtype <= 7 ? memOCMHz * 1000 : memOCMHz * 1000 * 2;
+    buf[10] = memOCMHz * 1000;
+
+    NvSetPstates(hdlGPU[idxGPU], buf) ?
 			printf("VRAM OC failed!\n") :
 			printf("RAM OC OK: %d MHz\n", memOCMHz);
 	free(buf);
