@@ -14,4 +14,6 @@ int getDefaultMemClock(int device_id);
 
 int getDefaultGraphClock(int device_id);
 
+int getNumDevices();
+
 void nvmlOC(int device_id, int graphClock, int memClock);

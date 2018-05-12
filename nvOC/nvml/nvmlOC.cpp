@@ -99,6 +99,12 @@ int getDefaultGraphClock(int device_id) {
     return res;
 }
 
+int getNumDevices(){
+    unsigned int deviceCount;
+    safeNVMLCall(nvmlDeviceGetCount(&deviceCount));
+    return deviceCount;
+}
+
 void nvmlOC(int device_id, int graphClock, int memClock) {
     nvmlDevice_t device;
     safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));

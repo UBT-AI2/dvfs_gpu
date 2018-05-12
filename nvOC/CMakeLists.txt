@@ -13,6 +13,8 @@ add_executable(nvmlOC nvml/main.cpp nvml/nvmlOC.cpp)
 target_link_libraries(nvmlOC nvml)
 add_executable(freq_benchmark freq_benchmark.cpp nvapi/nvapiOC.c nvml/nvmlOC.cpp)
 target_link_libraries(freq_benchmark nvml)
+add_executable(freq_hill_climbing freq_hill_climbing.cpp nvapi/nvapiOC.c nvml/nvmlOC.cpp)
+target_link_libraries(freq_hill_climbing nvml)
 
 #Specify install target for executable
 #INSTALL(TARGETS ${EXECUTABLENAME} RUNTIME DESTINATION ${CMAKE_PROJECT_NAME}/bin)
