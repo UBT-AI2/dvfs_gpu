@@ -15,7 +15,7 @@ namespace frequency_scaling {
     struct measurement {
         measurement() : mem_clock_(0), graph_clock_(0), power_(0),
                         hashrate_(0), energy_hash_(0),
-                        nvml_graph_clock_idx(-1), mem_oc(0), graph_oc(0){}
+                        nvml_graph_clock_idx(-1), mem_oc(0), graph_oc(0) {}
 
         measurement(int mem_clock, int graph_clock, float power, float hashrate) :
                 mem_clock_(mem_clock), graph_clock_(graph_clock), power_(power),
@@ -28,8 +28,16 @@ namespace frequency_scaling {
         int mem_oc, graph_oc;
     };
 
-    void start_power_monitoring(int device_id);
-    void stop_power_monitoring(int device_id);
-    measurement run_benchmark_nvml_nvapi(const device_clock_info &dci, int mem_oc, int nvml_graph_clock_idx);
-    measurement run_benchmark_nvapi_only(const device_clock_info &dci, int mem_oc, int graph_oc);
+    enum class miner_script {
+        ETHMINER, EXCAVATOR
+    };
+
+    void start_power_monitoring_script(int device_id);
+
+    void stop_power_monitoring_script(int device_id);
+
+    measurement
+    run_benchmark_script_nvml_nvapi(miner_script ms, const device_clock_info &dci, int mem_oc, int nvml_graph_clock_idx);
+
+    measurement run_benchmark_script_nvapi_only(miner_script ms, const device_clock_info &dci, int mem_oc, int graph_oc);
 }

@@ -6,21 +6,29 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "nvapi/nvapiOC.h"
-#include "nvml/nvmlOC.h"
+#include "../nvapi/nvapiOC.h"
+#include "../nvml/nvmlOC.h"
 
 namespace frequency_scaling {
 
     static const int BUFFER_SIZE = 1024;
 
-    static measurement run_benchmark_script(const device_clock_info &dci,
+    static measurement run_benchmark_script(miner_script ms, const device_clock_info &dci,
                                             int graph_clock, int mem_clock) {
         {
-            printf("\t Running benchmark with clocks: mem:%i,graph:%i\n", mem_clock, graph_clock);
+            printf("Running benchmark with clocks: mem:%i,graph:%i\n", mem_clock, graph_clock);
             //run benchmark command
             char cmd2[BUFFER_SIZE];
-            snprintf(cmd2, BUFFER_SIZE, "sh ../scripts/run_benchmark_ethminer.sh %i %i %i",
-                     dci.device_id_nvml, mem_clock, graph_clock);
+            switch (ms) {
+                case miner_script::ETHMINER:
+                    snprintf(cmd2, BUFFER_SIZE, "sh ../scripts/run_benchmark_ethminer.sh %i %i %i",
+                             dci.device_id_nvml, mem_clock, graph_clock);
+                    break;
+                case miner_script::EXCAVATOR:
+                    snprintf(cmd2, BUFFER_SIZE, "sh ../scripts/run_benchmark_excavator.sh %i %i %i",
+                             dci.device_id_nvml, mem_clock, graph_clock);
+                    break;
+            }
             system(cmd2);
         }
 
@@ -49,41 +57,43 @@ namespace frequency_scaling {
     }
 
 
-    void start_power_monitoring(int device_id){
+    void start_power_monitoring_script(int device_id) {
         //start power monitoring in background process
         char cmd1[BUFFER_SIZE];
         snprintf(cmd1, BUFFER_SIZE, "sh ../scripts/start_pm.sh %i", device_id);
         system(cmd1);
     }
 
-    void stop_power_monitoring(int device_id){
+    void stop_power_monitoring_script(int device_id) {
         //stop power monitoring
         char cmd3[BUFFER_SIZE];
         snprintf(cmd3, BUFFER_SIZE, "sh ../scripts/stop_pm.sh %i", device_id);
         system(cmd3);
     }
 
-    measurement run_benchmark_nvml_nvapi(const device_clock_info &dci, int mem_oc, int nvml_graph_clock_idx) {
+    measurement run_benchmark_script_nvml_nvapi(miner_script ms, const device_clock_info &dci,
+                                                int mem_oc, int nvml_graph_clock_idx) {
         //change graph and mem clocks
         int graph_clock = dci.nvml_graph_clocks[nvml_graph_clock_idx];
         nvapiOC(dci.device_id_nvapi, 0, mem_oc);
         nvmlOC(dci.device_id_nvml, graph_clock, dci.nvml_default_mem_clock);
         int mem_clock = dci.nvml_default_mem_clock + mem_oc;
         //run benchmark
-        measurement &&m = run_benchmark_script(dci, graph_clock, mem_clock);
+        measurement &&m = run_benchmark_script(ms, dci, graph_clock, mem_clock);
         m.nvml_graph_clock_idx = nvml_graph_clock_idx;
         m.mem_oc = mem_oc;
         m.graph_oc = 0;
         return m;
     }
 
-    measurement run_benchmark_nvapi_only(const device_clock_info &dci, int mem_oc, int graph_oc) {
+    measurement run_benchmark_script_nvapi_only(miner_script ms, const device_clock_info &dci,
+                                                int mem_oc, int graph_oc) {
         //change graph and mem clocks
         nvapiOC(dci.device_id_nvapi, graph_oc, mem_oc);
         int mem_clock = dci.nvml_default_mem_clock + mem_oc;
         int graph_clock = dci.nvml_default_graph_clock + graph_oc;
         //run benchmark
-        measurement &&m = run_benchmark_script(dci, graph_clock, mem_clock);
+        measurement &&m = run_benchmark_script(ms, dci, graph_clock, mem_clock);
         m.nvml_graph_clock_idx = -1;
         m.mem_oc = mem_oc;
         m.graph_oc = graph_oc;

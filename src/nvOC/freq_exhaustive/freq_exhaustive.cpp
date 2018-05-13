@@ -1,11 +1,13 @@
+#include "freq_exhaustive.h"
+
 #include <stdlib.h>
 #include "../nvml/nvmlOC.h"
-#include "../benchmark.h"
+#include "../benchmark/benchmark.h"
 
 namespace frequency_scaling {
 
-    measurement freq_exhaustive(const device_clock_info& dci, int nvapi_oc_interval,
-                               bool use_nvmlUC, int nvml_clock_idx_interval) {
+    measurement freq_exhaustive(miner_script ms, const device_clock_info &dci, int nvapi_oc_interval,
+                                bool use_nvmlUC, int nvml_clock_idx_interval) {
         int min_graph_oc = dci.min_graph_oc;
         if (use_nvmlUC)
             min_graph_oc = nvapi_oc_interval;
@@ -19,16 +21,16 @@ namespace frequency_scaling {
             if (use_nvmlUC) {
                 //for all supported graph clocks (nvml) -> underclocking
                 for (int j = dci.nvml_graph_clocks.size() - 1; j >= 0; j -= nvml_clock_idx_interval) {
-                    const measurement& m = run_benchmark_nvml_nvapi(dci, mem_oc, j);
-                    if(m.energy_hash_ > best_node.energy_hash_)
+                    const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_oc, j);
+                    if (m.energy_hash_ > best_node.energy_hash_)
                         best_node = m;
                 }
             }
 
             //for all supported graph clocks (nvapi) -> overclocking
             for (int graph_oc = min_graph_oc; graph_oc <= dci.max_graph_oc; graph_oc += nvapi_oc_interval) {
-                const measurement& m = run_benchmark_nvapi_only(dci, mem_oc, graph_oc);
-                if(m.energy_hash_ > best_node.energy_hash_)
+                const measurement &m = run_benchmark_script_nvapi_only(ms, dci, mem_oc, graph_oc);
+                if (m.energy_hash_ > best_node.energy_hash_)
                     best_node = m;
             }
         }

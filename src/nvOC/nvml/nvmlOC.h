@@ -16,6 +16,10 @@ namespace frequency_scaling {
 
     int nvmlGetNumDevices();
 
+    int nvmlGetTemperature(int device_id);
+
+    int nvmlGetPowerUsage(int device_id);
+
     void nvmlOC(int device_id, int graphClock, int memClock);
 
 }

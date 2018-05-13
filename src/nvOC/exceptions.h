@@ -15,4 +15,9 @@ namespace frequency_scaling {
         nvapi_exception(const std::string &msg) : std::runtime_error(msg) {}
     };
 
+    class io_exception : public std::runtime_error {
+    public:
+        io_exception(const std::string &msg) : std::runtime_error(msg) {}
+    };
+
 }

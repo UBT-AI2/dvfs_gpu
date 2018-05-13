@@ -7,11 +7,11 @@ add_executable(gpu_power_monitor
         utils/gpu_power_monitor.c)
 
 #
-if(WIN32)
+if (WIN32)
     add_executable(nvapiOC
             nvapi/main.c
             nvapi/nvapiOC.c)
-endif()
+endif ()
 
 #
 add_executable(nvmlOC
@@ -25,7 +25,7 @@ add_executable(freq_exhaustive
         freq_exhaustive/freq_exhaustive.cpp
         nvapi/nvapiOC.c
         nvml/nvmlOC.cpp
-        benchmark.cpp)
+        benchmark/benchmark.cpp)
 target_link_libraries(freq_exhaustive nvml)
 
 #
@@ -34,7 +34,7 @@ add_executable(freq_hill_climbing
         freq_hill_climbing/freq_hill_climbing.cpp
         nvapi/nvapiOC.c
         nvml/nvmlOC.cpp
-        benchmark.cpp)
+        benchmark/benchmark.cpp)
 target_link_libraries(freq_hill_climbing nvml)
 
 #Specify install target for executable

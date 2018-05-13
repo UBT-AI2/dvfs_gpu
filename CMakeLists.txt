@@ -43,10 +43,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 # Glob all sources file inside directory ${DIRECTORY}
 # extract relative path of all source files
 file(GLOB_RECURSE FREQ_SCALING_SOURCE_FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/*.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/*.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c
         )
 
 #generates source folder structure in build directory from relative path extracted above
@@ -63,5 +63,5 @@ endforeach ()
 
 #######################################################################################
 
-add_subdirectory(nvOC)
+add_subdirectory(src)
 

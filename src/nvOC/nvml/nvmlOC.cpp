@@ -100,6 +100,22 @@ namespace frequency_scaling {
         return pci.bus;
     }
 
+    int nvmlGetTemperature(int device_id) {
+        nvmlDevice_t device;
+        safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
+        unsigned int res;
+        safeNVMLCall(nvmlDeviceGetTemperature(device, NVML_TEMPERATURE_GPU, &res));
+        return res;
+    }
+
+    int nvmlGetPowerUsage(int device_id) {
+        nvmlDevice_t device;
+        safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
+        unsigned int res;
+        safeNVMLCall(nvmlDeviceGetPowerUsage(device, &res));
+        return res;
+    }
+
     void nvmlOC(int device_id, int graphClock, int memClock) {
         nvmlDevice_t device;
         safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
