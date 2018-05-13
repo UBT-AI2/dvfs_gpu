@@ -91,6 +91,7 @@ typedef void *(*NvAPI_QueryInterface_t)(unsigned int offset);
 typedef int (*NvAPI_Initialize_t)();
 typedef int (*NvAPI_Unload_t)();
 typedef int (*NvAPI_EnumPhysicalGPUs_t)(int **handles, int *count);
+typedef int (*NvAPI_GetBusId_t)(int *handle, int *busId);
 typedef int (*NvAPI_GPU_GetSystemType_t)(int *handle, int *systype);
 typedef int (*NvAPI_GPU_GetFullName_t)(int *handle, char *sysname);
 typedef int (*NvAPI_GPU_GetPhysicalFrameBufferSize_t)(int *handle, int *memsize);
@@ -105,7 +106,8 @@ typedef int (*NvAPI_GPU_SetPstates20_t)(int *handle, int *pstates_info);
 NvAPI_QueryInterface_t NvQueryInterface = 0;
 NvAPI_Initialize_t NvInit = 0;
 NvAPI_Unload_t NvUnload = 0;
-NvAPI_EnumPhysicalGPUs_t NvEnumGPUs = 0;
+NvAPI_EnumPhysicalGPUs_t NvEnumPhysicalGPUs = 0;
+NvAPI_GetBusId_t NvAPI_GetBusId = 0;
 NvAPI_GPU_GetSystemType_t NvGetSysType = 0;
 NvAPI_GPU_GetFullName_t NvGetName = 0;
 NvAPI_GPU_GetPhysicalFrameBufferSize_t NvGetMemSize = 0;
@@ -125,8 +127,10 @@ int nvapiInit() {
 	}
 	NvInit = NvQueryInterface(0x0150E828);
 	NvUnload = NvQueryInterface(0xD22BDD7E);
-	NvEnumGPUs = NvQueryInterface(0xE5AC921F);
-	NvGetSysType = NvQueryInterface(0xBAAABFCC);
+	NvEnumPhysicalGPUs = NvQueryInterface(0xE5AC921F);
+	NvAPI_GetBusId = NvQueryInterface(0x1BE0B8E5);
+
+    NvGetSysType = NvQueryInterface(0xBAAABFCC);
 	NvGetName = NvQueryInterface(0xCEEE8E9F);
 	NvGetMemSize = NvQueryInterface(0x46FBEB03);
 	NvGetMemType = NvQueryInterface(0x57F7CAAC);
@@ -135,12 +139,12 @@ int nvapiInit() {
 	NvGetPstates = NvQueryInterface(0x6FF81213);
 	NvSetPstates = NvQueryInterface(0x0F4DAE6B);
 	//
-	int nGPU = 0, systype = 0, memsize = 0, memtype = 0;
+	int nGPU = 0, systype = 0, memsize = 0, memtype = 0, busId=0;
 	int *hdlGPU[64] = { 0 }, *buf = 0;
 	char sysname[64] = { 0 }, biosname[64] = { 0 };
 
 	NvInit();
-	NvEnumGPUs(hdlGPU, &nGPU);
+	NvEnumPhysicalGPUs(hdlGPU, &nGPU);
 	printf("Number of GPUs: %i\n", nGPU);
 
 	for (int idxGPU = 0; idxGPU < nGPU; idxGPU++) {
@@ -149,6 +153,7 @@ int nvapiInit() {
 		NvGetMemSize(hdlGPU[idxGPU], &memsize);
 		NvGetMemType(hdlGPU[idxGPU], &memtype);
 		NvGetBiosName(hdlGPU[idxGPU], biosname);
+		NvAPI_GetBusId(hdlGPU[idxGPU], &busId);
 
 		printf("GPU index %i\n", idxGPU);
 		switch (systype) {
@@ -175,6 +180,19 @@ int nvapiUnload(){
 	return 0;
 }
 
+int nvapiGetDeviceIndexByBusId(int busId){
+	int *hdlGPU[64] = { 0 };
+	int nGPU;
+	NvEnumPhysicalGPUs(hdlGPU, &nGPU);
+	for (int idxGPU = 0; idxGPU < nGPU; idxGPU++) {
+		int curBusId;
+		NvAPI_GetBusId(hdlGPU[idxGPU], &curBusId);
+		if(busId == curBusId)
+			return idxGPU;
+	}
+	return -1;
+}
+
 int nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz) {
 
 	int nGPU = 0, memsize = 0, memtype = 0;
@@ -183,7 +201,7 @@ int nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz) {
 	NV_GPU_PERF_PSTATES20_INFO_V1 pstates_info;
 	pstates_info.version = 0x11c94;
 
-	NvEnumGPUs(hdlGPU, &nGPU);
+	NvEnumPhysicalGPUs(hdlGPU, &nGPU);
 	printf("Number of GPUs: %i\n", nGPU);
 	if (idxGPU >= nGPU) {
 		printf("Device with index %i doesnt exist\n", idxGPU);

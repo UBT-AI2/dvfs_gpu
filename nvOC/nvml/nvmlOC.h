@@ -2,18 +2,20 @@
 
 #include <vector>
 
-void nvmlInit_();
+namespace frequency_scaling {
 
-void nvmlShutdown_();
+    void nvmlInit_();
 
-std::vector<int> getAvailableMemClocks(int device_id);
+    void nvmlShutdown_();
 
-std::vector<int> getAvailableGraphClocks(int device_id, int mem_clock);
+    std::vector<int> nvmlGetAvailableMemClocks(int device_id);
 
-int getDefaultMemClock(int device_id);
+    std::vector<int> nvmlGetAvailableGraphClocks(int device_id, int mem_clock);
 
-int getDefaultGraphClock(int device_id);
+    int nvmlGetBusId(int device_id);
 
-int getNumDevices();
+    int nvmlGetNumDevices();
 
-void nvmlOC(int device_id, int graphClock, int memClock);
+    void nvmlOC(int device_id, int graphClock, int memClock);
+
+}

@@ -8,6 +8,7 @@ int main(int argc, char **argv) {
         return 1;
     }
     //
+    using namespace frequency_scaling;
     nvmlInit_();
     try {
         nvmlOC(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
