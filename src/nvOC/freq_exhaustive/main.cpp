@@ -32,9 +32,9 @@ int main(int argc, char **argv) {
     dci.device_id_nvml = device_id;
     dci.device_id_nvapi = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id));
     dci.nvml_mem_clocks = nvmlGetAvailableMemClocks(device_id);
-    dci.nvml_default_mem_clock = dci.nvml_mem_clocks[0];
-    dci.nvml_graph_clocks = nvmlGetAvailableGraphClocks(device_id, dci.nvml_default_mem_clock);
-    dci.nvml_default_graph_clock = dci.nvml_graph_clocks[0];
+    dci.nvml_graph_clocks = nvmlGetAvailableGraphClocks(device_id, dci.nvml_mem_clocks[1]);
+    dci.nvapi_default_mem_clock = dci.nvml_mem_clocks[0];
+    dci.nvapi_default_graph_clock = dci.nvml_graph_clocks[0];
     dci.min_graph_oc = min_graph_oc;
     dci.min_mem_oc = min_mem_oc;
     dci.max_graph_oc = max_graph_oc;
@@ -42,13 +42,13 @@ int main(int argc, char **argv) {
 
     //
     const measurement &m = freq_exhaustive(miner_script::EXCAVATOR, dci, interval, use_nvmlUC, 2);
-    printf("Best energy-hash value: %f", m.energy_hash_);
+    printf("Best energy-hash value: %f\n", m.energy_hash_);
 
     //stop power monitoring
     stop_power_monitoring_script(device_id);
 
     //unload apis
-    nvapiUnload();
-    nvmlShutdown_();
+    nvapiUnload(1);
+    nvmlShutdown_(true);
     return 0;
 }

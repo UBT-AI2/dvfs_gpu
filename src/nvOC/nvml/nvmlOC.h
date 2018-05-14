@@ -6,7 +6,7 @@ namespace frequency_scaling {
 
     void nvmlInit_();
 
-    void nvmlShutdown_();
+    void nvmlShutdown_(bool restoreClocks);
 
     std::vector<int> nvmlGetAvailableMemClocks(int device_id);
 

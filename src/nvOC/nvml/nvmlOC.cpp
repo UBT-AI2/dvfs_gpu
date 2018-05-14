@@ -41,20 +41,24 @@ namespace frequency_scaling {
             //disable auto boosting of clocks (for hardware < pascal)
             //safeNVMLCall(nvmlDeviceSetDefaultAutoBoostedClocksEnabled(device, 0, 0));
             //safeNVMLCall(nvmlDeviceSetAutoBoostedClocksEnabled(device, 0));
+
+            safeNVMLCall(nvmlDeviceResetApplicationsClocks(device));
         }
     }
 
-    void nvmlShutdown_() {
-        unsigned int deviceCount;
-        safeNVMLCall(nvmlDeviceGetCount(&deviceCount));
-        for (int device_id = 0; device_id < deviceCount; device_id++) {
-            nvmlDevice_t device;
-            // Query for device handle to perform operations on a device
-            safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
-            safeNVMLCall(nvmlDeviceResetApplicationsClocks(device));
-            //safeNVMLCall(nvmlDeviceSetDefaultAutoBoostedClocksEnabled(device, 1, 0));
-            //safeNVMLCall(nvmlDeviceSetAutoBoostedClocksEnabled(device, 1));
-            printf("Restored clocks for device %i\n", device_id);
+    void nvmlShutdown_(bool restoreClocks) {
+        if(restoreClocks) {
+            unsigned int deviceCount;
+            safeNVMLCall(nvmlDeviceGetCount(&deviceCount));
+            for (int device_id = 0; device_id < deviceCount; device_id++) {
+                nvmlDevice_t device;
+                // Query for device handle to perform operations on a device
+                safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
+                safeNVMLCall(nvmlDeviceResetApplicationsClocks(device));
+                //safeNVMLCall(nvmlDeviceSetDefaultAutoBoostedClocksEnabled(device, 1, 0));
+                //safeNVMLCall(nvmlDeviceSetAutoBoostedClocksEnabled(device, 1));
+                printf("Restored clocks for device %i\n", device_id);
+            }
         }
         safeNVMLCall(nvmlShutdown());
     }

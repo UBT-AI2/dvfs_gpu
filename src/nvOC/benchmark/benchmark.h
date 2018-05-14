@@ -6,7 +6,7 @@ namespace frequency_scaling {
 
     struct device_clock_info {
         int device_id_nvml, device_id_nvapi;
-        int nvml_default_mem_clock, nvml_default_graph_clock;
+        int nvapi_default_mem_clock, nvapi_default_graph_clock;
         std::vector<int> nvml_mem_clocks, nvml_graph_clocks;
         int min_mem_oc, min_graph_oc;
         int max_mem_oc, max_graph_oc;

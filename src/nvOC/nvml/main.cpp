@@ -13,8 +13,8 @@ int main(int argc, char **argv) {
     try {
         nvmlOC(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
     } catch (const std::exception &ex) {
-        nvmlShutdown_();
+        nvmlShutdown_(true);
     }
-    nvmlShutdown_();
+    nvmlShutdown_(false);
     return 0;
 }

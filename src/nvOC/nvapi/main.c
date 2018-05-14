@@ -10,6 +10,6 @@ int main(int argc, char **argv) {
     //
     nvapiInit();
     nvapiOC(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
-    nvapiUnload();
+    nvapiUnload(0);
     return 0;
 }

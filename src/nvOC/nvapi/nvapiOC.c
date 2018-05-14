@@ -182,12 +182,22 @@ int nvapiInit() {
         printf("Name: %s\n", sysname);
         printf("VRAM: %dMB GDDR%d\n", memsize / 1024, memtype <= 7 ? 3 : 5);
         printf("BIOS: %s\n", biosname);
+        //
+        nvapiOC(idxGPU, 0, 0);
     }
-
     return 0;
 }
 
-int nvapiUnload() {
+int nvapiUnload(int restoreClocks) {
+    if(restoreClocks) {
+        int *hdlGPU[64] = {0};
+        int nGPU;
+        NvEnumPhysicalGPUs(hdlGPU, &nGPU);
+        for (int idxGPU = 0; idxGPU < nGPU; idxGPU++) {
+            nvapiOC(idxGPU, 0, 0);
+        }
+    }
+    //
     NvUnload();
     return 0;
 }
@@ -203,6 +213,30 @@ int nvapiGetDeviceIndexByBusId(int busId) {
             return idxGPU;
     }
     return -1;
+}
+
+int nvapiGetDefaultMemClock(int deviceIdNvapi){
+    int *hdlGPU[64] = {0};
+    int nGPU;
+    NvEnumPhysicalGPUs(hdlGPU, &nGPU);
+    NV_GPU_PERF_PSTATES20_INFO_V1 pstates_info;
+    pstates_info.version = 0x11c94;
+    NvGetPstates(hdlGPU[deviceIdNvapi], &pstates_info);
+    int curRam = (int) ((pstates_info.pstates[0].clocks[1]).data.single.freq_kHz) / 1000;
+    int curRamOC = (int) ((pstates_info.pstates[0].clocks[1]).freqDelta_kHz.value) / 1000;
+    return curRam - curRamOC;
+}
+
+int nvapiGetDefaultGraphClock(int deviceIdNvapi){
+    int *hdlGPU[64] = {0};
+    int nGPU;
+    NvEnumPhysicalGPUs(hdlGPU, &nGPU);
+    NV_GPU_PERF_PSTATES20_INFO_V1 pstates_info;
+    pstates_info.version = 0x11c94;
+    NvGetPstates(hdlGPU[deviceIdNvapi], &pstates_info);
+    int curGraph = (int) ((pstates_info.pstates[0].clocks[0]).data.single.freq_kHz) / 1000;
+    int curGraphOC = (int) ((pstates_info.pstates[0].clocks[0]).freqDelta_kHz.value) / 1000;
+    return curGraph - curGraphOC;
 }
 
 int nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz) {

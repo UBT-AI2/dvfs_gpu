@@ -76,8 +76,8 @@ namespace frequency_scaling {
         //change graph and mem clocks
         int graph_clock = dci.nvml_graph_clocks[nvml_graph_clock_idx];
         nvapiOC(dci.device_id_nvapi, 0, mem_oc);
-        nvmlOC(dci.device_id_nvml, graph_clock, dci.nvml_default_mem_clock);
-        int mem_clock = dci.nvml_default_mem_clock + mem_oc;
+        nvmlOC(dci.device_id_nvml, graph_clock, dci.nvml_mem_clocks[1]);
+        int mem_clock = dci.nvapi_default_mem_clock + mem_oc;
         //run benchmark
         measurement &&m = run_benchmark_script(ms, dci, graph_clock, mem_clock);
         m.nvml_graph_clock_idx = nvml_graph_clock_idx;
@@ -90,8 +90,8 @@ namespace frequency_scaling {
                                                 int mem_oc, int graph_oc) {
         //change graph and mem clocks
         nvapiOC(dci.device_id_nvapi, graph_oc, mem_oc);
-        int mem_clock = dci.nvml_default_mem_clock + mem_oc;
-        int graph_clock = dci.nvml_default_graph_clock + graph_oc;
+        int mem_clock = dci.nvapi_default_mem_clock + mem_oc;
+        int graph_clock = dci.nvapi_default_graph_clock + graph_oc;
         //run benchmark
         measurement &&m = run_benchmark_script(ms, dci, graph_clock, mem_clock);
         m.nvml_graph_clock_idx = -1;
