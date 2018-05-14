@@ -17,7 +17,7 @@ endif ()
 add_executable(nvmlOC
         nvml/main.cpp
         nvml/nvmlOC.cpp)
-target_link_libraries(nvmlOC nvml)
+target_link_libraries(nvmlOC ${NVML_LIB_NAME})
 
 #
 add_executable(freq_exhaustive
@@ -26,7 +26,7 @@ add_executable(freq_exhaustive
         nvapi/nvapiOC.c
         nvml/nvmlOC.cpp
         benchmark/benchmark.cpp)
-target_link_libraries(freq_exhaustive nvml)
+target_link_libraries(freq_exhaustive ${NVML_LIB_NAME})
 
 #
 add_executable(freq_hill_climbing
@@ -35,7 +35,15 @@ add_executable(freq_hill_climbing
         nvapi/nvapiOC.c
         nvml/nvmlOC.cpp
         benchmark/benchmark.cpp)
-target_link_libraries(freq_hill_climbing nvml)
+target_link_libraries(freq_hill_climbing ${NVML_LIB_NAME})
+
+add_executable(freq_nelder_mead
+        freq_nelder_mead/main.cpp
+        freq_nelder_mead/freq_nelder_mead.cpp
+        nvapi/nvapiOC.c
+        nvml/nvmlOC.cpp
+        benchmark/benchmark.cpp)
+target_link_libraries(freq_nelder_mead ${NVML_LIB_NAME})
 
 #Specify install target for executable
 #INSTALL(TARGETS ${EXECUTABLENAME} RUNTIME DESTINATION ${CMAKE_PROJECT_NAME}/bin)

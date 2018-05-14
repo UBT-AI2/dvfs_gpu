@@ -17,6 +17,8 @@
 //https://1vwjbxf1wko0yhnr.wordpress.com/author/2pkaqwtuqm2q7djg/
 #include "nvapiOC.h"
 
+#ifdef _WIN32
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
@@ -303,3 +305,37 @@ int nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz) {
 
     return 0;
 }
+
+#else
+
+int nvapiInit()
+{
+    return 1;
+}
+
+int nvapiUnload(int restoreClocks)
+{
+    return 1;
+}
+
+int nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz)
+{
+    return 1;
+}
+
+int nvapiGetDeviceIndexByBusId(int busId)
+{
+    return 1;
+}
+
+int nvapiGetDefaultMemClock(int deviceId)
+{
+    return 1;
+}
+
+int nvapiGetDefaultGraphClock(int deviceId)
+{
+    return 1;
+}
+
+#endif

@@ -30,10 +30,27 @@ endif (DEBUG)
 find_package(CUDA 9.0 REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(Threads REQUIRED)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules)
+find_package(EIGEN3 REQUIRED)
 
 #include and link cuda toolkit headers/libs
 include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
-link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
+include_directories(${EIGEN3_INCLUDE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/numerical_methods/include)
+
+if(WIN32)
+    link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
+    set(NVML_LIB_NAME nvml)
+else()
+    execute_process (
+            COMMAND bash -c "nvidia-smi | grep Driver | cut -f 3 -d' ' | cut -f 1 -d '.'"
+            OUTPUT_VARIABLE DRIVER-BRANCH
+    )
+    message(${DRIVER-BRANCH})
+    #
+    link_directories(/usr/lib/nvidia-387)
+    set(NVML_LIB_NAME nvidia-ml)
+endif()
 
 #set OpenMP flags
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
