@@ -17,8 +17,8 @@ int main(int argc, char **argv) {
     int graph_idx_step = atoi(argv[4]);
     int min_mem_oc = atoi(argv[5]);
     int max_mem_oc = atoi(argv[6]);
-
-
+    
+    
     using namespace frequency_scaling;
     //init apis
     nvapiInit();

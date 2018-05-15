@@ -48,18 +48,20 @@ namespace frequency_scaling {
             const measurement& m = run_benchmark_script_nvml_nvapi(ms, dci, mem_oc, graph_idx);
             if(m.energy_hash_ > best_measurement.energy_hash_)
                 best_measurement = m;
+            std::cout << "Measured energy-hash: " << best_measurement.energy_hash_ << std::endl;
             //note minimize function
             return -m.energy_hash_;
         };
-        std::cout << "NM best measurement: " << best_measurement.energy_hash_ << std::endl;
+
         //nelder mead optimization
         numerical_methods::NelderMeadMethod<double, 2> method;
         method.options.setMinIterations(min_iterations);
         method.options.setMaxIterations(max_iterations);
         method.options.setParamTolerance(param_tolerance);
         method.options.setFuncTolerance(func_tolerance);
-        method.options.setInitScale(std::make_pair(1,2));
+        method.options.setInitScale(std::make_pair(1.5,1.5));
         const vec_type& glob_minimum = method.minimize(function, init_guess);
+        std::cout << "NM best measurement: " << best_measurement.energy_hash_ << std::endl;
         //run benchmark at proposed minimum
         int mem_oc = dci.min_mem_oc + std::lround(glob_minimum(0) * mem_step);
         int graph_idx = std::lround(glob_minimum(1) * graph_idx_step);

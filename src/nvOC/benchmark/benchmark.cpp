@@ -3,9 +3,9 @@
 //
 #include "benchmark.h"
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <fstream>
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
 
@@ -35,21 +35,26 @@ namespace frequency_scaling {
         //get last measurement from data file
         float data[5] = {0};
         {
-            FILE *pipe = popen("type result.dat", "r");
-            if (pipe) {
-                char buffer[BUFFER_SIZE] = {0};
-                if (fgets(buffer, BUFFER_SIZE, pipe)) {
-                    char *pt;
-                    pt = strtok(buffer, ",");
-                    int idx = 0;
-                    while (pt != NULL) {
-                        data[idx++] = atof(pt);
-                        pt = strtok(NULL, ",");
-                    }
-
-                    printf("%s\n", buffer);
+            std::ifstream file("result.dat", std::ios_base::ate);//open file
+            if (file) {
+                std::string tmp;
+                int c = 0;
+                int length = file.tellg();//Get file size
+                // loop backward over the file
+                for (int i = length - 2; i > 0; i--) {
+                    file.seekg(i);
+                    c = file.get();
+                    if (c == '\r' || c == '\n')//new line?
+                        break;
                 }
-                pclose(pipe);
+                std::getline(file, tmp);//read last line
+                char *pt;
+                pt = strtok(&tmp[0], ",");
+                int idx = 0;
+                while (pt != nullptr) {
+                    data[idx++] = atof(pt);
+                    pt = strtok(nullptr, ",");
+                }
             }
         }
         measurement m((int) data[0], (int) data[1], data[2], data[3]);
