@@ -48,7 +48,7 @@ namespace frequency_scaling {
             const measurement& m = run_benchmark_script_nvml_nvapi(ms, dci, mem_oc, graph_idx);
             if(m.energy_hash_ > best_measurement.energy_hash_)
                 best_measurement = m;
-            std::cout << "Measured energy-hash: " << best_measurement.energy_hash_ << std::endl;
+            std::cout << "Measured energy-hash: " << m.energy_hash_ << std::endl;
             //note minimize function
             return -m.energy_hash_;
         };

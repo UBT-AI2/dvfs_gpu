@@ -72,7 +72,7 @@ namespace frequency_scaling {
             const std::vector<measurement> &neighbors = explore_neighborhood(ms, dci, current_node, mem_step,
                                                                              graph_idx_step, false);
             float tmp_val = -1e37;
-            for (measurement n : neighbors) {
+            for (const measurement& n : neighbors) {
                 if (n.energy_hash_ > tmp_val) {
                     current_node = n;
                     tmp_val = n.energy_hash_;
