@@ -10,25 +10,42 @@ namespace frequency_scaling {
 
     static std::vector<measurement>
     explore_neighborhood(miner_script ms, const device_clock_info &dci, const measurement &current_node,
-                         int mem_step, int graph_step_idx) {
+                         int mem_step, int graph_step_idx, bool use8Neighborhood) {
         std::vector<measurement> neighbor_nodes;
         int mem_plus = current_node.mem_oc + mem_step;
         int mem_minus = current_node.mem_oc - mem_step;
         int graph_plus_idx = current_node.nvml_graph_clock_idx + graph_step_idx;
         int graph_minus_idx = current_node.nvml_graph_clock_idx - graph_step_idx;
-        //oc memory
-        if (mem_plus <= dci.max_mem_oc)
-            neighbor_nodes.push_back(
-                    run_benchmark_script_nvml_nvapi(ms, dci, mem_plus, current_node.nvml_graph_clock_idx));
-        if (mem_minus >= dci.min_mem_oc)
-            neighbor_nodes.push_back(
-                    run_benchmark_script_nvml_nvapi(ms, dci, mem_minus, current_node.nvml_graph_clock_idx));
 
-        //oc graphics
-        if (graph_plus_idx < dci.nvml_graph_clocks.size())
-            neighbor_nodes.push_back(run_benchmark_script_nvml_nvapi(ms, dci, current_node.mem_oc, graph_plus_idx));
-        if (graph_minus_idx >= 0)
-            neighbor_nodes.push_back(run_benchmark_script_nvml_nvapi(ms, dci, current_node.mem_oc, graph_minus_idx));
+        if(use8Neighborhood) {
+            //horizontal/vertical 4 neighborhood
+            if (mem_plus <= dci.max_mem_oc)
+                neighbor_nodes.push_back(
+                        run_benchmark_script_nvml_nvapi(ms, dci, mem_plus, current_node.nvml_graph_clock_idx));
+            if (mem_minus >= dci.min_mem_oc)
+                neighbor_nodes.push_back(
+                        run_benchmark_script_nvml_nvapi(ms, dci, mem_minus, current_node.nvml_graph_clock_idx));
+            if (graph_plus_idx < dci.nvml_graph_clocks.size())
+                neighbor_nodes.push_back(run_benchmark_script_nvml_nvapi(ms, dci, current_node.mem_oc, graph_plus_idx));
+            if (graph_minus_idx >= 0)
+                neighbor_nodes.push_back(
+                        run_benchmark_script_nvml_nvapi(ms, dci, current_node.mem_oc, graph_minus_idx));
+        }
+
+        //diagonal 4 neighborhood
+        if (mem_plus <= dci.max_mem_oc && graph_plus_idx < dci.nvml_graph_clocks.size())
+            neighbor_nodes.push_back(
+                    run_benchmark_script_nvml_nvapi(ms, dci, mem_plus, graph_plus_idx));
+        if (mem_minus >= dci.min_mem_oc && graph_minus_idx >= 0)
+            neighbor_nodes.push_back(
+                    run_benchmark_script_nvml_nvapi(ms, dci, mem_minus, graph_minus_idx));
+        if (mem_minus >= dci.min_mem_oc && graph_plus_idx < dci.nvml_graph_clocks.size())
+            neighbor_nodes.push_back(
+                    run_benchmark_script_nvml_nvapi(ms, dci, mem_minus, graph_plus_idx));
+        if (mem_plus <= dci.max_mem_oc && graph_minus_idx >= 0)
+            neighbor_nodes.push_back(
+                    run_benchmark_script_nvml_nvapi(ms, dci, mem_plus, graph_minus_idx));
+
 
         return neighbor_nodes;
     }
@@ -53,7 +70,7 @@ namespace frequency_scaling {
         //exploration
         for (int i = 0; i < max_iterations; i++) {
             const std::vector<measurement> &neighbors = explore_neighborhood(ms, dci, current_node, mem_step,
-                                                                             graph_idx_step);
+                                                                             graph_idx_step, false);
             float tmp_val = -1e37;
             for (measurement n : neighbors) {
                 if (n.energy_hash_ > tmp_val) {

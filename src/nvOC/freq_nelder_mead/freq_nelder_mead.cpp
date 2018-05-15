@@ -58,7 +58,7 @@ namespace frequency_scaling {
         method.options.setMaxIterations(max_iterations);
         method.options.setParamTolerance(param_tolerance);
         method.options.setFuncTolerance(func_tolerance);
-        method.options.setInitScale(std::make_pair(1,1));
+        method.options.setInitScale(std::make_pair(1,2));
         const vec_type& glob_minimum = method.minimize(function, init_guess);
         //run benchmark at proposed minimum
         int mem_oc = dci.min_mem_oc + std::lround(glob_minimum(0) * mem_step);
