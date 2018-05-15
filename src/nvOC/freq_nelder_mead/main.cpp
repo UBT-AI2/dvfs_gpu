@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     dci.max_mem_oc = max_mem_oc;
 
     //
-    const measurement &m = freq_nelder_mead(miner_script::EXCAVATOR, dci, 1, max_iterations, mem_step, graph_idx_step);
+    const measurement &m = freq_nelder_mead(miner_script::ETHMINER, dci, 1, max_iterations, mem_step, graph_idx_step);
     printf("Best energy-hash value: %f\n", m.energy_hash_);
 
     //stop power monitoring
