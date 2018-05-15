@@ -4,7 +4,6 @@
 #include <random>
 #include <limits>
 #include <chrono>
-#include "../benchmark/benchmark.h"
 #include <numerical-methods/optimization/nelder-mead-method.h>
 
 
@@ -39,7 +38,9 @@ namespace frequency_scaling {
         auto function = [ms,&dci,dimension_, &best_measurement, mem_step, graph_idx_step](const vec_type& x) -> double {
             int mem_oc = dci.min_mem_oc + std::lround(x(0) * mem_step);
             int graph_idx = std::lround(x(1) * graph_idx_step);
-            std::cout << "ARGs: " << x << std::endl;
+#ifdef DEBUG
+            std::cout << "NM function args: " << x(0) << "," << x(1) << std::endl;
+#endif
             if (mem_oc > dci.max_mem_oc || mem_oc < dci.min_mem_oc ||
                     graph_idx >= dci.nvml_graph_clocks.size() || graph_idx < 0){
                 return std::numeric_limits<double>::max();
@@ -48,7 +49,9 @@ namespace frequency_scaling {
             const measurement& m = run_benchmark_script_nvml_nvapi(ms, dci, mem_oc, graph_idx);
             if(m.energy_hash_ > best_measurement.energy_hash_)
                 best_measurement = m;
-            std::cout << "Measured energy-hash: " << m.energy_hash_ << std::endl;
+#ifdef DEBUG
+            std::cout << "NM measured energy-hash: " << m.energy_hash_ << std::endl;
+#endif
             //note minimize function
             return -m.energy_hash_;
         };
@@ -61,11 +64,13 @@ namespace frequency_scaling {
         method.options.setFuncTolerance(func_tolerance);
         method.options.setInitScale(std::make_pair(1.5,1.5));
         const vec_type& glob_minimum = method.minimize(function, init_guess);
-        std::cout << "NM best measurement: " << best_measurement.energy_hash_ << std::endl;
+        return best_measurement;
+        /*
         //run benchmark at proposed minimum
         int mem_oc = dci.min_mem_oc + std::lround(glob_minimum(0) * mem_step);
         int graph_idx = std::lround(glob_minimum(1) * graph_idx_step);
         return run_benchmark_script_nvml_nvapi(ms, dci, mem_oc, graph_idx);
+         */
     }
 
 }

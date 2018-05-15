@@ -43,6 +43,7 @@ if(WIN32)
     link_directories($ENV{GLOG_DIR}/lib)
     link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
     set(NVML_LIB_NAME nvml)
+    set(GLOG_LIB_NAME libglog)
 else()
     execute_process (
             COMMAND bash -c "nvidia-smi | grep Driver | cut -f 3 -d' ' | cut -f 1 -d '.'"
@@ -52,6 +53,7 @@ else()
     #
     link_directories(/usr/lib/nvidia-387)
     set(NVML_LIB_NAME nvidia-ml)
+    set(GLOG_LIB_NAME glog)
 endif()
 
 #set OpenMP flags

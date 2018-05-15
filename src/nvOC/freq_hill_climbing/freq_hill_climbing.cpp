@@ -3,7 +3,6 @@
 #include <vector>
 #include <random>
 #include <chrono>
-#include "../benchmark/benchmark.h"
 
 
 namespace frequency_scaling {

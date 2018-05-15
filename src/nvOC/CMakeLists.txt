@@ -43,7 +43,7 @@ add_executable(freq_nelder_mead
         nvapi/nvapiOC.c
         nvml/nvmlOC.cpp
         benchmark/benchmark.cpp)
-target_link_libraries(freq_nelder_mead ${NVML_LIB_NAME} libglog)
+target_link_libraries(freq_nelder_mead ${NVML_LIB_NAME} ${GLOG_LIB_NAME})
 
 #Specify install target for executable
 #INSTALL(TARGETS ${EXECUTABLENAME} RUNTIME DESTINATION ${CMAKE_PROJECT_NAME}/bin)
