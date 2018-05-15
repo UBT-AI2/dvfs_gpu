@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     dci.max_mem_oc = max_mem_oc;
 
     //
-    const measurement &m = freq_exhaustive(miner_script::EXCAVATOR, dci, interval, use_nvmlUC, 2);
+    const measurement &m = freq_exhaustive(miner_script::ETHMINER, dci, interval, use_nvmlUC, 2);
     printf("Best energy-hash value: %f\n", m.energy_hash_);
 
     //stop power monitoring

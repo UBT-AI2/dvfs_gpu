@@ -1,8 +1,8 @@
 #include "freq_hill_climbing.h"
 
-#include <stdlib.h>
 #include <vector>
 #include <random>
+#include <chrono>
 #include "../benchmark/benchmark.h"
 
 
@@ -39,8 +39,7 @@ namespace frequency_scaling {
         //get random numbers
         int initial_graph_idx, initial_mem_oc;
         {
-            std::random_device rd;
-            std::default_random_engine eng(rd());
+            std::default_random_engine eng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
             std::uniform_int_distribution<int> distr_graph(0, dci.nvml_graph_clocks.size() - 1);
             std::uniform_int_distribution<int> distr_mem(0, (dci.max_mem_oc - dci.min_mem_oc) / mem_step);
             initial_graph_idx = distr_graph(eng);

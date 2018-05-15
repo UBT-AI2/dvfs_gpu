@@ -39,6 +39,8 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/numerical_methods/include)
 
 if(WIN32)
+    include_directories($ENV{GLOG_DIR}/include)
+    link_directories($ENV{GLOG_DIR}/lib)
     link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
     set(NVML_LIB_NAME nvml)
 else()
