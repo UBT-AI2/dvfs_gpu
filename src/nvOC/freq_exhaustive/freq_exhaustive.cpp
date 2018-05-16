@@ -1,9 +1,5 @@
 #include "freq_exhaustive.h"
 
-#include <stdlib.h>
-#include "../nvml/nvmlOC.h"
-#include "../benchmark/benchmark.h"
-
 namespace frequency_scaling {
 
     measurement freq_exhaustive(miner_script ms, const device_clock_info &dci, int nvapi_oc_interval,

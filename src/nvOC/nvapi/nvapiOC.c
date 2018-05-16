@@ -308,33 +308,27 @@ int nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz) {
 
 #else
 
-int nvapiInit()
-{
+int nvapiInit() {
     return 1;
 }
 
-int nvapiUnload(int restoreClocks)
-{
+int nvapiUnload(int restoreClocks) {
     return 1;
 }
 
-int nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz)
-{
+int nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz) {
     return 1;
 }
 
-int nvapiGetDeviceIndexByBusId(int busId)
-{
+int nvapiGetDeviceIndexByBusId(int busId) {
     return 1;
 }
 
-int nvapiGetDefaultMemClock(int deviceId)
-{
+int nvapiGetDefaultMemClock(int deviceId) {
     return 1;
 }
 
-int nvapiGetDefaultGraphClock(int deviceId)
-{
+int nvapiGetDefaultGraphClock(int deviceId) {
     return 1;
 }
 

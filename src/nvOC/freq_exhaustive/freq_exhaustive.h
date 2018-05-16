@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../benchmark/benchmark.h"
+#include "../script_running/benchmark.h"
 
 namespace frequency_scaling {
 

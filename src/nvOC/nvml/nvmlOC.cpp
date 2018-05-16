@@ -1,6 +1,5 @@
 #include "nvmlOC.h"
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <nvml.h>
 #include "../exceptions.h"
@@ -47,7 +46,7 @@ namespace frequency_scaling {
     }
 
     void nvmlShutdown_(bool restoreClocks) {
-        if(restoreClocks) {
+        if (restoreClocks) {
             unsigned int deviceCount;
             safeNVMLCall(nvmlDeviceGetCount(&deviceCount));
             for (int device_id = 0; device_id < deviceCount; device_id++) {

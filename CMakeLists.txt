@@ -38,14 +38,14 @@ include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
 include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/numerical_methods/include)
 
-if(WIN32)
+if (WIN32)
     include_directories($ENV{GLOG_DIR}/include)
     link_directories($ENV{GLOG_DIR}/lib)
     link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
     set(NVML_LIB_NAME nvml)
     set(GLOG_LIB_NAME libglog)
-else()
-    execute_process (
+else ()
+    execute_process(
             COMMAND bash -c "nvidia-smi | grep Driver | cut -f 3 -d' ' | cut -f 1 -d '.'"
             OUTPUT_VARIABLE DRIVER-BRANCH
     )
@@ -54,7 +54,7 @@ else()
     link_directories(/usr/lib/nvidia-387)
     set(NVML_LIB_NAME nvidia-ml)
     set(GLOG_LIB_NAME glog)
-endif()
+endif ()
 
 #set OpenMP flags
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
