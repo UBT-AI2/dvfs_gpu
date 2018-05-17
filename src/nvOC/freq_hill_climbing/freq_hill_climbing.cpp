@@ -65,10 +65,12 @@ namespace frequency_scaling {
         measurement current_node = run_benchmark_script_nvml_nvapi(ms, dci, initial_mem_oc, initial_graph_idx);
         measurement best_node = current_node;
 
+        double currentslope = 0;
         //exploration
         for (int i = 0; i < max_iterations; i++) {
             const std::vector<measurement> &neighbors = explore_neighborhood(ms, dci, current_node, mem_step,
                                                                              graph_idx_step, false);
+            measurement last_node = current_node;
             float tmp_val = -1e37;
             for (const measurement &n : neighbors) {
                 if (n.energy_hash_ > tmp_val) {
@@ -76,6 +78,14 @@ namespace frequency_scaling {
                     tmp_val = n.energy_hash_;
                 }
             }
+            //compute slope
+            /*int memDiff = current_node.mem_oc - last_node.mem_oc;
+            int graphDiff = dci.nvml_graph_clocks[current_node.nvml_graph_clock_idx] -
+                    dci.nvml_graph_clocks[last_node.nvml_graph_clock_idx];
+            double deltaX = std::sqrt(memDiff*memDiff + graphDiff*graphDiff);
+            double deltaY = current_node.energy_hash_ - last_node.energy_hash_;
+            currentslope = (deltaX == 0) ? 0 : deltaY/deltaX;*/
+
             if (current_node.energy_hash_ > best_node.energy_hash_) {
                 best_node = current_node;
             }

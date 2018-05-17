@@ -65,13 +65,14 @@ namespace frequency_scaling {
         method.options.setFuncTolerance(func_tolerance);
         method.options.setInitScale(std::make_pair(1.5, 1.5));
         const vec_type &glob_minimum = method.minimize(function, init_guess);
-        return best_measurement;
-        /*
+
         //run script_running at proposed minimum
         int mem_oc = dci.min_mem_oc + std::lround(glob_minimum(0) * mem_step);
         int graph_idx = std::lround(glob_minimum(1) * graph_idx_step);
-        return run_benchmark_script_nvml_nvapi(ms, dci, mem_oc, graph_idx);
-         */
+        const measurement& glob_min_measurement =
+                run_benchmark_script_nvml_nvapi(ms, dci, mem_oc, graph_idx);
+        return (best_measurement.energy_hash_ > glob_min_measurement.energy_hash_) ?
+               best_measurement : glob_min_measurement;
     }
 
 }
