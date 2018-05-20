@@ -6,7 +6,8 @@ graph_clock=$3
 
 bench_start=$(tail -n 1 power_results.txt | awk '{print $1}')
 
-../../miner/windows/ethminer-0.9.41-genoil-1.1.7/ethminer.exe -U -M --cuda-devices $device_id > log_${mem_clock}_${graph_clock}.txt
+../../miner/windows/ethminer-0.9.41-genoil-1.1.7/ethminer.exe -U -M \
+--benchmark-trials 1 --benchmark-warmup 10 --cuda-devices $device_id > log_${mem_clock}_${graph_clock}.txt
 
 if [[ -z $bench_start ]]
 then
@@ -19,13 +20,7 @@ fi
 #avg_power=$(awk '{ total += $2 } END { print total/NR }' power_results_${mem_clock}_${graph_clock}.txt)
 
 max_power=$(awk 'BEGIN{a=0}{if ($2>0+a) a=$2} END{print a}' power_results_${mem_clock}_${graph_clock}.txt)
-
-t1=$(grep 'Trial 1...' log_${mem_clock}_${graph_clock}.txt | sed 's/Trial [0-9]... //g')
-t2=$(grep 'Trial 2...' log_${mem_clock}_${graph_clock}.txt | sed 's/Trial [0-9]... //g')
-t3=$(grep 'Trial 3...' log_${mem_clock}_${graph_clock}.txt | sed 's/Trial [0-9]... //g')
-t4=$(grep 'Trial 4...' log_${mem_clock}_${graph_clock}.txt | sed 's/Trial [0-9]... //g')
-t5=$(grep 'Trial 5...' log_${mem_clock}_${graph_clock}.txt | sed 's/Trial [0-9]... //g')
-avg_hashrate=$(./calc_inner_mean $t1 $t2 $t3 $t4 $t5)
+avg_hashrate=$(grep 'Trial 1...' log_${mem_clock}_${graph_clock}.txt | sed 's/Trial [0-9]... //g')
 hashes_per_joule=$(awk "BEGIN { print ${avg_hashrate} / ${max_power} }")
 
 echo ${mem_clock},${graph_clock},${max_power},${avg_hashrate},${hashes_per_joule} >> result.dat
