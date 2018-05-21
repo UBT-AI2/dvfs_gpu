@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <string>
 #include <fstream>
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
@@ -26,6 +27,10 @@ namespace frequency_scaling {
                     break;
                 case miner_script::EXCAVATOR:
                     snprintf(cmd2, BUFFER_SIZE, "sh ../scripts/run_benchmark_excavator.sh %i %i %i",
+                             dci.device_id_nvml, mem_clock, graph_clock);
+                    break;
+                case miner_script::XMRSTAK:
+                    snprintf(cmd2, BUFFER_SIZE, "sh ../scripts/run_benchmark_xmrstak.sh %i %i %i",
                              dci.device_id_nvml, mem_clock, graph_clock);
                     break;
             }

@@ -33,6 +33,9 @@ namespace frequency_scaling {
         currency_infos.emplace(currency_type::ETH,
                                currency_info(currency_type::ETH, 3289492680541800, 3.00000000,
                                              0.08435602 * 8485.00000000));
+        currency_infos.emplace(currency_type::XMR,
+                               currency_info(currency_type::XMR, 58874879759, 4.86930501,
+                                             0.02339000 * 8485.00000000));
         return currency_infos;
     }
 

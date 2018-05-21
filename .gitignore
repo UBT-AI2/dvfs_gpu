@@ -1,2 +1,4 @@
 /bin
+/build
 /cmake-build*
+/CMakeSettings.json

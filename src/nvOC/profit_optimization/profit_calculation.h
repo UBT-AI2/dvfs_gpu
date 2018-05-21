@@ -5,7 +5,7 @@
 namespace frequency_scaling {
 
     enum class currency_type {
-        ZEC, ETH
+        ZEC, ETH, XMR
     };
 
     struct currency_info {

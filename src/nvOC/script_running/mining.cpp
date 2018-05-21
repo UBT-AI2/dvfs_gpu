@@ -20,6 +20,10 @@ namespace frequency_scaling {
                 snprintf(cmd1, BUFFER_SIZE, "sh ../scripts/start_mining_ethminer.sh %s %i",
                          user_info.c_str(), device_id);
                 break;
+            case miner_script::XMRSTAK:
+                snprintf(cmd1, BUFFER_SIZE, "sh ../scripts/start_mining_xmrstak.sh %s %i",
+                         user_info.c_str(), device_id);
+                break;
         }
         system(cmd1);
 
@@ -34,6 +38,9 @@ namespace frequency_scaling {
                 break;
             case miner_script::ETHMINER:
                 snprintf(cmd3, BUFFER_SIZE, "sh ../scripts/kill_process.sh %s", "ethminer");
+                break;
+            case miner_script::XMRSTAK:
+                snprintf(cmd3, BUFFER_SIZE, "sh ../scripts/kill_process.sh %s", "xmr-stak");
                 break;
         }
         system(cmd3);
