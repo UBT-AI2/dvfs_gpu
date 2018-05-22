@@ -217,7 +217,7 @@ int nvapiGetDeviceIndexByBusId(int busId) {
     return -1;
 }
 
-int nvapiGetDefaultMemClock(int deviceIdNvapi){
+int nvapiGetCurrentMemClock(int deviceIdNvapi){
     int *hdlGPU[64] = {0};
     int nGPU;
     NvEnumPhysicalGPUs(hdlGPU, &nGPU);
@@ -225,11 +225,11 @@ int nvapiGetDefaultMemClock(int deviceIdNvapi){
     pstates_info.version = 0x11c94;
     NvGetPstates(hdlGPU[deviceIdNvapi], &pstates_info);
     int curRam = (int) ((pstates_info.pstates[0].clocks[1]).data.single.freq_kHz) / 1000;
-    int curRamOC = (int) ((pstates_info.pstates[0].clocks[1]).freqDelta_kHz.value) / 1000;
-    return curRam - curRamOC;
+    //int curRamOC = (int) ((pstates_info.pstates[0].clocks[1]).freqDelta_kHz.value) / 1000;
+    return curRam;
 }
 
-int nvapiGetDefaultGraphClock(int deviceIdNvapi){
+int nvapiGetCurrentGraphClock(int deviceIdNvapi){
     int *hdlGPU[64] = {0};
     int nGPU;
     NvEnumPhysicalGPUs(hdlGPU, &nGPU);
@@ -237,8 +237,8 @@ int nvapiGetDefaultGraphClock(int deviceIdNvapi){
     pstates_info.version = 0x11c94;
     NvGetPstates(hdlGPU[deviceIdNvapi], &pstates_info);
     int curGraph = (int) ((pstates_info.pstates[0].clocks[0]).data.single.freq_kHz) / 1000;
-    int curGraphOC = (int) ((pstates_info.pstates[0].clocks[0]).freqDelta_kHz.value) / 1000;
-    return curGraph - curGraphOC;
+    //int curGraphOC = (int) ((pstates_info.pstates[0].clocks[0]).freqDelta_kHz.value) / 1000;
+    return curGraph;
 }
 
 int nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz) {
@@ -324,11 +324,11 @@ int nvapiGetDeviceIndexByBusId(int busId) {
     return 1;
 }
 
-int nvapiGetDefaultMemClock(int deviceId) {
+int nvapiGetCurrentMemClock(int deviceId) {
     return 1;
 }
 
-int nvapiGetDefaultGraphClock(int deviceId) {
+int nvapiGetCurrentGraphClock(int deviceId) {
     return 1;
 }
 

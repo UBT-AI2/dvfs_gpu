@@ -12,9 +12,9 @@ int nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz);
 
 int nvapiGetDeviceIndexByBusId(int busId);
 
-int nvapiGetDefaultMemClock(int deviceId);
+int nvapiGetCurrentMemClock(int deviceId);
 
-int nvapiGetDefaultGraphClock(int deviceId);
+int nvapiGetCurrentGraphClock(int deviceId);
 
 #ifdef __cplusplus
 }

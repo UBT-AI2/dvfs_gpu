@@ -5,19 +5,24 @@
 
 namespace frequency_scaling {
 
-    class nvml_exception : public std::runtime_error {
+    class nvml_error : public std::runtime_error {
     public:
-        nvml_exception(const std::string &msg) : std::runtime_error(msg) {}
+        nvml_error(const std::string &msg) : std::runtime_error(msg) {}
     };
 
-    class nvapi_exception : public std::runtime_error {
+    class nvapi_error : public std::runtime_error {
     public:
-        nvapi_exception(const std::string &msg) : std::runtime_error(msg) {}
+        nvapi_error(const std::string &msg) : std::runtime_error(msg) {}
     };
 
-    class io_exception : public std::runtime_error {
+    class io_error : public std::runtime_error {
     public:
-        io_exception(const std::string &msg) : std::runtime_error(msg) {}
+        io_error(const std::string &msg) : std::runtime_error(msg) {}
+    };
+
+    class optimization_error : public std::runtime_error {
+    public:
+        optimization_error(const std::string &msg) : std::runtime_error(msg) {}
     };
 
 }

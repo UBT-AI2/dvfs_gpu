@@ -14,7 +14,7 @@ namespace frequency_scaling {
             std::string msg("NVML call failed: ");
             msg.append(nvmlErrorString(result));
             msg.append("\n");
-            throw nvml_exception(msg);
+            throw nvml_error(msg);
         }
     }
 

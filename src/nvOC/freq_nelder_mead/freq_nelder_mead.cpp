@@ -13,30 +13,24 @@ namespace frequency_scaling {
     measurement freq_nelder_mead(miner_script ms, const device_clock_info &dci,
                                  int min_iterations, int max_iterations,
                                  int mem_step, int graph_idx_step,
-                                 double param_tolerance, double func_tolerance) {
+                                 double min_hashrate,
+                                 double mem_scale, double graph_scale) {
 
-        //get random numbers
-        double initial_graph_idx, initial_mem_oc;
-        {
-            std::default_random_engine eng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
-            std::uniform_real_distribution<double> distr_graph(0, (dci.nvml_graph_clocks.size() - 1) /
-                                                                  (double) graph_idx_step);
-            std::uniform_real_distribution<double> distr_mem(0, (dci.max_mem_oc - dci.min_mem_oc) / (double) mem_step);
-            initial_graph_idx = distr_graph(eng);
-            initial_mem_oc = distr_mem(eng);
-        }
-        //initial random guess
+        //initial guess at maximum frequencies
         int dimension_ = 2;
         vec_type init_guess(dimension_);
-        init_guess(0) = initial_mem_oc;
-        init_guess(1) = initial_graph_idx;
+        init_guess(0) = (dci.max_mem_oc - dci.min_mem_oc) / (double) mem_step;
+        init_guess(1) = 0;
 
         // function to optimize
         measurement best_measurement;
-        best_measurement.energy_hash_ = std::numeric_limits<float>::min();
+        best_measurement.energy_hash_ = std::numeric_limits<float>::lowest();
+        int num_func_evals = 0;
 
-        auto function = [ms, &dci, dimension_, &best_measurement, mem_step, graph_idx_step](
+        auto function = [ms, &dci, dimension_, &best_measurement, mem_step, graph_idx_step,
+                min_hashrate, &num_func_evals](
                 const vec_type &x) -> double {
+            num_func_evals++;
             int mem_oc = dci.min_mem_oc + std::lround(x(0) * mem_step);
             int graph_idx = std::lround(x(1) * graph_idx_step);
 #ifdef DEBUG
@@ -48,6 +42,12 @@ namespace frequency_scaling {
             }
             //
             const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_oc, graph_idx);
+            if(m.hashrate_ < min_hashrate) {
+                if(num_func_evals == 1)
+                    throw std::runtime_error("Minimum hashrate cannot be reached");
+                return std::numeric_limits<double>::max();
+            }
+
             if (m.energy_hash_ > best_measurement.energy_hash_)
                 best_measurement = m;
 #ifdef DEBUG
@@ -61,10 +61,11 @@ namespace frequency_scaling {
         numerical_methods::NelderMeadMethod<double, 2> method;
         method.options.setMinIterations(min_iterations);
         method.options.setMaxIterations(max_iterations);
-        method.options.setParamTolerance(param_tolerance);
-        method.options.setFuncTolerance(func_tolerance);
-        method.options.setInitScale(std::make_pair(1.5, 1.5));
+        method.options.setParamTolerance(1e-3);
+        method.options.setFuncTolerance(1e-3);
+        method.options.setInitScale(std::make_pair(mem_scale, graph_scale));
         const vec_type &glob_minimum = method.minimize(function, init_guess);
+        std::cout << "Nelder-mead number of function evaluations: " << num_func_evals << std::endl;
 
         //run script_running at proposed minimum
         int mem_oc = dci.min_mem_oc + std::lround(glob_minimum(0) * mem_step);
