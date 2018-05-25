@@ -15,7 +15,7 @@ set(FREQ_NELDER_MEAD_FILES
         freq_nelder_mead/freq_nelder_mead.h freq_nelder_mead/freq_nelder_mead.cpp)
 set(PROFIT_OPTIMIZATION_FILES
         profit_optimization/profit_calculation.h profit_optimization/profit_calculation.cpp
-        profit_optimization/profit_optimization.h profit_optimization/profit_optimization.cpp)
+        profit_optimization/profit_optimization.h profit_optimization/profit_optimization.cpp profit_optimization/network_requests.h profit_optimization/network_requests.cpp)
 
 
 #
@@ -87,7 +87,8 @@ add_library(profit_optimization_lib
         ${PROFIT_OPTIMIZATION_FILES})
 target_link_libraries(profit_optimization_lib
         freq_hill_climbing_lib
-        freq_nelder_mead_lib)
+        freq_nelder_mead_lib
+        ${CURL_LIBRARIES})
 add_executable(profit_optimization
         profit_optimization/main.cpp)
 target_link_libraries(profit_optimization

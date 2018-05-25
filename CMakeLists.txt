@@ -32,10 +32,14 @@ find_package(OpenMP REQUIRED)
 find_package(Threads REQUIRED)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules)
 find_package(EIGEN3 REQUIRED)
+find_package(CURL REQUIRED)
+find_package(Boost REQUIRED)
 
 #include and link cuda toolkit headers/libs
 include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
 include_directories(${EIGEN3_INCLUDE_DIR})
+include_directories(${CURL_INCLUDE_DIRS})
+include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/numerical_methods/include)
 
 if (WIN32)

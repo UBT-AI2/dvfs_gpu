@@ -25,4 +25,9 @@ namespace frequency_scaling {
         optimization_error(const std::string &msg) : std::runtime_error(msg) {}
     };
 
+    class network_error : public std::runtime_error {
+    public:
+        network_error(const std::string &msg) : std::runtime_error(msg) {}
+    };
+
 }

@@ -1,4 +1,5 @@
 #include "profit_calculation.h"
+#include "network_requests.h"
 
 namespace frequency_scaling {
 
@@ -29,13 +30,13 @@ namespace frequency_scaling {
         std::map<currency_type, currency_info> currency_infos;
         currency_infos.emplace(currency_type::ZEC,
                                currency_info(currency_type::ZEC, 8310910.23802672, 10.00288114,
-                                             0.02953499 * 8485.00000000));
+                                             get_current_price_eur(currency_type::ZEC)));
         currency_infos.emplace(currency_type::ETH,
                                currency_info(currency_type::ETH, 3289492680541800, 3.00000000,
-                                             0.08435602 * 8485.00000000));
+                                             get_current_price_eur(currency_type::ETH)));
         currency_infos.emplace(currency_type::XMR,
                                currency_info(currency_type::XMR, 58874879759, 4.86930501,
-                                             0.02339000 * 8485.00000000));
+                                             get_current_price_eur(currency_type::XMR)));
         return currency_infos;
     }
 
