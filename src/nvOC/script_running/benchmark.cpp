@@ -7,6 +7,7 @@
 #include <string.h>
 #include <string>
 #include <fstream>
+#include <cuda.h>
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
 
@@ -23,16 +24,18 @@ namespace frequency_scaling {
             switch (ms) {
                 case miner_script::ETHMINER:
                     snprintf(cmd2, BUFFER_SIZE, "sh ../scripts/run_benchmark_ethminer.sh %i %i %i",
-                             dci.device_id_nvml, mem_clock, graph_clock);
+                             dci.device_id_cuda, mem_clock, graph_clock);
                     break;
                 case miner_script::EXCAVATOR:
                     snprintf(cmd2, BUFFER_SIZE, "sh ../scripts/run_benchmark_excavator.sh %i %i %i",
-                             dci.device_id_nvml, mem_clock, graph_clock);
+                             dci.device_id_cuda, mem_clock, graph_clock);
                     break;
                 case miner_script::XMRSTAK:
                     snprintf(cmd2, BUFFER_SIZE, "sh ../scripts/run_benchmark_xmrstak.sh %i %i %i",
-                             dci.device_id_nvml, mem_clock, graph_clock);
+                             dci.device_id_cuda, mem_clock, graph_clock);
                     break;
+                default:
+                    throw std::runtime_error("Invalid enum value");
             }
             system(cmd2);
         }
@@ -121,4 +124,19 @@ namespace frequency_scaling {
         return m;
     }
 
+    device_clock_info::device_clock_info(int device_id_nvml, int min_mem_oc, int min_graph_oc, int max_mem_oc,
+                                         int max_graph_oc) : device_id_nvml(device_id_nvml), min_mem_oc(min_mem_oc),
+                                                             min_graph_oc(min_graph_oc), max_mem_oc(max_mem_oc),
+                                                             max_graph_oc(max_graph_oc) {
+        device_id_nvapi = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id_nvml));
+        CUresult res = cuDeviceGetByPCIBusId(&device_id_cuda, nvmlGetBusIdString(device_id_nvml).c_str());
+        if(res ==  CUDA_ERROR_NOT_INITIALIZED){
+            cuInit(0);
+            cuDeviceGetByPCIBusId(&device_id_cuda, nvmlGetBusIdString(device_id_nvml).c_str());
+        }
+        nvml_mem_clocks = nvmlGetAvailableMemClocks(device_id_nvml);
+        nvml_graph_clocks = nvmlGetAvailableGraphClocks(device_id_nvml, nvml_mem_clocks[1]);
+        nvapi_default_mem_clock = nvml_mem_clocks[0];
+        nvapi_default_graph_clock = nvml_graph_clocks[0];
+    }
 }

@@ -4,6 +4,8 @@
 #include <random>
 #include <chrono>
 #include <numerical-methods/optimization/nelder-mead-method.h>
+#include "../exceptions.h"
+
 
 
 namespace frequency_scaling {
@@ -44,7 +46,7 @@ namespace frequency_scaling {
             const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_oc, graph_idx);
             if(m.hashrate_ < min_hashrate) {
                 if(num_func_evals == 1)
-                    throw std::runtime_error("Minimum hashrate cannot be reached");
+                    throw optimization_error("Minimum hashrate cannot be reached");
                 return std::numeric_limits<double>::max();
             }
 

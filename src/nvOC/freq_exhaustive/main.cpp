@@ -28,17 +28,7 @@ int main(int argc, char **argv) {
     start_power_monitoring_script(device_id);
 
     //
-    device_clock_info dci;
-    dci.device_id_nvml = device_id;
-    dci.device_id_nvapi = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id));
-    dci.nvml_mem_clocks = nvmlGetAvailableMemClocks(device_id);
-    dci.nvml_graph_clocks = nvmlGetAvailableGraphClocks(device_id, dci.nvml_mem_clocks[1]);
-    dci.nvapi_default_mem_clock = dci.nvml_mem_clocks[0];
-    dci.nvapi_default_graph_clock = dci.nvml_graph_clocks[0];
-    dci.min_graph_oc = min_graph_oc;
-    dci.min_mem_oc = min_mem_oc;
-    dci.max_graph_oc = max_graph_oc;
-    dci.max_mem_oc = max_mem_oc;
+    device_clock_info dci(device_id, min_mem_oc, min_graph_oc,max_mem_oc,max_graph_oc);
 
     //
     const measurement &m = freq_exhaustive(miner_script::ETHMINER, dci, interval, use_nvmlUC, 2);

@@ -26,17 +26,8 @@ int main(int argc, char **argv) {
     nvmlInit_();
 
     //
-    device_clock_info dci;
-    dci.device_id_nvml = device_id;
-    dci.device_id_nvapi = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id));
-    dci.nvml_mem_clocks = nvmlGetAvailableMemClocks(device_id);
-    dci.nvml_graph_clocks = nvmlGetAvailableGraphClocks(device_id, dci.nvml_mem_clocks[1]);
-    dci.nvapi_default_mem_clock = dci.nvml_mem_clocks[0];
-    dci.nvapi_default_graph_clock = dci.nvml_graph_clocks[0];
-    dci.min_graph_oc = 0;
-    dci.min_mem_oc = min_mem_oc;
-    dci.max_graph_oc = 0;
-    dci.max_mem_oc = max_mem_oc;
+    device_clock_info dci(device_id, min_mem_oc, 0,max_mem_oc,0);
+
 
     mine_most_profitable_currency(mining_user_info, dci, max_iterations, mem_step, graph_idx_step);
 

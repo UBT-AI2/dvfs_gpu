@@ -49,7 +49,8 @@ add_library(script_running_lib
         ${SCRIPT_RUNNING_FILES})
 target_link_libraries(script_running_lib
         nvapiOC_lib
-        nvmlOC_lib)
+        nvmlOC_lib
+        cuda)
 
 #
 add_library(freq_exhaustive_lib

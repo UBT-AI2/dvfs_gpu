@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
 namespace frequency_scaling {
 
@@ -13,6 +14,8 @@ namespace frequency_scaling {
     std::vector<int> nvmlGetAvailableGraphClocks(int device_id, int mem_clock);
 
     int nvmlGetBusId(int device_id);
+
+    std::string nvmlGetBusIdString(int device_id);
 
     int nvmlGetNumDevices();
 

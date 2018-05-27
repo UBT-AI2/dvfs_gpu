@@ -103,6 +103,14 @@ namespace frequency_scaling {
         return pci.bus;
     }
 
+    std::string nvmlGetBusIdString(int device_id){
+        nvmlDevice_t device;
+        nvmlPciInfo_t pci;
+        safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
+        safeNVMLCall(nvmlDeviceGetPciInfo(device, &pci));
+        return pci.busId;
+    }
+
     int nvmlGetTemperature(int device_id) {
         nvmlDevice_t device;
         safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));

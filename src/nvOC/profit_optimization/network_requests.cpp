@@ -41,25 +41,76 @@ namespace frequency_scaling {
         return response_string;
     }
 
-    double get_current_price_eur(currency_type type) {
-        std::string json_response;
+    static std::string get_nanopool_url(currency_type type){
         switch (type) {
             case currency_type::ZEC:
-                json_response = curl_https_get("https://min-api.cryptocompare.com/data/price?fsym=ZEC&tsyms=EUR");
-                break;
+                return "https://api.nanopool.org/v1/zec";
             case currency_type::ETH:
-                json_response = curl_https_get("https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=EUR");
-                break;
+                return "https://api.nanopool.org/v1/eth";
             case currency_type::XMR:
-                json_response = curl_https_get("https://min-api.cryptocompare.com/data/price?fsym=XMR&tsyms=EUR");
-                break;
+                return "https://api.nanopool.org/v1/xmr";
+            default:
+                return "";
         }
+    }
+
+    double get_approximated_earnings_per_hour_nanopool(currency_type type, double hashrate_hs) {
+        double hashrate_arg = (type == currency_type::ETH)?hashrate_hs/1e6:hashrate_hs;
+        const std::string& json_response = curl_https_get(
+                get_nanopool_url(type)+ "/approximated_earnings/" + std::to_string(hashrate_arg));
         //
         std::istringstream is(json_response);
-        boost::property_tree::ptree ptree;
-        boost::property_tree::json_parser::read_json(is, ptree);
-        return ptree.get<double>("EUR");
+        boost::property_tree::ptree root;
+        boost::property_tree::json_parser::read_json(is, root);
+        std::string status = root.get<std::string>("status", "false");
+        if (status != "true")
+            throw network_error("API error: " + root.get<std::string>("data"));
+        return root.get<double>("data.hour.euros");
     }
+
+    std::map<std::string, double>
+    get_avg_hashrate_per_worker_nanopool(currency_type type, const std::string &wallet_address, double period_hours) {
+        const std::string& json_response = curl_https_get(
+                get_nanopool_url(type) + "/avghashrateworkers/" + wallet_address + "/" +
+                std::to_string(period_hours));
+        //
+        std::istringstream is(json_response);
+        boost::property_tree::ptree root;
+        boost::property_tree::json_parser::read_json(is, root);
+        std::string status = root.get<std::string>("status", "false");
+        if (status != "true")
+            throw network_error("API error: " + root.get<std::string>("data"));
+        std::map<std::string, double> res;
+        for (const boost::property_tree::ptree::value_type &array_elem : root.get_child("data")) {
+            const boost::property_tree::ptree &subtree = array_elem.second;
+            res.emplace(subtree.get<std::string>("worker"), subtree.get<double>("hashrate"));
+        }
+        return res;
+    };
+
+
+    double get_current_stock_price_nanopool(currency_type type) {
+        const std::string& json_response = curl_https_get(
+                get_nanopool_url(type) + "/prices");
+        std::istringstream is(json_response);
+        boost::property_tree::ptree root;
+        boost::property_tree::json_parser::read_json(is, root);
+        std::string status = root.get<std::string>("status", "false");
+        if (status != "true")
+            throw network_error("API error: " + root.get<std::string>("data"));
+        return root.get<double>("data.price_eur");
+    }
+
+
+    double get_energy_cost_stromdao(int plz) {
+        const std::string &json_response = curl_https_get(
+                "https://stromdao.de/crm/service/gsi/?plz=" + std::to_string(plz));
+        std::istringstream is(json_response);
+        boost::property_tree::ptree root;
+        boost::property_tree::json_parser::read_json(is, root);
+        return root.get<double>("tarif.centPerKWh") / 100.0;
+    }
+
 
 }
 

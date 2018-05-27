@@ -3,7 +3,7 @@
 namespace frequency_scaling {
 
     enum class miner_script {
-        ETHMINER, EXCAVATOR, XMRSTAK
+        ETHMINER, EXCAVATOR, XMRSTAK, count
     };
 
 }

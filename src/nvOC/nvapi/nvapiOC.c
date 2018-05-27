@@ -117,19 +117,19 @@ typedef int (*NvAPI_GPU_GetPstates20_t)(int *handle,
 
 typedef int (*NvAPI_GPU_SetPstates20_t)(int *handle, int *pstates_info);
 
-NvAPI_QueryInterface_t NvQueryInterface = 0;
-NvAPI_Initialize_t NvInit = 0;
-NvAPI_Unload_t NvUnload = 0;
-NvAPI_EnumPhysicalGPUs_t NvEnumPhysicalGPUs = 0;
-NvAPI_GetBusId_t NvAPI_GetBusId = 0;
-NvAPI_GPU_GetSystemType_t NvGetSysType = 0;
-NvAPI_GPU_GetFullName_t NvGetName = 0;
-NvAPI_GPU_GetPhysicalFrameBufferSize_t NvGetMemSize = 0;
-NvAPI_GPU_GetRamType_t NvGetMemType = 0;
-NvAPI_GPU_GetVbiosVersionString_t NvGetBiosName = 0;
-NvAPI_GPU_GetAllClockFrequencies_t NvGetFreq = 0;
-NvAPI_GPU_GetPstates20_t NvGetPstates = 0;
-NvAPI_GPU_SetPstates20_t NvSetPstates = 0;
+static NvAPI_QueryInterface_t NvQueryInterface = 0;
+static NvAPI_Initialize_t NvInit = 0;
+static NvAPI_Unload_t NvUnload = 0;
+static NvAPI_EnumPhysicalGPUs_t NvEnumPhysicalGPUs = 0;
+static NvAPI_GetBusId_t NvAPI_GetBusId = 0;
+static NvAPI_GPU_GetSystemType_t NvGetSysType = 0;
+static NvAPI_GPU_GetFullName_t NvGetName = 0;
+static NvAPI_GPU_GetPhysicalFrameBufferSize_t NvGetMemSize = 0;
+static NvAPI_GPU_GetRamType_t NvGetMemType = 0;
+static NvAPI_GPU_GetVbiosVersionString_t NvGetBiosName = 0;
+static NvAPI_GPU_GetAllClockFrequencies_t NvGetFreq = 0;
+static NvAPI_GPU_GetPstates20_t NvGetPstates = 0;
+static NvAPI_GPU_SetPstates20_t NvSetPstates = 0;
 
 
 int nvapiInit() {

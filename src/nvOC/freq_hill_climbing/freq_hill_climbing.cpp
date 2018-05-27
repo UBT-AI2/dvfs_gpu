@@ -3,6 +3,7 @@
 #include <random>
 #include <chrono>
 #include <iostream>
+#include "../exceptions.h"
 
 
 namespace frequency_scaling {
@@ -157,7 +158,7 @@ namespace frequency_scaling {
         measurement current_node = run_benchmark_script_nvml_nvapi(ms, dci, initial_mem_oc, initial_graph_idx);
         if (current_node.mem_oc == dci.max_mem_oc &&
             current_node.nvml_graph_clock_idx == dci.nvml_graph_clocks.size()-1) {
-            throw std::runtime_error("Minimum hashrate cannot be reached");
+            throw optimization_error("Minimum hashrate cannot be reached");
         }
         measurement best_node = current_node;
 
