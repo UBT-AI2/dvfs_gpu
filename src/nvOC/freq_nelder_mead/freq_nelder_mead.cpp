@@ -7,7 +7,6 @@
 #include "../exceptions.h"
 
 
-
 namespace frequency_scaling {
 
     typedef Eigen::Matrix<double, 2, 1> vec_type;
@@ -44,8 +43,8 @@ namespace frequency_scaling {
             }
             //
             const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_oc, graph_idx);
-            if(m.hashrate_ < min_hashrate) {
-                if(num_func_evals == 1)
+            if (m.hashrate_ < min_hashrate) {
+                if (num_func_evals == 1)
                     throw optimization_error("Minimum hashrate cannot be reached");
                 return std::numeric_limits<double>::max();
             }
@@ -72,7 +71,7 @@ namespace frequency_scaling {
         //run script_running at proposed minimum
         int mem_oc = dci.min_mem_oc + std::lround(glob_minimum(0) * mem_step);
         int graph_idx = std::lround(glob_minimum(1) * graph_idx_step);
-        const measurement& glob_min_measurement =
+        const measurement &glob_min_measurement =
                 run_benchmark_script_nvml_nvapi(ms, dci, mem_oc, graph_idx);
         return (best_measurement.energy_hash_ > glob_min_measurement.energy_hash_) ?
                best_measurement : glob_min_measurement;

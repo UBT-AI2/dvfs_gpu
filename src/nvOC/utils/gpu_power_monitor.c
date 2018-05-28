@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <omp.h>
 #include <time.h>
+
 #ifdef _MSC_VER
 #include <windows.h>
 #else
@@ -19,13 +20,13 @@ int main(int argc, char **argv) {
             atoi(argv[1]));
 
     FILE *data = fopen("power_results.txt", "w");
-    if(data == NULL){
+    if (data == NULL) {
         puts("Could not create result file");
         return 1;
     }
     fclose(data);
     data = fopen("power_results.txt", "a");
-    if(data == NULL){
+    if (data == NULL) {
         puts("Could not open result file");
         return 1;
     }
@@ -38,9 +39,9 @@ int main(int argc, char **argv) {
 
         /* Open the command for reading. */
 #ifdef _MSC_VER
-		fp = _popen(cmd, "r");
+        fp = _popen(cmd, "r");
 #else
-		fp = popen(cmd, "r");
+        fp = popen(cmd, "r");
 #endif
         if (fp == NULL) {
             printf("Failed to run command\n");
@@ -58,8 +59,8 @@ int main(int argc, char **argv) {
 
         /* close */
 #ifdef _MSC_VER
-		_pclose(fp);
-		Sleep(100);
+        _pclose(fp);
+        Sleep(100);
 #else
         pclose(fp);
         const struct timespec spec = {0, 1.0e8};

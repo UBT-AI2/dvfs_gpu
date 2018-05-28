@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
     start_power_monitoring_script(device_id);
 
     //
-    device_clock_info dci(device_id, min_mem_oc, min_graph_oc,max_mem_oc,max_graph_oc);
+    device_clock_info dci(device_id, min_mem_oc, min_graph_oc, max_mem_oc, max_graph_oc);
 
     //
     const measurement &m = freq_exhaustive(miner_script::ETHMINER, dci, interval, use_nvmlUC, 2);

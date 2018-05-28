@@ -41,7 +41,7 @@ namespace frequency_scaling {
         return response_string;
     }
 
-    static std::string get_nanopool_url(currency_type type){
+    static std::string get_nanopool_url(currency_type type) {
         switch (type) {
             case currency_type::ZEC:
                 return "https://api.nanopool.org/v1/zec";
@@ -55,9 +55,9 @@ namespace frequency_scaling {
     }
 
     double get_approximated_earnings_per_hour_nanopool(currency_type type, double hashrate_hs) {
-        double hashrate_arg = (type == currency_type::ETH)?hashrate_hs/1e6:hashrate_hs;
-        const std::string& json_response = curl_https_get(
-                get_nanopool_url(type)+ "/approximated_earnings/" + std::to_string(hashrate_arg));
+        double hashrate_arg = (type == currency_type::ETH) ? hashrate_hs / 1e6 : hashrate_hs;
+        const std::string &json_response = curl_https_get(
+                get_nanopool_url(type) + "/approximated_earnings/" + std::to_string(hashrate_arg));
         //
         std::istringstream is(json_response);
         boost::property_tree::ptree root;
@@ -70,7 +70,7 @@ namespace frequency_scaling {
 
     std::map<std::string, double>
     get_avg_hashrate_per_worker_nanopool(currency_type type, const std::string &wallet_address, double period_hours) {
-        const std::string& json_response = curl_https_get(
+        const std::string &json_response = curl_https_get(
                 get_nanopool_url(type) + "/avghashrateworkers/" + wallet_address + "/" +
                 std::to_string(period_hours));
         //
@@ -90,7 +90,7 @@ namespace frequency_scaling {
 
 
     double get_current_stock_price_nanopool(currency_type type) {
-        const std::string& json_response = curl_https_get(
+        const std::string &json_response = curl_https_get(
                 get_nanopool_url(type) + "/prices");
         std::istringstream is(json_response);
         boost::property_tree::ptree root;

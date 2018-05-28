@@ -37,7 +37,7 @@ namespace frequency_scaling {
         const std::map<currency_type, currency_info> &currency_infos = get_currency_infos_nanopool(energy_hash_infos);
 
         profit_calculator pc(currency_infos, energy_hash_infos, 0.3);
-        const std::pair<currency_type, double>& best_currency = pc.calc_best_currency();
+        const std::pair<currency_type, double> &best_currency = pc.calc_best_currency();
 
         switch (best_currency.first) {
             case currency_type::ETH:

@@ -33,11 +33,15 @@ namespace frequency_scaling {
                           double power_cost_kwh);
 
         std::pair<currency_type, double> calc_best_currency() const;
+
         void update_currency_info_nanopool();
+
         void update_energy_cost_stromdao(int plz);
 
         const std::map<currency_type, currency_info> &getCurrency_info_() const;
+
         const std::map<currency_type, energy_hash_info> &getEnergy_hash_info_() const;
+
         double getPower_cost_kwh_() const;
 
     private:

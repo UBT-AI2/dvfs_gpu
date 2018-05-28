@@ -130,7 +130,7 @@ namespace frequency_scaling {
                                                              max_graph_oc(max_graph_oc) {
         device_id_nvapi = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id_nvml));
         CUresult res = cuDeviceGetByPCIBusId(&device_id_cuda, nvmlGetBusIdString(device_id_nvml).c_str());
-        if(res ==  CUDA_ERROR_NOT_INITIALIZED){
+        if (res == CUDA_ERROR_NOT_INITIALIZED) {
             cuInit(0);
             cuDeviceGetByPCIBusId(&device_id_cuda, nvmlGetBusIdString(device_id_nvml).c_str());
         }

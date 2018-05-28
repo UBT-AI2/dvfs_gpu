@@ -38,32 +38,36 @@ namespace frequency_scaling {
             //horizontal/vertical 4 neighborhood
             if (use8Neighborhood) {
                 if (mem_plus <= dci.max_mem_oc) {
-                    const measurement& m = run_benchmark_script_nvml_nvapi(ms, dci, mem_plus, current_node.nvml_graph_clock_idx);
-                    if(m.hashrate_ >= min_hashrate) {
+                    const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_plus,
+                                                                           current_node.nvml_graph_clock_idx);
+                    if (m.hashrate_ >= min_hashrate) {
                         neighbor_nodes.push_back(m);
                         deriv_info.emplace_back(
                                 compute_derivatives(dci, m, current_node, current_slope), m);
                     }
                 }
                 if (mem_minus >= dci.min_mem_oc) {
-                    const measurement& m = run_benchmark_script_nvml_nvapi(ms, dci, mem_minus, current_node.nvml_graph_clock_idx);
-                    if(m.hashrate_ >= min_hashrate) {
+                    const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_minus,
+                                                                           current_node.nvml_graph_clock_idx);
+                    if (m.hashrate_ >= min_hashrate) {
                         neighbor_nodes.push_back(m);
                         deriv_info.emplace_back(
                                 compute_derivatives(dci, m, current_node, current_slope), m);
                     }
                 }
                 if (graph_plus_idx < dci.nvml_graph_clocks.size()) {
-                    const measurement& m = run_benchmark_script_nvml_nvapi(ms, dci, current_node.mem_oc, graph_plus_idx);
-                    if(m.hashrate_ >= min_hashrate) {
+                    const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, current_node.mem_oc,
+                                                                           graph_plus_idx);
+                    if (m.hashrate_ >= min_hashrate) {
                         neighbor_nodes.push_back(m);
                         deriv_info.emplace_back(
                                 compute_derivatives(dci, m, current_node, current_slope), m);
                     }
                 }
                 if (graph_minus_idx >= 0) {
-                    const measurement& m = run_benchmark_script_nvml_nvapi(ms, dci, current_node.mem_oc, graph_minus_idx);
-                    if(m.hashrate_ >= min_hashrate) {
+                    const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, current_node.mem_oc,
+                                                                           graph_minus_idx);
+                    if (m.hashrate_ >= min_hashrate) {
                         neighbor_nodes.push_back(m);
                         deriv_info.emplace_back(
                                 compute_derivatives(dci, m, current_node, current_slope), m);
@@ -73,32 +77,32 @@ namespace frequency_scaling {
 
             //diagonal 4 neighborhood
             if (mem_plus <= dci.max_mem_oc && graph_plus_idx < dci.nvml_graph_clocks.size()) {
-                const measurement& m = run_benchmark_script_nvml_nvapi(ms, dci, mem_plus, graph_plus_idx);
-                if(m.hashrate_ >= min_hashrate) {
+                const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_plus, graph_plus_idx);
+                if (m.hashrate_ >= min_hashrate) {
                     neighbor_nodes.push_back(m);
                     deriv_info.emplace_back(
                             compute_derivatives(dci, m, current_node, current_slope), m);
                 }
             }
             if (mem_minus >= dci.min_mem_oc && graph_minus_idx >= 0) {
-                const measurement& m = run_benchmark_script_nvml_nvapi(ms, dci, mem_minus, graph_minus_idx);
-                if(m.hashrate_ >= min_hashrate) {
+                const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_minus, graph_minus_idx);
+                if (m.hashrate_ >= min_hashrate) {
                     neighbor_nodes.push_back(m);
                     deriv_info.emplace_back(
                             compute_derivatives(dci, m, current_node, current_slope), m);
                 }
             }
             if (mem_minus >= dci.min_mem_oc && graph_plus_idx < dci.nvml_graph_clocks.size()) {
-                const measurement& m = run_benchmark_script_nvml_nvapi(ms, dci, mem_minus, graph_plus_idx);
-                if(m.hashrate_ >= min_hashrate) {
+                const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_minus, graph_plus_idx);
+                if (m.hashrate_ >= min_hashrate) {
                     neighbor_nodes.push_back(m);
                     deriv_info.emplace_back(
                             compute_derivatives(dci, m, current_node, current_slope), m);
                 }
             }
             if (mem_plus <= dci.max_mem_oc && graph_minus_idx >= 0) {
-                const measurement& m = run_benchmark_script_nvml_nvapi(ms, dci, mem_plus, graph_minus_idx);
-                if(m.hashrate_ >= min_hashrate) {
+                const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_plus, graph_minus_idx);
+                if (m.hashrate_ >= min_hashrate) {
                     neighbor_nodes.push_back(m);
                     deriv_info.emplace_back(
                             compute_derivatives(dci, m, current_node, current_slope), m);
@@ -133,8 +137,8 @@ namespace frequency_scaling {
             if (max_deriv_mem_oc > dci.max_mem_oc || max_deriv_mem_oc < dci.min_mem_oc ||
                 max_deriv_graph_idx >= dci.nvml_graph_clocks.size() || max_deriv_graph_idx < 0)
                 break;
-            const measurement& m = run_benchmark_script_nvml_nvapi(ms, dci, max_deriv_mem_oc, max_deriv_graph_idx);
-            if(m.hashrate_ < min_hashrate)
+            const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, max_deriv_mem_oc, max_deriv_graph_idx);
+            if (m.hashrate_ < min_hashrate)
                 break;
             neighbor_nodes.push_back(m);
             max_deriv_current_node = max_deriv_measurement;
@@ -157,7 +161,7 @@ namespace frequency_scaling {
         int initial_graph_idx = 0, initial_mem_oc = dci.max_mem_oc;
         measurement current_node = run_benchmark_script_nvml_nvapi(ms, dci, initial_mem_oc, initial_graph_idx);
         if (current_node.mem_oc == dci.max_mem_oc &&
-            current_node.nvml_graph_clock_idx == dci.nvml_graph_clocks.size()-1) {
+            current_node.nvml_graph_clock_idx == dci.nvml_graph_clocks.size() - 1) {
             throw optimization_error("Minimum hashrate cannot be reached");
         }
         measurement best_node = current_node;

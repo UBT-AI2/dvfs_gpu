@@ -25,12 +25,12 @@ namespace frequency_scaling {
     profit_calculator::calc_best_currency() const {
         int best_idx = 0;
         double best_profit = std::numeric_limits<double>::lowest();
-        for (int i = 0; i < static_cast<int>(currency_type::count); i++){
-            const energy_hash_info& ehi = energy_hash_info_.at(static_cast<currency_type>(i));
-            const currency_info& ci = currency_info_.at(static_cast<currency_type>(i));
-            double costs_per_hour = ehi.energy_consumption_js_ * (power_cost_kwh_/1000.0);
+        for (int i = 0; i < static_cast<int>(currency_type::count); i++) {
+            const energy_hash_info &ehi = energy_hash_info_.at(static_cast<currency_type>(i));
+            const currency_info &ci = currency_info_.at(static_cast<currency_type>(i));
+            double costs_per_hour = ehi.energy_consumption_js_ * (power_cost_kwh_ / 1000.0);
             double profit_per_hour = ci.approximated_earnings_eur_hour_ - costs_per_hour;
-            if(profit_per_hour > best_profit){
+            if (profit_per_hour > best_profit) {
                 best_idx = i;
                 best_profit = profit_per_hour;
             }
@@ -38,11 +38,11 @@ namespace frequency_scaling {
         return std::make_pair(static_cast<currency_type>(best_idx), best_profit);
     }
 
-    void profit_calculator::update_currency_info_nanopool(){
+    void profit_calculator::update_currency_info_nanopool() {
         currency_info_ = get_currency_infos_nanopool(energy_hash_info_);
     }
 
-    void profit_calculator::update_energy_cost_stromdao(int plz){
+    void profit_calculator::update_energy_cost_stromdao(int plz) {
         power_cost_kwh_ = get_energy_cost_stromdao(plz);
     }
 
