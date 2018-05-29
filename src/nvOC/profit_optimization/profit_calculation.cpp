@@ -10,8 +10,10 @@ namespace frequency_scaling {
               stock_price_eur_(stock_price_eur) {}
 
 
-    energy_hash_info::energy_hash_info(currency_type type_, double hashrate_hs_, double energy_consumption_js_) : type_(
-            type_), hashrate_hs_(hashrate_hs_), energy_consumption_js_(energy_consumption_js_) {}
+    energy_hash_info::energy_hash_info(currency_type type,
+                                       const device_clock_info &dci,
+                                       const measurement &optimal_configuration) : type_(
+            type), dci_(dci), optimal_configuration_(optimal_configuration) {}
 
 
     profit_calculator::profit_calculator(const std::map<currency_type, currency_info> &currency_info,
@@ -28,7 +30,7 @@ namespace frequency_scaling {
         for (int i = 0; i < static_cast<int>(currency_type::count); i++) {
             const energy_hash_info &ehi = energy_hash_info_.at(static_cast<currency_type>(i));
             const currency_info &ci = currency_info_.at(static_cast<currency_type>(i));
-            double costs_per_hour = ehi.energy_consumption_js_ * (power_cost_kwh_ / 1000.0);
+            double costs_per_hour = ehi.optimal_configuration_.power_ * (power_cost_kwh_ / 1000.0);
             double profit_per_hour = ci.approximated_earnings_eur_hour_ - costs_per_hour;
             if (profit_per_hour > best_profit) {
                 best_idx = i;
@@ -58,6 +60,19 @@ namespace frequency_scaling {
         return power_cost_kwh_;
     }
 
+    miner_script get_miner_for_currency(currency_type ct) {
+        switch (ct) {
+            case currency_type::ETH:
+                return miner_script::ETHMINER;
+            case currency_type::ZEC:
+                return miner_script::EXCAVATOR;
+            case currency_type::XMR:
+                return miner_script::XMRSTAK;
+            default:
+                throw std::runtime_error("Invalid enum value");
+        }
+    }
+
 
     std::map<currency_type, currency_info> get_currency_infos_nanopool(
             const std::map<currency_type, energy_hash_info> &ehi) {
@@ -66,7 +81,7 @@ namespace frequency_scaling {
             currency_infos.emplace(static_cast<currency_type>(i), currency_info(
                     static_cast<currency_type>(i),
                     get_approximated_earnings_per_hour_nanopool(static_cast<currency_type>(i),
-                                                                ehi.at(static_cast<currency_type>(i)).hashrate_hs_),
+                                                                ehi.at(static_cast<currency_type>(i)).optimal_configuration_.hashrate_),
                     get_current_stock_price_nanopool(static_cast<currency_type>(i))));
         }
         return currency_infos;

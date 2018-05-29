@@ -4,11 +4,42 @@
 
 #include "profit_optimization.h"
 
+#include <thread>
+#include <iostream>
 #include "../script_running/mining.h"
 #include "../freq_nelder_mead/freq_nelder_mead.h"
 #include "profit_calculation.h"
+#include "network_requests.h"
 
 namespace frequency_scaling {
+
+    static void start_mining_best_currency(const profit_calculator &profit_calc, const std::string &user_info) {
+        const std::pair<currency_type, double> &best_currency = profit_calc.calc_best_currency();
+        const energy_hash_info &ehi = profit_calc.getEnergy_hash_info_().at(best_currency.first);
+        miner_script ms = get_miner_for_currency(best_currency.first);
+        //
+        change_clocks_nvml_nvapi(ehi.dci_, ehi.optimal_configuration_.mem_oc,
+                                 ehi.optimal_configuration_.nvml_graph_clock_idx);
+        start_mining_script(ms, ehi.dci_, miner_user_info(user_info, ms));
+    }
+
+    static void
+    start_profit_monitoring(profit_calculator &profit_calc, const std::string &user_info, int update_interval_sec) {
+        while (true) {
+            std::this_thread::sleep_for(std::chrono::seconds(update_interval_sec));
+            try {
+                const std::pair<currency_type, double> &old_best_currency = profit_calc.calc_best_currency();
+                profit_calc.update_currency_info_nanopool();
+                const std::pair<currency_type, double> &new_best_currency = profit_calc.calc_best_currency();
+                if (old_best_currency.first != new_best_currency.first) {
+                    stop_mining_script(get_miner_for_currency(old_best_currency.first));
+                    start_mining_best_currency(profit_calc, user_info);
+                }
+            } catch (const std::exception &ex) {
+                std::cout << "Exception: " << ex.what() << std::endl;
+            }
+        }
+    }
 
     void mine_most_profitable_currency(const std::string &user_info, const device_clock_info &dci,
                                        int max_iterations, int mem_step, int graph_idx_step) {
@@ -29,32 +60,16 @@ namespace frequency_scaling {
 
         std::map<currency_type, energy_hash_info> energy_hash_infos;
         energy_hash_infos.emplace(currency_type::ZEC,
-                                  energy_hash_info(currency_type::ZEC, m_zec.hashrate_, m_zec.power_));
+                                  energy_hash_info(currency_type::ZEC, dci, m_zec));
         energy_hash_infos.emplace(currency_type::ETH,
-                                  energy_hash_info(currency_type::ETH, m_eth.hashrate_, m_eth.power_));
+                                  energy_hash_info(currency_type::ETH, dci, m_eth));
         energy_hash_infos.emplace(currency_type::XMR,
-                                  energy_hash_info(currency_type::XMR, m_xmr.hashrate_, m_xmr.power_));
+                                  energy_hash_info(currency_type::XMR, dci, m_xmr));
         const std::map<currency_type, currency_info> &currency_infos = get_currency_infos_nanopool(energy_hash_infos);
 
-        profit_calculator pc(currency_infos, energy_hash_infos, 0.3);
-        const std::pair<currency_type, double> &best_currency = pc.calc_best_currency();
-
-        switch (best_currency.first) {
-            case currency_type::ETH:
-                change_clocks_nvml_nvapi(dci, m_eth.mem_oc, m_eth.nvml_graph_clock_idx);
-                start_mining_script(miner_script::ETHMINER, dci, user_info);
-                break;
-            case currency_type::ZEC:
-                change_clocks_nvml_nvapi(dci, m_zec.mem_oc, m_zec.nvml_graph_clock_idx);
-                start_mining_script(miner_script::EXCAVATOR, dci, user_info);
-                break;
-            case currency_type::XMR:
-                change_clocks_nvml_nvapi(dci, m_xmr.mem_oc, m_xmr.nvml_graph_clock_idx);
-                start_mining_script(miner_script::XMRSTAK, dci, user_info);
-                break;
-            default:
-                throw std::runtime_error("Invalid enum value");
-        }
+        profit_calculator pc(currency_infos, energy_hash_infos, get_energy_cost_stromdao(95440));
+        start_mining_best_currency(pc, user_info);
+        start_profit_monitoring(pc, user_info, 300);
     }
 
 }

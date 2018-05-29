@@ -1,6 +1,5 @@
 #include "nvmlOC.h"
 
-#include <stdio.h>
 #include <nvml.h>
 #include "../exceptions.h"
 

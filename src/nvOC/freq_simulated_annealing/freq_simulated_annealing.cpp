@@ -4,10 +4,8 @@
 
 #include "freq_simulated_annealing.h"
 #include <cmath>
-#include <vector>
 #include <random>
 #include <chrono>
-#include <limits>
 #include "../freq_hill_climbing/freq_hill_climbing.h"
 #include "../exceptions.h"
 
@@ -49,7 +47,7 @@ namespace frequency_scaling {
             //
             double ea = -current_node.energy_hash_;
             double eb = -neighbor_node.energy_hash_;
-            //system can use lower energy configuration with probability dependent on temperature
+            //system can use higher energy configuration with probability dependent on temperature
             if (eb < ea || exp(-(eb - ea) / Tk) > prob_check(engine)) {
                 current_node = neighbor_node;
             }

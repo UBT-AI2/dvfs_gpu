@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
     nvapiInit();
     nvmlInit_();
 
-    //
+    //TODO: start a thread for each GPU
     device_clock_info dci(device_id, min_mem_oc, 0, max_mem_oc, 0);
 
 

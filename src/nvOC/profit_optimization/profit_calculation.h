@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include "../script_running/benchmark.h"
 
 namespace frequency_scaling {
 
@@ -19,10 +20,13 @@ namespace frequency_scaling {
 
 
     struct energy_hash_info {
-        energy_hash_info(currency_type type_, double hashrate_hs_, double energy_consumption_js_);
+        energy_hash_info(currency_type type,
+                         const device_clock_info &dci,
+                         const measurement &optimal_configuration);
 
         currency_type type_;
-        double hashrate_hs_, energy_consumption_js_;
+        device_clock_info dci_;
+        measurement optimal_configuration_;
     };
 
 
@@ -50,6 +54,8 @@ namespace frequency_scaling {
         double power_cost_kwh_;
     };
 
+
+    miner_script get_miner_for_currency(currency_type ct);
 
     std::map<currency_type, currency_info> get_currency_infos_nanopool(
             const std::map<currency_type, energy_hash_info> &ehi);

@@ -31,6 +31,7 @@ namespace frequency_scaling {
         int mem_oc, graph_oc;
     };
 
+
     void start_power_monitoring_script(int device_id);
 
     void stop_power_monitoring_script(int device_id);
