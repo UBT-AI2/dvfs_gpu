@@ -16,12 +16,24 @@ namespace frequency_scaling {
                                  int mem_step, int graph_idx_step,
                                  double min_hashrate,
                                  double mem_scale, double graph_scale) {
-
         //initial guess at maximum frequencies
+        measurement start_node;
+        start_node.mem_oc = dci.max_mem_oc;
+        start_node.nvml_graph_clock_idx = 0;
+        return freq_nelder_mead(ms, dci, start_node, min_iterations, max_iterations, mem_step, graph_idx_step,
+                                min_hashrate, mem_scale, graph_scale);
+    }
+
+    measurement freq_nelder_mead(miner_script ms, const device_clock_info &dci, const measurement &start_node,
+                                 int min_iterations, int max_iterations,
+                                 int mem_step, int graph_idx_step,
+                                 double min_hashrate,
+                                 double mem_scale, double graph_scale) {
+
         int dimension_ = 2;
         vec_type init_guess(dimension_);
-        init_guess(0) = (dci.max_mem_oc - dci.min_mem_oc) / (double) mem_step;
-        init_guess(1) = 0;
+        init_guess(0) = (start_node.mem_oc - dci.min_mem_oc) / (double) mem_step;
+        init_guess(1) = start_node.nvml_graph_clock_idx / graph_idx_step;
 
         // function to optimize
         measurement best_measurement;

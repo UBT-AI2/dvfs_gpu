@@ -139,4 +139,6 @@ namespace frequency_scaling {
         nvapi_default_mem_clock = nvml_mem_clocks[0];
         nvapi_default_graph_clock = nvml_graph_clocks[0];
     }
+
+
 }

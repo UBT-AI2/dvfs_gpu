@@ -13,9 +13,12 @@ set(FREQ_HILL_CLIMBING_FILES
         freq_hill_climbing/freq_hill_climbing.h freq_hill_climbing/freq_hill_climbing.cpp)
 set(FREQ_NELDER_MEAD_FILES
         freq_nelder_mead/freq_nelder_mead.h freq_nelder_mead/freq_nelder_mead.cpp)
+set(FREQ_SIMULATED_ANNEALING_FILES
+        freq_simulated_annealing/freq_simulated_annealing.h freq_simulated_annealing/freq_simulated_annealing.cpp)
 set(PROFIT_OPTIMIZATION_FILES
         profit_optimization/profit_calculation.h profit_optimization/profit_calculation.cpp
-        profit_optimization/profit_optimization.h profit_optimization/profit_optimization.cpp profit_optimization/network_requests.h profit_optimization/network_requests.cpp)
+        profit_optimization/profit_optimization.h profit_optimization/profit_optimization.cpp
+        profit_optimization/network_requests.h profit_optimization/network_requests.cpp)
 
 
 #
@@ -82,6 +85,17 @@ add_executable(freq_nelder_mead
         freq_nelder_mead/main.cpp)
 target_link_libraries(freq_nelder_mead
         freq_nelder_mead_lib)
+
+#
+add_library(freq_simulated_annealing_lib
+        ${FREQ_SIMULATED_ANNEALING_FILES})
+target_link_libraries(freq_simulated_annealing_lib
+        script_running_lib
+        freq_hill_climbing_lib)
+add_executable(freq_simulated_annealing
+        freq_simulated_annealing/main.cpp)
+target_link_libraries(freq_simulated_annealing
+        freq_simulated_annealing_lib)
 
 #
 add_library(profit_optimization_lib
