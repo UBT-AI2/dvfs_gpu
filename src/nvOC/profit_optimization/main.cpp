@@ -26,9 +26,8 @@ int main(int argc, char **argv) {
     nvmlInit_();
 
     //TODO: start a thread for each GPU
+    //start mining and monitoring best currency
     device_clock_info dci(device_id, min_mem_oc, 0, max_mem_oc, 0);
-
-
     mine_most_profitable_currency(mining_user_info, dci, max_iterations, mem_step, graph_idx_step);
 
     //unload apis
