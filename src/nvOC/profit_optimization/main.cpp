@@ -3,6 +3,7 @@
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
 #include "../script_running/benchmark.h"
+#include "../script_running/mining.h"
 #include "profit_optimization.h"
 
 int main(int argc, char **argv) {
@@ -11,7 +12,7 @@ int main(int argc, char **argv) {
                argv[0]);
         return 1;
     }
-    std::string mining_user_info(argv[1]);
+    std::string mui_str(argv[1]);
     unsigned int device_id = atoi(argv[2]);
     int max_iterations = atoi(argv[3]);
     int mem_step = atoi(argv[4]);
@@ -28,7 +29,8 @@ int main(int argc, char **argv) {
     //TODO: start a thread for each GPU
     //start mining and monitoring best currency
     device_clock_info dci(device_id, min_mem_oc, 0, max_mem_oc, 0);
-    mine_most_profitable_currency(mining_user_info, dci, max_iterations, mem_step, graph_idx_step);
+    miner_user_info mui(mui_str, miner_script::EXCAVATOR);
+    mine_most_profitable_currency(mui, dci, max_iterations, mem_step, graph_idx_step);
 
     //unload apis
     nvapiUnload(0);

@@ -13,18 +13,18 @@
 
 namespace frequency_scaling {
 
-    static void start_mining_best_currency(const profit_calculator &profit_calc, const std::string &user_info) {
+    static void start_mining_best_currency(const profit_calculator &profit_calc, const miner_user_info &user_info) {
         const std::pair<currency_type, double> &best_currency = profit_calc.calc_best_currency();
         const energy_hash_info &ehi = profit_calc.getEnergy_hash_info_().at(best_currency.first);
         miner_script ms = get_miner_for_currency(best_currency.first);
         //
         change_clocks_nvml_nvapi(ehi.dci_, ehi.optimal_configuration_.mem_oc,
                                  ehi.optimal_configuration_.nvml_graph_clock_idx);
-        start_mining_script(ms, ehi.dci_, miner_user_info(user_info, ms));
+        start_mining_script(ms, ehi.dci_, user_info);
     }
 
     static void
-    start_profit_monitoring(profit_calculator &profit_calc, const std::string &user_info, int update_interval_sec) {
+    start_profit_monitoring(profit_calculator &profit_calc, const miner_user_info &user_info, int update_interval_sec) {
         while (true) {
             std::this_thread::sleep_for(std::chrono::seconds(update_interval_sec));
             try {
@@ -41,7 +41,7 @@ namespace frequency_scaling {
         }
     }
 
-    void mine_most_profitable_currency(const std::string &user_info, const device_clock_info &dci,
+    void mine_most_profitable_currency(const miner_user_info &user_info, const device_clock_info &dci,
                                        int max_iterations, int mem_step, int graph_idx_step) {
         //
         //start power monitoring

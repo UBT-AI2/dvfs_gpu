@@ -5,7 +5,7 @@
 
 #include <cstdio>
 #include <string>
-#include <vector>
+#include <map>
 
 namespace frequency_scaling{
 
@@ -13,19 +13,25 @@ namespace frequency_scaling{
         MINER, POWER_MONITOR, count
     };
 
-    struct process_info{
-        int pid_;
-        int device_id_;
-        process_type process_type_;
-    };
 
     class process_management {
     public:
         static FILE *popen_file(const std::string &cmd);
         static std::string popen_string(const std::string &cmd);
 
+        static bool gpu_has_process(int device_id, process_type pt);
+        static bool gpu_kill_process(int device_id, process_type pt);
+        static bool gpu_execute_shell_script(const std::string &filename,
+                                             int device_id, process_type pt);
+        static bool gpu_execute_shell_command(const std::string &command,
+                                              int device_id, process_type pt);
+
+        static void kill_process(int pid);
+        static int execute_shell_script(const std::string& filename, bool blocking);
+        static int execute_shell_command(const std::string& command, bool blocking);
     private:
-        std::vector<process_info> process_infos_;
+        static int start_process(const std::string& cmd, bool blocking);
+        static std::map<std::pair<int,process_type>, int> process_pids_;
     };
 
 }

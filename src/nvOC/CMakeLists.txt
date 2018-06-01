@@ -102,7 +102,7 @@ target_link_libraries(freq_simulated_annealing
 add_library(profit_optimization_lib
         ${PROFIT_OPTIMIZATION_FILES})
 target_link_libraries(profit_optimization_lib
-        freq_hill_climbing_lib
+        freq_simulated_annealing_lib
         freq_nelder_mead_lib
         ${CURL_LIBRARIES})
 add_executable(profit_optimization

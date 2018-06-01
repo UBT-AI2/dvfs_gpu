@@ -15,9 +15,9 @@ namespace frequency_scaling {
         nvapi_error(const std::string &msg) : std::runtime_error(msg) {}
     };
 
-    class io_error : public std::runtime_error {
+    class process_error : public std::runtime_error {
     public:
-        io_error(const std::string &msg) : std::runtime_error(msg) {}
+        process_error(const std::string &msg) : std::runtime_error(msg) {}
     };
 
     class optimization_error : public std::runtime_error {
