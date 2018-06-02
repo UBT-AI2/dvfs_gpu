@@ -10,6 +10,7 @@
 #include <cuda.h>
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
+#include "process_management.h"
 
 namespace frequency_scaling {
 
@@ -23,27 +24,28 @@ namespace frequency_scaling {
             char cmd2[BUFFER_SIZE];
             switch (ms) {
                 case miner_script::ETHMINER:
-                    snprintf(cmd2, BUFFER_SIZE, "sh ../scripts/run_benchmark_ethminer.sh %i %i %i",
+                    snprintf(cmd2, BUFFER_SIZE, "../scripts/run_benchmark_ethminer.sh %i %i %i",
                              dci.device_id_cuda, mem_clock, graph_clock);
                     break;
                 case miner_script::EXCAVATOR:
-                    snprintf(cmd2, BUFFER_SIZE, "sh ../scripts/run_benchmark_excavator.sh %i %i %i",
+                    snprintf(cmd2, BUFFER_SIZE, "../scripts/run_benchmark_excavator.sh %i %i %i",
                              dci.device_id_cuda, mem_clock, graph_clock);
                     break;
                 case miner_script::XMRSTAK:
-                    snprintf(cmd2, BUFFER_SIZE, "sh ../scripts/run_benchmark_xmrstak.sh %i %i %i",
+                    snprintf(cmd2, BUFFER_SIZE, "../scripts/run_benchmark_xmrstak.sh %i %i %i",
                              dci.device_id_cuda, mem_clock, graph_clock);
                     break;
                 default:
                     throw std::runtime_error("Invalid enum value");
             }
-            system(cmd2);
+            process_management::gpu_execute_shell_script(cmd2, dci.device_id_nvml, process_type::MINER, false);
         }
 
         //get last measurement from data file
         float data[5] = {0};
         {
-            std::ifstream file("result.dat", std::ios_base::ate);//open file
+            std::string filename = "result_" + std::to_string(dci.device_id_cuda) + ".dat";
+            std::ifstream file(filename, std::ios_base::ate);//open file
             if (file) {
                 std::string tmp;
                 int c = 0;
@@ -72,16 +74,14 @@ namespace frequency_scaling {
 
     void start_power_monitoring_script(int device_id) {
         //start power monitoring in background process
-        char cmd1[BUFFER_SIZE];
-        snprintf(cmd1, BUFFER_SIZE, "sh ../scripts/start_pm.sh %i", device_id);
-        system(cmd1);
+        char cmd[BUFFER_SIZE];
+        snprintf(cmd, BUFFER_SIZE, "./gpu_power_monitor %i", device_id);
+        process_management::gpu_execute_shell_command(cmd, device_id, process_type::POWER_MONITOR, true);
     }
 
     void stop_power_monitoring_script(int device_id) {
         //stop power monitoring
-        char cmd3[BUFFER_SIZE];
-        snprintf(cmd3, BUFFER_SIZE, "sh ../scripts/kill_process.sh %s", "gpu_power_monitor");
-        system(cmd3);
+        process_management::gpu_kill_background_process(device_id, process_type::POWER_MONITOR);
     }
 
     void change_clocks_nvml_nvapi(const device_clock_info &dci,

@@ -8,24 +8,28 @@
 #else
 #endif
 
+static int BUFFER_SIZE = 1024;
 
 int main(int argc, char **argv) {
     if (argc != 2) {
         printf("error: must give CUDA device ID as command line argument (use nvidia-smi to determine id)\n");
         return 1;
     }
+    int device_id = atoi(argv[1]);
 
-    char cmd[1024];
-    sprintf(cmd, "nvidia-smi -a -i %d | grep \"Power Draw\" | cut -d ':' -f 2 | cut -d 'W' -f 1 | awk '{$1=$1};1'",
-            atoi(argv[1]));
+    char cmd[BUFFER_SIZE];
+    snprintf(cmd, BUFFER_SIZE, "nvidia-smi -a -i %d | grep \"Power Draw\" | cut -d ':' -f 2 | cut -d 'W' -f 1 | awk '{$1=$1};1'",
+            device_id);
 
-    FILE *data = fopen("power_results.txt", "w");
+    char data_filename[BUFFER_SIZE];
+    snprintf(data_filename, BUFFER_SIZE, "power_results_%i.txt", device_id);
+    FILE *data = fopen(data_filename, "w");
     if (data == NULL) {
         puts("Could not create result file");
         return 1;
     }
     fclose(data);
-    data = fopen("power_results.txt", "a");
+    data = fopen(data_filename, "a");
     if (data == NULL) {
         puts("Could not open result file");
         return 1;

@@ -18,9 +18,9 @@ namespace frequency_scaling {
         const energy_hash_info &ehi = profit_calc.getEnergy_hash_info_().at(best_currency.first);
         miner_script ms = get_miner_for_currency(best_currency.first);
         //
-        change_clocks_nvml_nvapi(ehi.dci_, ehi.optimal_configuration_.mem_oc,
+        change_clocks_nvml_nvapi(profit_calc.getDci_(), ehi.optimal_configuration_.mem_oc,
                                  ehi.optimal_configuration_.nvml_graph_clock_idx);
-        start_mining_script(ms, ehi.dci_, user_info);
+        start_mining_script(ms, profit_calc.getDci_(), user_info);
     }
 
     static void
@@ -32,7 +32,7 @@ namespace frequency_scaling {
                 profit_calc.update_currency_info_nanopool();
                 const std::pair<currency_type, double> &new_best_currency = profit_calc.calc_best_currency();
                 if (old_best_currency.first != new_best_currency.first) {
-                    stop_mining_script(get_miner_for_currency(old_best_currency.first));
+                    stop_mining_script(profit_calc.getDci_().device_id_nvml);
                     start_mining_best_currency(profit_calc, user_info);
                 }
             } catch (const std::exception &ex) {
@@ -60,14 +60,14 @@ namespace frequency_scaling {
 
         std::map<currency_type, energy_hash_info> energy_hash_infos;
         energy_hash_infos.emplace(currency_type::ZEC,
-                                  energy_hash_info(currency_type::ZEC, dci, m_zec));
+                                  energy_hash_info(currency_type::ZEC, m_zec));
         energy_hash_infos.emplace(currency_type::ETH,
-                                  energy_hash_info(currency_type::ETH, dci, m_eth));
+                                  energy_hash_info(currency_type::ETH, m_eth));
         energy_hash_infos.emplace(currency_type::XMR,
-                                  energy_hash_info(currency_type::XMR, dci, m_xmr));
+                                  energy_hash_info(currency_type::XMR, m_xmr));
         const std::map<currency_type, currency_info> &currency_infos = get_currency_infos_nanopool(energy_hash_infos);
 
-        profit_calculator pc(currency_infos, energy_hash_infos, get_energy_cost_stromdao(95440));
+        profit_calculator pc(dci, currency_infos, energy_hash_infos, get_energy_cost_stromdao(95440));
         start_mining_best_currency(pc, user_info);
         start_profit_monitoring(pc, user_info, 300);
     }

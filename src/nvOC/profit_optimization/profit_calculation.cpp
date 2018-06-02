@@ -11,14 +11,15 @@ namespace frequency_scaling {
 
 
     energy_hash_info::energy_hash_info(currency_type type,
-                                       const device_clock_info &dci,
                                        const measurement &optimal_configuration) : type_(
-            type), dci_(dci), optimal_configuration_(optimal_configuration) {}
+            type), optimal_configuration_(optimal_configuration) {}
 
 
-    profit_calculator::profit_calculator(const std::map<currency_type, currency_info> &currency_info,
+    profit_calculator::profit_calculator(const device_clock_info &dci,
+                                         const std::map<currency_type, currency_info> &currency_info,
                                          const std::map<currency_type, energy_hash_info> &energy_hash_info,
-                                         double power_cost_kwh) : currency_info_(currency_info),
+                                         double power_cost_kwh) : dci_(dci),
+                                                                  currency_info_(currency_info),
                                                                   energy_hash_info_(energy_hash_info),
                                                                   power_cost_kwh_(power_cost_kwh) {}
 
@@ -58,6 +59,10 @@ namespace frequency_scaling {
 
     double profit_calculator::getPower_cost_kwh_() const {
         return power_cost_kwh_;
+    }
+
+    const device_clock_info &profit_calculator::getDci_() const {
+        return dci_;
     }
 
     miner_script get_miner_for_currency(currency_type ct) {

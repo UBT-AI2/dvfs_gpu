@@ -3,6 +3,7 @@
 //
 
 #include "mining.h"
+#include "process_management.h"
 #include <stdexcept>
 #include <regex>
 
@@ -56,41 +57,25 @@ namespace frequency_scaling {
         char cmd1[BUFFER_SIZE];
         switch (ms) {
             case miner_script::EXCAVATOR:
-                snprintf(cmd1, BUFFER_SIZE, "sh ../scripts/start_mining_excavator.sh %s %i",
+                snprintf(cmd1, BUFFER_SIZE, "../scripts/start_mining_excavator.sh %s %i",
                          user_info.get_combined_user_info(ms).c_str(), dci.device_id_cuda);
                 break;
             case miner_script::ETHMINER:
-                snprintf(cmd1, BUFFER_SIZE, "sh ../scripts/start_mining_ethminer.sh %s %i",
+                snprintf(cmd1, BUFFER_SIZE, "../scripts/start_mining_ethminer.sh %s %i",
                          user_info.get_combined_user_info(ms).c_str(), dci.device_id_cuda);
                 break;
             case miner_script::XMRSTAK:
-                snprintf(cmd1, BUFFER_SIZE, "sh ../scripts/start_mining_xmrstak.sh %s %i",
+                snprintf(cmd1, BUFFER_SIZE, "../scripts/start_mining_xmrstak.sh %s %i",
                          user_info.get_combined_user_info(ms).c_str(), dci.device_id_cuda);
                 break;
             default:
                 throw std::runtime_error("Invalid enum value");
         }
-        system(cmd1);
-
+        process_management::gpu_execute_shell_script(cmd1, dci.device_id_nvml, process_type::MINER, true);
     }
 
-    void stop_mining_script(miner_script ms) {
-        //stop mining
-        char cmd3[BUFFER_SIZE];
-        switch (ms) {
-            case miner_script::EXCAVATOR:
-                snprintf(cmd3, BUFFER_SIZE, "sh ../scripts/kill_process.sh %s", "excavator");
-                break;
-            case miner_script::ETHMINER:
-                snprintf(cmd3, BUFFER_SIZE, "sh ../scripts/kill_process.sh %s", "ethminer");
-                break;
-            case miner_script::XMRSTAK:
-                snprintf(cmd3, BUFFER_SIZE, "sh ../scripts/kill_process.sh %s", "xmr-stak");
-                break;
-            default:
-                throw std::runtime_error("Invalid enum value");
-        }
-        system(cmd3);
+    void stop_mining_script(int device_id) {
+        process_management::gpu_kill_background_process(device_id, process_type::MINER);
     }
 
 

@@ -21,7 +21,7 @@ namespace frequency_scaling {
 
     void start_mining_script(miner_script ms, const device_clock_info &dci, const miner_user_info &user_info);
 
-    void stop_mining_script(miner_script ms);
+    void stop_mining_script(int device_id);
 
 
 }
