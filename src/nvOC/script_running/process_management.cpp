@@ -5,11 +5,12 @@
 #include "process_management.h"
 #include <iostream>
 #include <algorithm>
-
 #ifdef _WIN32
-
 #include <windows.h>
-
+#else
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #endif
 
 #include "../exceptions.h"
@@ -69,11 +70,11 @@ namespace frequency_scaling {
         return true;
     }
 
-    bool process_management::gpu_execute_shell_script(const std::string &filename,
-                                                      int device_id, process_type pt, bool background) {
+    bool process_management::gpu_start_process(const std::string &filename,
+                                               int device_id, process_type pt, bool background) {
         if (process_management::gpu_has_background_process(device_id, pt))
             return false;
-        int pid = process_management::execute_shell_script(filename, background);
+        int pid = process_management::start_process(filename, background);
         if(background) {
             std::lock_guard<std::mutex> lock(process_management::background_processes_mutex_);
             process_management::background_processes_.emplace(std::make_pair(device_id, pt), pid);
@@ -81,29 +82,9 @@ namespace frequency_scaling {
         return true;
     }
 
-    bool process_management::gpu_execute_shell_command(const std::string &command,
-                                                       int device_id, process_type pt, bool background) {
-        if (process_management::gpu_has_background_process(device_id, pt))
-            return false;
-        int pid = process_management::execute_shell_command(command, background);
-        if(background) {
-            std::lock_guard<std::mutex> lock(process_management::background_processes_mutex_);
-            process_management::background_processes_.emplace(std::make_pair(device_id, pt), pid);
-        }
-        return true;
-    }
 
     void process_management::kill_process(int pid) {
-        process_management::execute_shell_command("kill " + std::to_string(pid), true);
-    }
-
-    int process_management::execute_shell_script(const std::string &filename, bool background) {
-        return process_management::start_process("sh " + filename, background);
-    }
-
-
-    int process_management::execute_shell_command(const std::string &command, bool background) {
-        return process_management::start_process("sh -c '" + command + "'", background);
+        process_management::start_process("kill " + std::to_string(pid), false);
     }
 
 
@@ -111,10 +92,10 @@ namespace frequency_scaling {
 #ifdef _WIN32
         STARTUPINFO startup_info = {sizeof(startup_info)};
         PROCESS_INFORMATION pi;
-        std::string cmd_copy(cmd);
+        std::string full_cmd = "bash -c '" + cmd + "'";
 
         if (CreateProcess(NULL,
-                          &cmd_copy[0],
+                          &full_cmd[0],
                           NULL,
                           NULL,
                           FALSE,
@@ -135,7 +116,24 @@ namespace frequency_scaling {
             throw process_error("CreateProcess() failed: " + cmd);
         }
 #else
-
+        int pid = vfork();
+        if(pid < 0){
+            throw process_error("fork() failed");
+        }
+        else if(pid == 0){
+            //child
+            execl("/bin/bash", "bash", "-c", cmd.c_str(), NULL);
+            //should not get here
+            _exit(127);
+        }
+        else{
+            //parent
+            std::cout << "Started process: " << cmd << " (PID: " << pid << ")" << std::endl;
+            if(!background) {
+                waitpid(pid, NULL, 0);
+            }
+        }
+        return pid;
 #endif
     }
 

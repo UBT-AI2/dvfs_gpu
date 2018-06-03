@@ -57,22 +57,23 @@ namespace frequency_scaling {
         char cmd1[BUFFER_SIZE];
         switch (ms) {
             case miner_script::EXCAVATOR:
-                snprintf(cmd1, BUFFER_SIZE, "../scripts/start_mining_excavator.sh %s %i",
+                snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_excavator.sh %s %i",
                          user_info.get_combined_user_info(ms).c_str(), dci.device_id_cuda);
                 break;
             case miner_script::ETHMINER:
-                snprintf(cmd1, BUFFER_SIZE, "../scripts/start_mining_ethminer.sh %s %i",
+                snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_ethminer.sh %s %i",
                          user_info.get_combined_user_info(ms).c_str(), dci.device_id_cuda);
                 break;
             case miner_script::XMRSTAK:
-                snprintf(cmd1, BUFFER_SIZE, "../scripts/start_mining_xmrstak.sh %s %i",
+                snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_xmrstak.sh %s %i",
                          user_info.get_combined_user_info(ms).c_str(), dci.device_id_cuda);
                 break;
             default:
                 throw std::runtime_error("Invalid enum value");
         }
-        process_management::gpu_execute_shell_script(cmd1, dci.device_id_nvml, process_type::MINER, true);
+        process_management::gpu_start_process(cmd1, dci.device_id_nvml, process_type::MINER, true);
     }
+
 
     void stop_mining_script(int device_id) {
         process_management::gpu_kill_background_process(device_id, process_type::MINER);

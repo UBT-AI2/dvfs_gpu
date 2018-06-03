@@ -6,10 +6,18 @@ graph_clock=$3
 POWERFILE=power_results_${device_id}.txt
 BENCH_POWERFILE=power_results_${device_id}_${mem_clock}_${graph_clock}.txt
 BENCH_LOGFILE=log_${device_id}_${mem_clock}_${graph_clock}.txt
+if [[ "$OSTYPE" == "msys" ]]
+then
+#MINGW
+MINER_BINARY=../../miner/binaries/windows/xmr-stak-build/xmr-stak.exe
+else
+#Linux
+MINER_BINARY=../../miner/binaries/linux/xmr-stak-build/xmr-stak
+fi
 #################################################################################
 
 bench_start=$(tail -n 1 ${POWERFILE} | awk '{print $1}')
-../../miner/windows/xmr-stak/xmr-stak.exe --noCPU --benchmark 6 --nvidia nvidia$device_id.txt &> ${BENCH_LOGFILE}
+${MINER_BINARY} --noCPU --benchmark 6 --nvidia nvidia$device_id.txt &> ${BENCH_LOGFILE}
 
 if [[ -z $bench_start ]]
 then

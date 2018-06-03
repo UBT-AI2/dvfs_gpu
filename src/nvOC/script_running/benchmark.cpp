@@ -24,21 +24,21 @@ namespace frequency_scaling {
             char cmd2[BUFFER_SIZE];
             switch (ms) {
                 case miner_script::ETHMINER:
-                    snprintf(cmd2, BUFFER_SIZE, "../scripts/run_benchmark_ethminer.sh %i %i %i",
+                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_ethminer.sh %i %i %i",
                              dci.device_id_cuda, mem_clock, graph_clock);
                     break;
                 case miner_script::EXCAVATOR:
-                    snprintf(cmd2, BUFFER_SIZE, "../scripts/run_benchmark_excavator.sh %i %i %i",
+                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_excavator.sh %i %i %i",
                              dci.device_id_cuda, mem_clock, graph_clock);
                     break;
                 case miner_script::XMRSTAK:
-                    snprintf(cmd2, BUFFER_SIZE, "../scripts/run_benchmark_xmrstak.sh %i %i %i",
+                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_xmrstak.sh %i %i %i",
                              dci.device_id_cuda, mem_clock, graph_clock);
                     break;
                 default:
                     throw std::runtime_error("Invalid enum value");
             }
-            process_management::gpu_execute_shell_script(cmd2, dci.device_id_nvml, process_type::MINER, false);
+            process_management::gpu_start_process(cmd2, dci.device_id_nvml, process_type::MINER, false);
         }
 
         //get last measurement from data file
@@ -76,7 +76,7 @@ namespace frequency_scaling {
         //start power monitoring in background process
         char cmd[BUFFER_SIZE];
         snprintf(cmd, BUFFER_SIZE, "./gpu_power_monitor %i", device_id);
-        process_management::gpu_execute_shell_command(cmd, device_id, process_type::POWER_MONITOR, true);
+        process_management::gpu_start_process(cmd, device_id, process_type::POWER_MONITOR, true);
     }
 
     void stop_power_monitoring_script(int device_id) {

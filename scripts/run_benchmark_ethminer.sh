@@ -6,10 +6,18 @@ graph_clock=$3
 POWERFILE=power_results_${device_id}.txt
 BENCH_POWERFILE=power_results_${device_id}_${mem_clock}_${graph_clock}.txt
 BENCH_LOGFILE=log_${device_id}_${mem_clock}_${graph_clock}.txt
+if [[ "$OSTYPE" == "msys" ]]
+then
+#MINGW
+MINER_BINARY=../../miner/binaries/windows/ethminer-build/ethminer.exe
+else
+#Linux
+MINER_BINARY=../../miner/binaries/linux/ethminer-build/ethminer
+fi
 #################################################################################
 
 bench_start=$(tail -n 1 ${POWERFILE} | awk '{print $1}')
-../../miner/windows/ethminer-build/ethminer.exe -U -M \
+${MINER_BINARY} -U -M \
 --benchmark-trials 1 --benchmark-warmup 10 --cuda-devices $device_id &> ${BENCH_LOGFILE}
 
 if [[ -z $bench_start ]]

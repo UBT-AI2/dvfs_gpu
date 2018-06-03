@@ -6,10 +6,19 @@ graph_clock=$3
 POWERFILE=power_results_${device_id}.txt
 BENCH_POWERFILE=power_results_${device_id}_${mem_clock}_${graph_clock}.txt
 BENCH_LOGFILE=log_${device_id}_${mem_clock}_${graph_clock}.txt
+if [[ "$OSTYPE" == "msys" ]]
+then
+#MINGW
+MINER_BINARY=../../miner/binaries/windows/excavator_v1.1.0a_Win64/excavator.exe
+else
+#Linux
+echo "exavator not available on linux"
+exit 1
+fi
 #################################################################################
 
 bench_start=$(tail -n 1 ${POWERFILE} | awk '{print $1}')
-../../miner/windows/excavator_v1.1.0a_Win64/excavator.exe -b -a equihash -cd $device_id &> ${BENCH_LOGFILE}
+${MINER_BINARY} -b -a equihash -cd $device_id &> ${BENCH_LOGFILE}
 
 if [[ -z $bench_start ]]
 then
