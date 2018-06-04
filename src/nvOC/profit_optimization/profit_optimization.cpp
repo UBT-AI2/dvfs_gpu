@@ -6,25 +6,53 @@
 
 #include <thread>
 #include <iostream>
-#include "../script_running/mining.h"
+#include <set>
 #include "../freq_nelder_mead/freq_nelder_mead.h"
-#include "profit_calculation.h"
+#include "../nvml/nvmlOC.h"
+#include "../script_running/process_management.h"
 #include "network_requests.h"
 
 namespace frequency_scaling {
 
-    static void start_mining_best_currency(const profit_calculator &profit_calc, const miner_user_info &user_info) {
+    static int BUFFER_SIZE = 1024;
+
+    static std::map<currency_type, energy_hash_info> find_optimal_config(const device_clock_info &dci,
+                                                                         const std::set<currency_type> &currencies,
+                                                                         int max_iterations, int mem_step,
+                                                                         int graph_idx_step) {
+        std::map<currency_type, energy_hash_info> energy_hash_infos;
+        //start power monitoring
+        start_power_monitoring_script(dci.device_id_nvml);
+        for (currency_type ct : currencies) {
+            const measurement &optimal_config = freq_nelder_mead(get_miner_for_currency(ct), dci,
+                                                                 1, max_iterations, mem_step, graph_idx_step);
+            energy_hash_infos.emplace(ct, energy_hash_info(ct, optimal_config));
+            char cmd[BUFFER_SIZE];
+            snprintf(cmd, BUFFER_SIZE, "bash ../scripts/move_result_files.sh %i %s",
+                     dci.device_id_nvml, enum_to_string(ct).c_str());
+            process_management::start_process(cmd, false);
+        }
+        stop_power_monitoring_script(dci.device_id_nvml);
+        return energy_hash_infos;
+    };
+
+
+    static void start_mining_best_currency(const profit_calculator &profit_calc,
+                                           const std::map<currency_type, miner_user_info> &user_infos) {
         const std::pair<currency_type, double> &best_currency = profit_calc.calc_best_currency();
         const energy_hash_info &ehi = profit_calc.getEnergy_hash_info_().at(best_currency.first);
         miner_script ms = get_miner_for_currency(best_currency.first);
         //
         change_clocks_nvml_nvapi(profit_calc.getDci_(), ehi.optimal_configuration_.mem_oc,
                                  ehi.optimal_configuration_.nvml_graph_clock_idx);
-        start_mining_script(ms, profit_calc.getDci_(), user_info);
+        start_mining_script(ms, profit_calc.getDci_(), user_infos.at(best_currency.first));
     }
 
+
     static void
-    start_profit_monitoring(profit_calculator &profit_calc, const miner_user_info &user_info, int update_interval_sec) {
+    start_profit_monitoring(profit_calculator &profit_calc,
+                            const std::map<currency_type, miner_user_info> &user_infos,
+                            int update_interval_sec) {
         while (true) {
             std::this_thread::sleep_for(std::chrono::seconds(update_interval_sec));
             try {
@@ -33,7 +61,7 @@ namespace frequency_scaling {
                 const std::pair<currency_type, double> &new_best_currency = profit_calc.calc_best_currency();
                 if (old_best_currency.first != new_best_currency.first) {
                     stop_mining_script(profit_calc.getDci_().device_id_nvml);
-                    start_mining_best_currency(profit_calc, user_info);
+                    start_mining_best_currency(profit_calc, user_infos);
                 }
             } catch (const std::exception &ex) {
                 std::cout << "Exception: " << ex.what() << std::endl;
@@ -41,35 +69,115 @@ namespace frequency_scaling {
         }
     }
 
-    void mine_most_profitable_currency(const miner_user_info &user_info, const device_clock_info &dci,
+
+    static std::vector<std::vector<int>> find_equal_gpus(const std::vector<device_clock_info> &dcis) {
+        std::vector<std::vector<int>> res;
+        std::set<int> remaining_devices;
+        for (auto &dci : dcis)
+            remaining_devices.insert(dci.device_id_nvml);
+        while (!remaining_devices.empty()) {
+            int i = *remaining_devices.begin();
+            std::vector<int> equal_devs({i});
+            for (int j : remaining_devices) {
+                if (i == j)
+                    continue;
+                if (nvmlGetDeviceName(i) == nvmlGetDeviceName(j))
+                    equal_devs.push_back(j);
+            }
+            for (int to_remove : equal_devs)
+                remaining_devices.erase(to_remove);
+            res.push_back(equal_devs);
+        }
+        return res;
+    }
+
+
+    static std::map<int, std::set<currency_type>>
+    find_optimization_gpu_distr(const std::vector<std::vector<int>> &equal_gpus,
+                                const std::set<currency_type> &currencies) {
+        std::map<int, std::set<currency_type>> res;
+        for (auto &eq_vec : equal_gpus)
+            for(int device_id_nvml : eq_vec)
+                res.emplace(device_id_nvml, std::set<currency_type>());
+
+        for (auto &eg : equal_gpus) {
+            int i;
+            for (i = 0; i < eg.size(); i++) {
+                int gpu = eg[i];
+                if (i < static_cast<int>(currency_type::count)) {
+                    currency_type ct = static_cast<currency_type>(i);
+                    if (currencies.count(ct) != 0)
+                        res.at(gpu).insert(ct);
+                }
+            }
+            for (; i < static_cast<int>(currency_type::count); i++) {
+                currency_type ct = static_cast<currency_type>(i);
+                if (currencies.count(ct) != 0)
+                    res.at(eg.front()).insert(ct);
+            }
+        }
+        return res;
+    };
+
+
+    static void
+    complete_optimization_results(std::map<int, std::map<currency_type, energy_hash_info>> &optimization_results,
+                                  const std::vector<std::vector<int>> &equal_gpus) {
+        for (auto &eq_vec : equal_gpus) {
+            for (int i = 0; i < eq_vec.size(); i++) {
+                std::map<currency_type, energy_hash_info> &cur_or = optimization_results.at(eq_vec[i]);
+                for (int j = 0; j < eq_vec.size(); j++) {
+                    if (i == j)
+                        continue;
+                    const std::map<currency_type, energy_hash_info> &other_or = optimization_results.at(eq_vec[j]);
+                    for (auto &elem : other_or)
+                        cur_or.emplace(elem.first, elem.second);
+                }
+            }
+        }
+    }
+
+
+    void mine_most_profitable_currency(const std::map<currency_type, miner_user_info> &user_infos,
+                                       const std::vector<device_clock_info> &dcis, int monitoring_interval_sec,
                                        int max_iterations, int mem_step, int graph_idx_step) {
-        //
-        //start power monitoring
-        start_power_monitoring_script(dci.device_id_nvml);
-        const measurement &m_eth = freq_nelder_mead(miner_script::ETHMINER, dci, 1, max_iterations, mem_step,
-                                                    graph_idx_step);
-        const measurement &m_zec = freq_nelder_mead(miner_script::EXCAVATOR, dci, 1, max_iterations, mem_step,
-                                                    graph_idx_step);
-        const measurement &m_xmr = freq_nelder_mead(miner_script::XMRSTAK, dci, 1, max_iterations, mem_step,
-                                                    graph_idx_step);
-        printf("Best energy-hash value ETH: %f\n", m_eth.energy_hash_);
-        printf("Best energy-hash value ZEC: %f\n", m_zec.energy_hash_);
-        printf("Best energy-hash value XMR: %f\n", m_xmr.energy_hash_);
-        stop_power_monitoring_script(dci.device_id_nvml);
+        //check for equal gpus and distribute optimization work accordingly
+        const std::vector<std::vector<int>> &equal_gpus = find_equal_gpus(dcis);
+        std::set<currency_type> currencies;
+        for (auto &ui : user_infos)
+            currencies.insert(ui.first);
+        const std::map<int, std::set<currency_type>> &gpu_distr =
+                find_optimization_gpu_distr(equal_gpus, currencies);
 
+        //find best frequency configurations for each gpus and currency
+        std::map<int, std::map<currency_type, energy_hash_info>> optimization_results;
+#pragma omp parallel for num_threads(dcis.size())
+        for (int i = 0; i < dcis.size(); i++) {
+            const device_clock_info &gpu_dci = dcis[i];
+            const std::map<currency_type, energy_hash_info> &gpu_optimal_config =
+                    find_optimal_config(gpu_dci, gpu_distr.at(gpu_dci.device_id_nvml),
+                                        max_iterations, mem_step, graph_idx_step);
+#pragma omp critical
+            optimization_results.emplace(gpu_dci.device_id_nvml, gpu_optimal_config);
+        }
 
-        std::map<currency_type, energy_hash_info> energy_hash_infos;
-        energy_hash_infos.emplace(currency_type::ZEC,
-                                  energy_hash_info(currency_type::ZEC, m_zec));
-        energy_hash_infos.emplace(currency_type::ETH,
-                                  energy_hash_info(currency_type::ETH, m_eth));
-        energy_hash_infos.emplace(currency_type::XMR,
-                                  energy_hash_info(currency_type::XMR, m_xmr));
-        const std::map<currency_type, currency_info> &currency_infos = get_currency_infos_nanopool(energy_hash_infos);
+        //equal gpus have same optimal frequency configurations
+        complete_optimization_results(optimization_results, equal_gpus);
 
-        profit_calculator pc(dci, currency_infos, energy_hash_infos, get_energy_cost_stromdao(95440));
-        start_mining_best_currency(pc, user_info);
-        start_profit_monitoring(pc, user_info, 300);
+        //start mining and monitoring currency with highest profit
+        double energy_cost_kwh = get_energy_cost_stromdao(95440);
+#pragma omp parallel for num_threads(dcis.size())
+        for (int i = 0; i < dcis.size(); i++) {
+            const device_clock_info &gpu_dci = dcis[i];
+            const std::map<currency_type, energy_hash_info> &gpu_opt_res =
+                    optimization_results.at(gpu_dci.device_id_nvml);
+            const std::map<currency_type, currency_info> &gpu_currency_infos =
+                    get_currency_infos_nanopool(gpu_opt_res);
+
+            profit_calculator pc(gpu_dci, gpu_currency_infos, gpu_opt_res, energy_cost_kwh);
+            start_mining_best_currency(pc, user_infos);
+            start_profit_monitoring(pc, user_infos, monitoring_interval_sec);
+        }
     }
 
 }

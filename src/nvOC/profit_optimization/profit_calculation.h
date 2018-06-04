@@ -30,7 +30,7 @@ namespace frequency_scaling {
 
     class profit_calculator {
     public:
-        profit_calculator(const device_clock_info& dci,
+        profit_calculator(const device_clock_info &dci,
                           const std::map<currency_type, currency_info> &currency_info,
                           const std::map<currency_type, energy_hash_info> &energy_hash_info,
                           double power_cost_kwh);
@@ -56,6 +56,8 @@ namespace frequency_scaling {
         double power_cost_kwh_;
     };
 
+
+    std::string enum_to_string(currency_type ct);
 
     miner_script get_miner_for_currency(currency_type ct);
 

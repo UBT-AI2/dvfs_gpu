@@ -3,31 +3,21 @@
 //
 
 #include "mining.h"
-#include "process_management.h"
 #include <stdexcept>
 #include <regex>
+#include "process_management.h"
 
 namespace frequency_scaling {
 
     static const int BUFFER_SIZE = 1024;
 
-    miner_user_info::miner_user_info(const std::string &combined_user_info, miner_script ms) {
-        std::string regex;
-        switch (ms) {
-            case miner_script::ETHMINER:
-            case miner_script::XMRSTAK:
-                regex = "\\.|/";
-                break;
-            case miner_script::EXCAVATOR:
-                regex = "/";
-                break;
-            default:
-                throw std::runtime_error("Invalid enum value");
-        }
+    miner_user_info::miner_user_info(const std::string &combined_user_info) {
+        std::string regex = "/";
+        //regex = "\\.|/";
         std::regex re(regex);
         std::sregex_token_iterator first{combined_user_info.begin(), combined_user_info.end(), re, -1}, last;
         std::vector<std::string> vec(first, last);
-        if(vec.size() != 3)
+        if (vec.size() != 3)
             throw std::runtime_error("Invalid miner user info");
         wallet_adress_ = vec[0];
         worker_name_ = vec[1];

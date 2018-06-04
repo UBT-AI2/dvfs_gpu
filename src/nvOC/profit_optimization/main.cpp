@@ -26,11 +26,15 @@ int main(int argc, char **argv) {
     nvapiInit();
     nvmlInit_();
 
-    //TODO: start a thread for each GPU
-    //start mining and monitoring best currency
-    device_clock_info dci(device_id, min_mem_oc, 0, max_mem_oc, 0);
-    miner_user_info mui(mui_str, miner_script::EXCAVATOR);
-    mine_most_profitable_currency(mui, dci, max_iterations, mem_step, graph_idx_step);
+    //TODO: create dci and user_info for several gpus (user dialog)
+    std::vector<device_clock_info> dcis;
+    dcis.push_back(device_clock_info(device_id, min_mem_oc, 0, max_mem_oc, 0));
+    std::map<currency_type, miner_user_info> user_infos;
+    user_infos.emplace(currency_type::ETH, miner_user_info(mui_str));
+
+    //start mining and monitoring best currency;
+    mine_most_profitable_currency(user_infos, dcis, 300,
+                                  max_iterations, mem_step, graph_idx_step);
 
     //unload apis
     nvapiUnload(0);

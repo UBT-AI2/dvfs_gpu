@@ -17,6 +17,8 @@ namespace frequency_scaling {
 
     std::string nvmlGetBusIdString(int device_id);
 
+    std::string nvmlGetDeviceName(int device_id);
+
     int nvmlGetNumDevices();
 
     int nvmlGetTemperature(int device_id);

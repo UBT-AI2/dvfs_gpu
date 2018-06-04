@@ -65,6 +65,21 @@ namespace frequency_scaling {
         return dci_;
     }
 
+
+    std::string enum_to_string(currency_type ct){
+        switch (ct) {
+            case currency_type::ETH:
+                return "ETH";
+            case currency_type::ZEC:
+                return "ZEC";
+            case currency_type::XMR:
+                return "XMR";
+            default:
+                throw std::runtime_error("Invalid enum value");
+        }
+    }
+
+
     miner_script get_miner_for_currency(currency_type ct) {
         switch (ct) {
             case currency_type::ETH:

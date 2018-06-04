@@ -8,7 +8,7 @@ namespace frequency_scaling {
 
     class miner_user_info {
     public:
-        miner_user_info(const std::string &combined_user_info, miner_script ms);
+        miner_user_info(const std::string &combined_user_info);
 
         miner_user_info(const std::string &wallet_adress_, const std::string &worker_name_,
                         const std::string &email_adress_);

@@ -18,8 +18,9 @@ int main(int argc, char **argv) {
     int device_id = atoi(argv[1]);
 
     char cmd[BUFFER_SIZE];
-    snprintf(cmd, BUFFER_SIZE, "nvidia-smi -a -i %d | grep \"Power Draw\" | cut -d ':' -f 2 | cut -d 'W' -f 1 | awk '{$1=$1};1'",
-            device_id);
+    snprintf(cmd, BUFFER_SIZE,
+             "nvidia-smi -a -i %d | grep \"Power Draw\" | cut -d ':' -f 2 | cut -d 'W' -f 1 | awk '{$1=$1};1'",
+             device_id);
 
     char data_filename[BUFFER_SIZE];
     snprintf(data_filename, BUFFER_SIZE, "power_results_%i.txt", device_id);

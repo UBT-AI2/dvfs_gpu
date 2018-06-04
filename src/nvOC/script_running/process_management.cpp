@@ -5,12 +5,14 @@
 #include "process_management.h"
 #include <iostream>
 #include <algorithm>
+
 #ifdef _WIN32
 #include <windows.h>
 #else
+
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/wait.h>
+
 #endif
 
 #include "../exceptions.h"
@@ -18,7 +20,7 @@
 namespace frequency_scaling {
 
     static const int BUFFER_SIZE = 4096;
-    std::map<std::pair<int,process_type>, int> process_management::background_processes_;
+    std::map<std::pair<int, process_type>, int> process_management::background_processes_;
     std::mutex process_management::background_processes_mutex_;
 
 
@@ -75,7 +77,7 @@ namespace frequency_scaling {
         if (process_management::gpu_has_background_process(device_id, pt))
             return false;
         int pid = process_management::start_process(filename, background);
-        if(background) {
+        if (background) {
             std::lock_guard<std::mutex> lock(process_management::background_processes_mutex_);
             process_management::background_processes_.emplace(std::make_pair(device_id, pt), pid);
         }
@@ -117,19 +119,17 @@ namespace frequency_scaling {
         }
 #else
         int pid = vfork();
-        if(pid < 0){
+        if (pid < 0) {
             throw process_error("fork() failed");
-        }
-        else if(pid == 0){
+        } else if (pid == 0) {
             //child
             execl("/bin/bash", "bash", "-c", cmd.c_str(), NULL);
             //should not get here
             _exit(127);
-        }
-        else{
+        } else {
             //parent
             std::cout << "Started process: " << cmd << " (PID: " << pid << ")" << std::endl;
-            if(!background) {
+            if (!background) {
                 waitpid(pid, NULL, 0);
             }
         }
