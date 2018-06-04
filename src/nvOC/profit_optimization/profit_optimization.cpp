@@ -8,6 +8,8 @@
 #include <iostream>
 #include <set>
 #include "../freq_nelder_mead/freq_nelder_mead.h"
+#include "../freq_hill_climbing/freq_hill_climbing.h"
+#include "../freq_simulated_annealing/freq_simulated_annealing.h"
 #include "../nvml/nvmlOC.h"
 #include "../script_running/process_management.h"
 #include "network_requests.h"
@@ -16,16 +18,60 @@ namespace frequency_scaling {
 
     static int BUFFER_SIZE = 1024;
 
+    optimization_info::optimization_info(optimization_method method, int min_hashrate) :
+            method_(method), min_hashrate_(min_hashrate) {
+        switch (method) {
+            case optimization_method::NELDER_MEAD:
+                max_iterations_ = 8;
+                mem_step_ = 300;
+                graph_idx_step_ = 10;
+                break;
+            case optimization_method::HILL_CLIMBING:
+            case optimization_method::SIMULATED_ANNEALING:
+                max_iterations_ = 5;
+                mem_step_ = 300;
+                graph_idx_step_ = 6;
+                break;
+            default:
+                throw std::runtime_error("Invalid enum value");
+        }
+    }
+
+    optimization_info::optimization_info(optimization_method method, int max_iterations, int mem_step,
+                                         int graph_idx_step, int min_hashrate) : method_(method),
+                                                                                 max_iterations_(max_iterations),
+                                                                                 mem_step_(mem_step),
+                                                                                 graph_idx_step_(graph_idx_step),
+                                                                                 min_hashrate_(min_hashrate) {}
+
+
     static std::map<currency_type, energy_hash_info> find_optimal_config(const device_clock_info &dci,
                                                                          const std::set<currency_type> &currencies,
-                                                                         int max_iterations, int mem_step,
-                                                                         int graph_idx_step) {
+                                                                         const optimization_info &opt_info) {
         std::map<currency_type, energy_hash_info> energy_hash_infos;
         //start power monitoring
         start_power_monitoring_script(dci.device_id_nvml);
         for (currency_type ct : currencies) {
-            const measurement &optimal_config = freq_nelder_mead(get_miner_for_currency(ct), dci,
-                                                                 1, max_iterations, mem_step, graph_idx_step);
+            measurement optimal_config;
+            switch (opt_info.method_) {
+                case optimization_method::NELDER_MEAD:
+                    optimal_config = freq_nelder_mead(get_miner_for_currency(ct), dci, 1,
+                                                      opt_info.max_iterations_, opt_info.mem_step_,
+                                                      opt_info.graph_idx_step_, opt_info.min_hashrate_);
+                    break;
+                case optimization_method::HILL_CLIMBING:
+                    optimal_config = freq_hill_climbing(get_miner_for_currency(ct), dci,
+                                                        opt_info.max_iterations_, opt_info.mem_step_,
+                                                        opt_info.graph_idx_step_, opt_info.min_hashrate_);
+                    break;
+                case optimization_method::SIMULATED_ANNEALING:
+                    optimal_config = freq_simulated_annealing(get_miner_for_currency(ct), dci,
+                                                              opt_info.max_iterations_, opt_info.mem_step_,
+                                                              opt_info.graph_idx_step_, opt_info.min_hashrate_);
+                    break;
+                default:
+                    throw std::runtime_error("Invalid enum value");
+            }
             energy_hash_infos.emplace(ct, energy_hash_info(ct, optimal_config));
             char cmd[BUFFER_SIZE];
             snprintf(cmd, BUFFER_SIZE, "bash ../scripts/move_result_files.sh %i %s",
@@ -97,7 +143,7 @@ namespace frequency_scaling {
                                 const std::set<currency_type> &currencies) {
         std::map<int, std::set<currency_type>> res;
         for (auto &eq_vec : equal_gpus)
-            for(int device_id_nvml : eq_vec)
+            for (int device_id_nvml : eq_vec)
                 res.emplace(device_id_nvml, std::set<currency_type>());
 
         for (auto &eg : equal_gpus) {
@@ -139,8 +185,9 @@ namespace frequency_scaling {
 
 
     void mine_most_profitable_currency(const std::map<currency_type, miner_user_info> &user_infos,
-                                       const std::vector<device_clock_info> &dcis, int monitoring_interval_sec,
-                                       int max_iterations, int mem_step, int graph_idx_step) {
+                                       const std::vector<device_clock_info> &dcis,
+                                       const optimization_info &opt_info,
+                                       int monitoring_interval_sec) {
         //check for equal gpus and distribute optimization work accordingly
         const std::vector<std::vector<int>> &equal_gpus = find_equal_gpus(dcis);
         std::set<currency_type> currencies;
@@ -156,7 +203,7 @@ namespace frequency_scaling {
             const device_clock_info &gpu_dci = dcis[i];
             const std::map<currency_type, energy_hash_info> &gpu_optimal_config =
                     find_optimal_config(gpu_dci, gpu_distr.at(gpu_dci.device_id_nvml),
-                                        max_iterations, mem_step, graph_idx_step);
+                                        opt_info);
 #pragma omp critical
             optimization_results.emplace(gpu_dci.device_id_nvml, gpu_optimal_config);
         }
@@ -179,5 +226,6 @@ namespace frequency_scaling {
             start_profit_monitoring(pc, user_infos, monitoring_interval_sec);
         }
     }
+
 
 }
