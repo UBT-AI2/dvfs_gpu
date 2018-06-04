@@ -66,7 +66,7 @@ namespace frequency_scaling {
     }
 
 
-    std::string enum_to_string(currency_type ct){
+    std::string enum_to_string(currency_type ct) {
         switch (ct) {
             case currency_type::ETH:
                 return "ETH";
