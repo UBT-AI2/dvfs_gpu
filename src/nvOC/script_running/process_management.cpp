@@ -102,14 +102,21 @@ namespace frequency_scaling {
     }
 
     void process_management::kill_all_processes(bool only_background) {
-        for (auto &process : process_management::all_processes_) {
-            if (only_background) {
-                if (process.second)
-                    process_management::kill_process(process.first);
-            } else {
-                process_management::kill_process(process.first);
+        std::vector<int> pids_to_kill;
+        {
+            std::lock_guard<std::mutex> lock(process_management::all_processes_mutex_);
+            for (auto &process : process_management::all_processes_) {
+                if (only_background) {
+                    if (process.second)
+                        pids_to_kill.push_back(process.first);
+                } else {
+                    pids_to_kill.push_back(process.first);
+                }
             }
         }
+        //
+        for(int pid : pids_to_kill)
+            process_management::kill_process(pid);
     }
 
     void process_management::kill_process(int pid) {
