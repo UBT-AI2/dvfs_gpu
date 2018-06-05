@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
     device_clock_info dci(device_id, min_mem_oc, 0, max_mem_oc, 0);
 
     //
-    const measurement &m = freq_hill_climbing(miner_script::ETHMINER, dci, max_iterations, mem_step, graph_idx_step,
+    const measurement &m = freq_hill_climbing(miner_script::EXCAVATOR, dci, max_iterations, mem_step, graph_idx_step,
                                               min_hashrate);
     printf("Best energy-hash value: %f\n", m.energy_hash_);
 
