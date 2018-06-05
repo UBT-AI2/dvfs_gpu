@@ -5,6 +5,7 @@
 #include "../nvml/nvmlOC.h"
 #include "../script_running/benchmark.h"
 #include "../script_running/mining.h"
+#include "../script_running/process_management.h"
 #include "profit_optimization.h"
 
 using namespace frequency_scaling;
@@ -52,6 +53,7 @@ int main(int argc, char **argv) {
     //init apis
     nvapiInit();
     nvmlInit_();
+    process_management::register_process_cleanup_sighandler();
 
     std::vector<device_clock_info> dcis;
     std::map<currency_type, miner_user_info> miner_user_infos;

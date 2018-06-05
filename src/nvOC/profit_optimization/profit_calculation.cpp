@@ -1,5 +1,6 @@
-#include <limits>
 #include "profit_calculation.h"
+
+#include <limits>
 #include "network_requests.h"
 
 namespace frequency_scaling {

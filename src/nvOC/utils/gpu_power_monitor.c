@@ -8,7 +8,7 @@
 #else
 #endif
 
-static int BUFFER_SIZE = 1024;
+#define BUFFER_SIZE 1024
 
 int main(int argc, char **argv) {
     if (argc != 2) {

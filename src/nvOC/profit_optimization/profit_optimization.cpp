@@ -16,7 +16,7 @@
 
 namespace frequency_scaling {
 
-    static int BUFFER_SIZE = 1024;
+    static const int BUFFER_SIZE = 1024;
 
     optimization_info::optimization_info(optimization_method method, int min_hashrate) :
             method_(method), min_hashrate_(min_hashrate) {

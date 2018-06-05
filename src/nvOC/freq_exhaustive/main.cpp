@@ -3,6 +3,7 @@
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
 #include "../script_running/benchmark.h"
+#include "../script_running/process_management.h"
 #include "freq_exhaustive.h"
 
 
@@ -23,6 +24,7 @@ int main(int argc, char **argv) {
     //init apis
     nvapiInit();
     nvmlInit_();
+    process_management::register_process_cleanup_sighandler();
 
     //start power monitoring
     start_power_monitoring_script(device_id);

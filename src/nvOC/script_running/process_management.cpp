@@ -5,9 +5,12 @@
 #include "process_management.h"
 #include <iostream>
 #include <algorithm>
+#include <signal.h>
 
 #ifdef _WIN32
+
 #include <windows.h>
+
 #else
 
 #include <unistd.h>
@@ -20,8 +23,24 @@
 namespace frequency_scaling {
 
     static const int BUFFER_SIZE = 4096;
-    std::map<std::pair<int, process_type>, int> process_management::background_processes_;
-    std::mutex process_management::background_processes_mutex_;
+    std::vector<std::pair<int, bool>> process_management::all_processes_;
+    std::mutex process_management::all_processes_mutex_;
+    std::map<std::pair<int, process_type>, int> process_management::gpu_background_processes_;
+    std::mutex process_management::gpu_background_processes_mutex_;
+
+    static void sig_handler(int signo) {
+        if (signo == SIGINT)
+            process_management::kill_all_processes(false);
+    }
+
+
+    bool process_management::register_process_cleanup_sighandler() {
+        //setup sigint handler
+        if (signal(SIGINT, &sig_handler) == SIG_ERR) {
+            return false;
+        }
+        return true;
+    }
 
 
     FILE *process_management::popen_file(const std::string &cmd) {
@@ -53,9 +72,9 @@ namespace frequency_scaling {
     }
 
     bool process_management::gpu_has_background_process(int device_id, process_type pt) {
-        std::lock_guard<std::mutex> lock(process_management::background_processes_mutex_);
-        auto it = process_management::background_processes_.find(std::make_pair(device_id, pt));
-        return it != process_management::background_processes_.end();
+        std::lock_guard<std::mutex> lock(process_management::gpu_background_processes_mutex_);
+        auto it = process_management::gpu_background_processes_.find(std::make_pair(device_id, pt));
+        return it != process_management::gpu_background_processes_.end();
     }
 
     bool process_management::gpu_kill_background_process(int device_id, process_type pt) {
@@ -63,12 +82,10 @@ namespace frequency_scaling {
             return false;
         int pid;
         {
-            std::lock_guard<std::mutex> lock(process_management::background_processes_mutex_);
-            pid = process_management::background_processes_.at(std::make_pair(device_id, pt));
+            std::lock_guard<std::mutex> lock(process_management::gpu_background_processes_mutex_);
+            pid = process_management::gpu_background_processes_.at(std::make_pair(device_id, pt));
         }
         process_management::kill_process(pid);
-        std::lock_guard<std::mutex> lock(process_management::background_processes_mutex_);
-        process_management::background_processes_.erase(std::make_pair(device_id, pt));
         return true;
     }
 
@@ -78,19 +95,56 @@ namespace frequency_scaling {
             return false;
         int pid = process_management::start_process(filename, background);
         if (background) {
-            std::lock_guard<std::mutex> lock(process_management::background_processes_mutex_);
-            process_management::background_processes_.emplace(std::make_pair(device_id, pt), pid);
+            std::lock_guard<std::mutex> lock(process_management::gpu_background_processes_mutex_);
+            process_management::gpu_background_processes_.emplace(std::make_pair(device_id, pt), pid);
         }
         return true;
     }
 
-
-    void process_management::kill_process(int pid) {
-        process_management::start_process("kill " + std::to_string(pid), false);
+    void process_management::kill_all_processes(bool only_background) {
+        for (auto &process : process_management::all_processes_) {
+            if (only_background) {
+                if (process.second)
+                    process_management::kill_process(process.first);
+            } else {
+                process_management::kill_process(process.first);
+            }
+        }
     }
 
+    void process_management::kill_process(int pid) {
+        process_management::start_process("kill " + std::to_string(pid), false, true, pid);
+        //
+        {
+            std::lock_guard<std::mutex> lock(process_management::all_processes_mutex_);
+            for (auto it = process_management::all_processes_.begin();
+                 it != process_management::all_processes_.end();) {
+                if (it->first == pid) {
+                    it = process_management::all_processes_.erase(it);
+                    break;
+                } else
+                    ++it;
+            }
+        }
+        {
+            std::lock_guard<std::mutex> lock(process_management::gpu_background_processes_mutex_);
+            for (auto it = process_management::gpu_background_processes_.begin();
+                 it != process_management::gpu_background_processes_.end();) {
+                if (it->second == pid) {
+                    it = process_management::gpu_background_processes_.erase(it);
+                    break;
+                } else
+                    ++it;
+            }
+        }
+    }
 
     int process_management::start_process(const std::string &cmd, bool background) {
+        return process_management::start_process(cmd, background, false, -1);
+    }
+
+    int process_management::start_process(const std::string &cmd, bool background,
+                                          bool is_kill, int pid_to_kill) {
 #ifdef _WIN32
         STARTUPINFO startup_info = {sizeof(startup_info)};
         PROCESS_INFORMATION pi;
@@ -107,6 +161,10 @@ namespace frequency_scaling {
                           &startup_info,
                           &pi)) {
             int dwPid = GetProcessId(pi.hProcess);
+            if (!is_kill) {
+                std::lock_guard<std::mutex> lock(process_management::all_processes_mutex_);
+                process_management::all_processes_.emplace_back(dwPid, background);
+            }
             std::cout << "Started process: " << cmd << " (PID: " << dwPid << ")" << std::endl;
             if (!background) {
                 WaitForSingleObject(pi.hProcess, INFINITE);
@@ -128,6 +186,10 @@ namespace frequency_scaling {
             _exit(127);
         } else {
             //parent
+            if(!is_kill){
+                std::lock_guard<std::mutex> lock(process_management::all_processes_mutex_);
+                process_management::all_processes_.emplace_back(dwPid, background);
+            }
             std::cout << "Started process: " << cmd << " (PID: " << pid << ")" << std::endl;
             if (!background) {
                 waitpid(pid, NULL, 0);
