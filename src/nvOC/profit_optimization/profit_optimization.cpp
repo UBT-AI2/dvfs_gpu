@@ -4,8 +4,10 @@
 
 #include "profit_optimization.h"
 
-#include <thread>
 #include <iostream>
+#include <thread>
+#include <condition_variable>
+#include <atomic>
 #include <set>
 #include "../freq_nelder_mead/freq_nelder_mead.h"
 #include "../freq_hill_climbing/freq_hill_climbing.h"
@@ -28,7 +30,7 @@ namespace frequency_scaling {
                 break;
             case optimization_method::HILL_CLIMBING:
             case optimization_method::SIMULATED_ANNEALING:
-                max_iterations_ = 5;
+                max_iterations_ = 6;
                 mem_step_ = 300;
                 graph_idx_step_ = 6;
                 break;
@@ -97,10 +99,21 @@ namespace frequency_scaling {
 
     static void
     start_profit_monitoring(profit_calculator &profit_calc,
-                            const std::map<currency_type, miner_user_info> &user_infos,
-                            int update_interval_sec) {
+                            const std::map<currency_type, miner_user_info> &user_infos, int update_interval_sec,
+                            std::mutex &mutex, std::condition_variable &cond_var, const std::atomic_bool &terminate) {
         while (true) {
-            std::this_thread::sleep_for(std::chrono::seconds(update_interval_sec));
+            std::cv_status stat;
+            int remaining_sleep_ms = update_interval_sec * 1000;
+            do {
+                std::unique_lock<std::mutex> lock(mutex);
+                auto start = std::chrono::steady_clock::now();
+                stat = cond_var.wait_for(lock, std::chrono::milliseconds(remaining_sleep_ms));
+                remaining_sleep_ms -= std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::steady_clock::now() - start).count();
+            } while (stat == std::cv_status::no_timeout && !terminate);
+            if (terminate)
+                break;
+            //monitoring code
             try {
                 const std::pair<currency_type, double> &old_best_currency = profit_calc.calc_best_currency();
                 profit_calc.update_currency_info_nanopool();
@@ -196,35 +209,73 @@ namespace frequency_scaling {
         const std::map<int, std::set<currency_type>> &gpu_distr =
                 find_optimization_gpu_distr(equal_gpus, currencies);
 
-        //find best frequency configurations for each gpus and currency
+        //find best frequency configurations for each gpu and currency
+        //launch one thread per gpu
+        std::cout << "Starting optimization phase..." << std::endl;
         std::map<int, std::map<currency_type, energy_hash_info>> optimization_results;
-#pragma omp parallel for num_threads(dcis.size())
-        for (int i = 0; i < dcis.size(); i++) {
-            const device_clock_info &gpu_dci = dcis[i];
-            const std::map<currency_type, energy_hash_info> &gpu_optimal_config =
-                    find_optimal_config(gpu_dci, gpu_distr.at(gpu_dci.device_id_nvml),
-                                        opt_info);
-#pragma omp critical
-            optimization_results.emplace(gpu_dci.device_id_nvml, gpu_optimal_config);
+        {
+            std::vector<std::thread> threads;
+            std::mutex mutex;
+            for (int i = 0; i < dcis.size(); i++) {
+                threads.emplace_back([i, &mutex, &dcis, &gpu_distr, &opt_info, &optimization_results]() {
+                    const device_clock_info &gpu_dci = dcis[i];
+                    const std::map<currency_type, energy_hash_info> &gpu_optimal_config =
+                            find_optimal_config(gpu_dci, gpu_distr.at(gpu_dci.device_id_nvml),
+                                                opt_info);
+                    std::lock_guard<std::mutex> lock(mutex);
+                    optimization_results.emplace(gpu_dci.device_id_nvml, gpu_optimal_config);
+                });
+            }
+
+            for (auto &t : threads)
+                t.join();
         }
 
-        //equal gpus have same optimal frequency configurations
+        //exchange frequency configurations (equal gpus have same optimal frequency configurations)
         complete_optimization_results(optimization_results, equal_gpus);
+        std::cout << "Finished optimization phase..." << std::endl;
 
         //start mining and monitoring currency with highest profit
-        double energy_cost_kwh = get_energy_cost_stromdao(95440);
-#pragma omp parallel for num_threads(dcis.size())
-        for (int i = 0; i < dcis.size(); i++) {
-            const device_clock_info &gpu_dci = dcis[i];
-            const std::map<currency_type, energy_hash_info> &gpu_opt_res =
-                    optimization_results.at(gpu_dci.device_id_nvml);
-            const std::map<currency_type, currency_info> &gpu_currency_infos =
-                    get_currency_infos_nanopool(gpu_opt_res);
+        //launch one thread per gpu
+        std::cout << "Starting mining and monitoring..." << std::endl;
+        {
+            std::vector<std::thread> threads;
+            std::mutex mutex;
+            std::condition_variable cond_var;
+            std::atomic_bool terminate = ATOMIC_VAR_INIT(false);
+            double energy_cost_kwh = get_energy_cost_stromdao(95440);
+            for (int i = 0; i < dcis.size(); i++) {
+                threads.emplace_back([i, energy_cost_kwh, monitoring_interval_sec,
+                                             &dcis, &user_infos, &optimization_results, &mutex, &cond_var, &terminate]() {
+                    const device_clock_info &gpu_dci = dcis[i];
+                    const std::map<currency_type, energy_hash_info> &gpu_opt_res =
+                            optimization_results.at(gpu_dci.device_id_nvml);
+                    const std::map<currency_type, currency_info> &gpu_currency_infos =
+                            get_currency_infos_nanopool(gpu_opt_res);
 
-            profit_calculator pc(gpu_dci, gpu_currency_infos, gpu_opt_res, energy_cost_kwh);
-            start_mining_best_currency(pc, user_infos);
-            start_profit_monitoring(pc, user_infos, monitoring_interval_sec);
+                    profit_calculator pc(gpu_dci, gpu_currency_infos, gpu_opt_res, energy_cost_kwh);
+                    start_mining_best_currency(pc, user_infos);
+                    start_profit_monitoring(pc, user_infos, monitoring_interval_sec, mutex, cond_var, terminate);
+                });
+            }
+            //
+            std::cout << "Mining and monitoring...\nEnter q to stop" << std::endl;
+            while (true) {
+                char c;
+                std::cin >> c;
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                if (c == 'q') {
+                    terminate = true;
+                    cond_var.notify_all();
+                    break;
+                }
+            }
+            for (auto &t : threads)
+                t.join();
+            //
+            process_management::kill_all_processes(false);
         }
+
     }
 
 

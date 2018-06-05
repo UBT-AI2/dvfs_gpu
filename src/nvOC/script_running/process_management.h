@@ -40,6 +40,7 @@ namespace frequency_scaling {
     private:
         static int start_process(const std::string &cmd, bool background,
                                  bool is_kill, int pid_to_kill);
+
         static std::vector<std::pair<int, bool>> all_processes_;
         static std::mutex all_processes_mutex_;
         static std::map<std::pair<int, process_type>, int> gpu_background_processes_;

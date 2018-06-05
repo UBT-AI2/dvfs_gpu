@@ -6,7 +6,7 @@
 
 namespace frequency_scaling {
 
-	static const int BUFFER_SIZE = 1024;
+    static const int BUFFER_SIZE = 1024;
 
     static void safeNVMLCall(nvmlReturn_t result) {
         if (result != NVML_SUCCESS) {

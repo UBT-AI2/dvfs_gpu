@@ -115,7 +115,7 @@ namespace frequency_scaling {
             }
         }
         //
-        for(int pid : pids_to_kill)
+        for (int pid : pids_to_kill)
             process_management::kill_process(pid);
     }
 

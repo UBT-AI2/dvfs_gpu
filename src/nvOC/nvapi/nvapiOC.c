@@ -191,7 +191,7 @@ int nvapiInit() {
 }
 
 int nvapiUnload(int restoreClocks) {
-    if(restoreClocks) {
+    if (restoreClocks) {
         int *hdlGPU[64] = {0};
         int nGPU;
         NvEnumPhysicalGPUs(hdlGPU, &nGPU);
@@ -217,7 +217,7 @@ int nvapiGetDeviceIndexByBusId(int busId) {
     return -1;
 }
 
-int nvapiGetCurrentMemClock(int deviceIdNvapi){
+int nvapiGetCurrentMemClock(int deviceIdNvapi) {
     int *hdlGPU[64] = {0};
     int nGPU;
     NvEnumPhysicalGPUs(hdlGPU, &nGPU);
@@ -229,7 +229,7 @@ int nvapiGetCurrentMemClock(int deviceIdNvapi){
     return curRam;
 }
 
-int nvapiGetCurrentGraphClock(int deviceIdNvapi){
+int nvapiGetCurrentGraphClock(int deviceIdNvapi) {
     int *hdlGPU[64] = {0};
     int nGPU;
     NvEnumPhysicalGPUs(hdlGPU, &nGPU);
