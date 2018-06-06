@@ -11,8 +11,8 @@
 
 
 int main(int argc, char **argv) {
-    if (argc < 7) {
-        printf("Usage: %s device_id max_iterations mem_step graph_idx_step min_mem_oc max_mem_oc [min_hashrate]",
+    if (argc < 8) {
+        printf("Usage: %s device_id max_iterations mem_step graph_idx_step min_mem_oc max_mem_oc currency [min_hashrate]",
                argv[0]);
         return 1;
     }
@@ -22,9 +22,10 @@ int main(int argc, char **argv) {
     int graph_idx_step = atoi(argv[4]);
     int min_mem_oc = atoi(argv[5]);
     int max_mem_oc = atoi(argv[6]);
+    int currency = atoi(argv[7]);
     double min_hashrate = -1.0;
-    if (argc > 7)
-        min_hashrate = atof(argv[7]);
+    if (argc > 8)
+        min_hashrate = atof(argv[8]);
 
 
     using namespace frequency_scaling;
@@ -39,7 +40,7 @@ int main(int argc, char **argv) {
     device_clock_info dci(device_id, min_mem_oc, 0, max_mem_oc, 0);
 
     //
-    const measurement &m = freq_simulated_annealing(miner_script::ETHMINER, dci, max_iterations, mem_step,
+    const measurement &m = freq_simulated_annealing(static_cast<miner_script>(currency), dci, max_iterations, mem_step,
                                                     graph_idx_step,
                                                     min_hashrate);
     printf("Best energy-hash value: %f\n", m.energy_hash_);
