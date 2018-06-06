@@ -57,17 +57,17 @@ namespace frequency_scaling {
             measurement optimal_config;
             switch (opt_info.method_) {
                 case optimization_method::NELDER_MEAD:
-                    optimal_config = freq_nelder_mead(get_miner_for_currency(ct), dci, 1,
+                    optimal_config = freq_nelder_mead(ct, dci, 1,
                                                       opt_info.max_iterations_, opt_info.mem_step_,
                                                       opt_info.graph_idx_step_, opt_info.min_hashrate_);
                     break;
                 case optimization_method::HILL_CLIMBING:
-                    optimal_config = freq_hill_climbing(get_miner_for_currency(ct), dci,
+                    optimal_config = freq_hill_climbing(ct, dci,
                                                         opt_info.max_iterations_, opt_info.mem_step_,
                                                         opt_info.graph_idx_step_, opt_info.min_hashrate_);
                     break;
                 case optimization_method::SIMULATED_ANNEALING:
-                    optimal_config = freq_simulated_annealing(get_miner_for_currency(ct), dci,
+                    optimal_config = freq_simulated_annealing(ct, dci,
                                                               opt_info.max_iterations_, opt_info.mem_step_,
                                                               opt_info.graph_idx_step_, opt_info.min_hashrate_);
                     break;
@@ -89,11 +89,10 @@ namespace frequency_scaling {
                                            const std::map<currency_type, miner_user_info> &user_infos) {
         const std::pair<currency_type, double> &best_currency = profit_calc.calc_best_currency();
         const energy_hash_info &ehi = profit_calc.getEnergy_hash_info_().at(best_currency.first);
-        miner_script ms = get_miner_for_currency(best_currency.first);
         //
         change_clocks_nvml_nvapi(profit_calc.getDci_(), ehi.optimal_configuration_.mem_oc,
                                  ehi.optimal_configuration_.nvml_graph_clock_idx);
-        start_mining_script(ms, profit_calc.getDci_(), user_infos.at(best_currency.first));
+        start_mining_script(best_currency.first, profit_calc.getDci_(), user_infos.at(best_currency.first));
     }
 
 
@@ -259,7 +258,7 @@ namespace frequency_scaling {
                 });
             }
             //
-            std::cout << "Mining and monitoring...\nEnter q to stop" << std::endl;
+            std::cout << "Performing mining and monitoring...\nEnter q to stop" << std::endl;
             while (true) {
                 char c;
                 std::cin >> c;
@@ -272,7 +271,7 @@ namespace frequency_scaling {
             }
             for (auto &t : threads)
                 t.join();
-            //
+            //cleanup processes
             process_management::kill_all_processes(false);
         }
 

@@ -5,10 +5,6 @@
 
 namespace frequency_scaling {
 
-    enum class currency_type {
-        ZEC, ETH, XMR, count
-    };
-
     struct currency_info {
         currency_info(currency_type type, double approximated_earnings_eur_hour,
                       double stock_price_eur_);
@@ -56,10 +52,6 @@ namespace frequency_scaling {
         double power_cost_kwh_;
     };
 
-
-    std::string enum_to_string(currency_type ct);
-
-    miner_script get_miner_for_currency(currency_type ct);
 
     std::map<currency_type, currency_info> get_currency_infos_nanopool(
             const std::map<currency_type, energy_hash_info> &ehi);

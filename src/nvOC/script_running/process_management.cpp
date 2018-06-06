@@ -5,7 +5,6 @@
 #include "process_management.h"
 #include <iostream>
 #include <algorithm>
-#include <signal.h>
 
 #ifdef _WIN32
 

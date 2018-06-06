@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "miner_script.h"
+#include "currency_type.h"
 
 namespace frequency_scaling {
 
@@ -43,9 +43,9 @@ namespace frequency_scaling {
                                   int mem_oc, int graph_oc);
 
     measurement
-    run_benchmark_script_nvml_nvapi(miner_script ms, const device_clock_info &dci, int mem_oc,
+    run_benchmark_script_nvml_nvapi(currency_type ct, const device_clock_info &dci, int mem_oc,
                                     int nvml_graph_clock_idx);
 
     measurement
-    run_benchmark_script_nvapi_only(miner_script ms, const device_clock_info &dci, int mem_oc, int graph_oc);
+    run_benchmark_script_nvapi_only(currency_type ct, const device_clock_info &dci, int mem_oc, int graph_oc);
 }

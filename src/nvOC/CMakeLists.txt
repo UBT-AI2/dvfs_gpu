@@ -4,10 +4,10 @@ set(NVAPI_FILES
 set(NVML_FILES
         nvml/nvmlOC.h nvml/nvmlOC.cpp)
 set(SCRIPT_RUNNING_FILES
-        script_running/miner_script.h
+        script_running/currency_type.h
         script_running/benchmark.h script_running/benchmark.cpp
         script_running/mining.h script_running/mining.cpp
-        script_running/process_management.h script_running/process_management.cpp)
+        script_running/process_management.h script_running/process_management.cpp script_running/currency_type.cpp)
 set(FREQ_EXHAUSTIVE_FILES
         freq_exhaustive/freq_exhaustive.h freq_exhaustive/freq_exhaustive.cpp)
 set(FREQ_HILL_CLIMBING_FILES

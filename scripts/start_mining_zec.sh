@@ -1,7 +1,9 @@
 #!/bin/bash
 
-user_data=$1
-device_id=$2
+device_id=$1
+wallet_address=$2
+worker_name=$3
+email=$4
 if [[ "$OSTYPE" == "msys" ]]
 then
 #MINGW
@@ -13,4 +15,4 @@ exit 1
 fi
 #################################################################################
 
-${MINER_BINARY} -a equihash -s zec-eu1.nanopool.org:6666 -u $user_data -p 0 -d 2 -cd $device_id
+${MINER_BINARY} -a equihash -s zec-eu1.nanopool.org:6666 -u ${wallet_address}/${worker_name}/${email} -p 0 -d 2 -cd $device_id

@@ -24,7 +24,7 @@ namespace frequency_scaling {
 
 
     static std::vector<measurement>
-    explore_neighborhood(miner_script ms, const device_clock_info &dci,
+    explore_neighborhood(currency_type ms, const device_clock_info &dci,
                          const measurement &current_node, double current_slope,
                          int mem_step, int graph_step_idx, double min_hashrate, bool use8Neighborhood) {
         std::vector<measurement> neighbor_nodes;
@@ -154,7 +154,7 @@ namespace frequency_scaling {
     }
 
 
-    measurement freq_hill_climbing(miner_script ms, const device_clock_info &dci,
+    measurement freq_hill_climbing(currency_type ms, const device_clock_info &dci,
                                    int max_iterations, int mem_step, int graph_idx_step, double min_hashrate) {
         //initial guess at maximum frequencies
         int initial_graph_idx = 0, initial_mem_oc = dci.max_mem_oc;
@@ -163,7 +163,7 @@ namespace frequency_scaling {
     }
 
 
-    measurement freq_hill_climbing(miner_script ms, const device_clock_info &dci, const measurement &start_node,
+    measurement freq_hill_climbing(currency_type ms, const device_clock_info &dci, const measurement &start_node,
                                    bool allow_start_node_result,
                                    int max_iterations, int mem_step, int graph_idx_step, double min_hashrate) {
 
