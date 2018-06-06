@@ -32,7 +32,7 @@ namespace frequency_scaling {
             case optimization_method::SIMULATED_ANNEALING:
                 max_iterations_ = 6;
                 mem_step_ = 300;
-                graph_idx_step_ = 6;
+                graph_idx_step_ = 10;
                 break;
             default:
                 throw std::runtime_error("Invalid enum value");

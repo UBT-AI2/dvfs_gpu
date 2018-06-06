@@ -158,19 +158,24 @@ namespace frequency_scaling {
                                    int max_iterations, int mem_step, int graph_idx_step, double min_hashrate) {
         //initial guess at maximum frequencies
         int initial_graph_idx = 0, initial_mem_oc = dci.max_mem_oc;
-        measurement max_node = run_benchmark_script_nvml_nvapi(ms, dci, initial_mem_oc, initial_graph_idx);
-        return freq_hill_climbing(ms, dci, max_node, max_iterations, mem_step, graph_idx_step, min_hashrate);
+        measurement start_node = run_benchmark_script_nvml_nvapi(ms, dci, initial_mem_oc, initial_graph_idx);
+        return freq_hill_climbing(ms, dci, start_node, true, max_iterations, mem_step, graph_idx_step, min_hashrate);
     }
 
 
     measurement freq_hill_climbing(miner_script ms, const device_clock_info &dci, const measurement &start_node,
+                                   bool allow_start_node_result,
                                    int max_iterations, int mem_step, int graph_idx_step, double min_hashrate) {
 
         if (start_node.hashrate_ < min_hashrate) {
             throw optimization_error("Minimum hashrate cannot be reached");
         }
         measurement current_node = start_node;
-        measurement best_node = current_node;
+        measurement best_node;
+        if (allow_start_node_result)
+            best_node = current_node;
+        else
+            best_node.energy_hash_ = std::numeric_limits<float>::lowest();
         std::default_random_engine eng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
         std::uniform_real_distribution<double> distr_stepsize(1.0, 2.0);
 

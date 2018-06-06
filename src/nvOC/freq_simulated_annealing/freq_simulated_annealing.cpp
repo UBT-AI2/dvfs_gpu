@@ -12,16 +12,24 @@
 
 namespace frequency_scaling {
 
+    static double guess_start_temperature(miner_script ms, const device_clock_info &dci) {
+        int min_graph_idx = dci.nvml_graph_clocks.size() - 1;
+        int min_mem_oc = dci.max_mem_oc;
+        const measurement &min_node = run_benchmark_script_nvml_nvapi(ms, dci, min_mem_oc, min_graph_idx);
+        int max_graph_idx = 0.5 * dci.nvml_graph_clocks.size();
+        int max_mem_oc = dci.min_mem_oc + 0.5 * (dci.max_mem_oc - dci.min_mem_oc);
+        const measurement &max_node = run_benchmark_script_nvml_nvapi(ms, dci, max_mem_oc, max_graph_idx);
+        //start temperature should be higher than the maximum energy difference between all configurations
+        return abs(max_node.energy_hash_ - min_node.energy_hash_);
+    }
+
     measurement freq_simulated_annealing(miner_script ms, const device_clock_info &dci, int max_iterations,
                                          int mem_step, int graph_idx_step, double min_hashrate) {
+        double start_temperature = guess_start_temperature(ms, dci);
         //initial guess at maximum frequencies
         int initial_graph_idx = 0, initial_mem_oc = dci.max_mem_oc;
-        const measurement &max_node = run_benchmark_script_nvml_nvapi(ms, dci, initial_mem_oc, initial_graph_idx);
-        const measurement &min_node = run_benchmark_script_nvml_nvapi(ms, dci, dci.min_mem_oc,
-                                                                      dci.nvml_graph_clocks.size() - 1);
-        //start temperature should be higher than the maximum energy difference between all configurations
-        double start_temperature = abs(max_node.energy_hash_ - min_node.energy_hash_);
-        return freq_simulated_annealing(ms, dci, max_node, start_temperature,
+        const measurement &initial_node = run_benchmark_script_nvml_nvapi(ms, dci, initial_mem_oc, initial_graph_idx);
+        return freq_simulated_annealing(ms, dci, initial_node, start_temperature,
                                         max_iterations, mem_step, graph_idx_step, min_hashrate);
     }
 
@@ -39,7 +47,7 @@ namespace frequency_scaling {
         double Tk = start_temperature;
         double c = 0.8;
         for (int k = 1; k <= max_iterations; k++) {
-            const measurement &neighbor_node = freq_hill_climbing(ms, dci, current_node, 1, mem_step, graph_idx_step,
+            const measurement &neighbor_node = freq_hill_climbing(ms, dci, current_node, false, 1, mem_step, graph_idx_step,
                                                                   min_hashrate);
             if (neighbor_node.energy_hash_ > best_node.energy_hash_)
                 best_node = neighbor_node;
