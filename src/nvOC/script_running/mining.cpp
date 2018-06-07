@@ -35,18 +35,18 @@ namespace frequency_scaling {
         char cmd1[BUFFER_SIZE];
         switch (ct) {
             case currency_type::ETH:
-                snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_eth.sh %i %s %s %s",
-                         dci.device_id_cuda, user_info.wallet_address_.c_str(),
+                snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_eth.sh %i %i %s %s %s",
+                         dci.device_id_nvml, dci.device_id_cuda, user_info.wallet_address_.c_str(),
                          user_info.worker_name_.c_str(), user_info.email_adress_.c_str());
                 break;
             case currency_type::ZEC:
-                snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_zec.sh %i %s %s %s",
-                         dci.device_id_cuda, user_info.wallet_address_.c_str(),
+                snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_zec.sh %i %i %s %s %s",
+                         dci.device_id_nvml, dci.device_id_cuda, user_info.wallet_address_.c_str(),
                          user_info.worker_name_.c_str(), user_info.email_adress_.c_str());
                 break;
             case currency_type::XMR:
-                snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_xmr.sh %i %s %s %s",
-                         dci.device_id_cuda, user_info.wallet_address_.c_str(),
+                snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_xmr.sh %i %i %s %s %s",
+                         dci.device_id_nvml, dci.device_id_cuda, user_info.wallet_address_.c_str(),
                          user_info.worker_name_.c_str(), user_info.email_adress_.c_str());
                 break;
             default:

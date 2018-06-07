@@ -1,9 +1,10 @@
 #!/bin/bash
 
 device_id=$1
-wallet_address=$2
-worker_name=$3
-email=$4
+device_id_cuda=$2
+wallet_address=$3
+worker_name=$4
+email=$5
 if [[ "$OSTYPE" == "msys" ]]
 then
 #MINGW

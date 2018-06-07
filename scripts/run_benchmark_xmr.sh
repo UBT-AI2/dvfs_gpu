@@ -1,8 +1,9 @@
 #!/bin/bash
 
 device_id=$1
-mem_clock=$2
-graph_clock=$3
+device_id_cuda=$2
+mem_clock=$3
+graph_clock=$4
 POWERFILE=power_results_${device_id}.txt
 BENCH_POWERFILE=power_results_${device_id}_${mem_clock}_${graph_clock}.txt
 BENCH_LOGFILE=log_${device_id}_${mem_clock}_${graph_clock}.txt

@@ -1,8 +1,9 @@
 #!/bin/bash
 
 device_id=$1
-mem_clock=$2
-graph_clock=$3
+device_id_cuda=$2
+mem_clock=$3
+graph_clock=$4
 POWERFILE=power_results_${device_id}.txt
 BENCH_POWERFILE=power_results_${device_id}_${mem_clock}_${graph_clock}.txt
 BENCH_LOGFILE=log_${device_id}_${mem_clock}_${graph_clock}.txt
@@ -18,7 +19,7 @@ fi
 
 bench_start=$(tail -n 1 ${POWERFILE} | awk '{print $1}')
 ${MINER_BINARY} -U -M \
---benchmark-trials 1 --benchmark-warmup 10 --cuda-devices $device_id &> ${BENCH_LOGFILE}
+--benchmark-trials 1 --benchmark-warmup 10 --cuda-devices $device_id_cuda &> ${BENCH_LOGFILE}
 
 if [[ -z $bench_start ]]
 then

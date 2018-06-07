@@ -22,16 +22,16 @@ namespace frequency_scaling {
             char cmd2[BUFFER_SIZE];
             switch (ms) {
                 case currency_type::ETH:
-                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_eth.sh %i %i %i",
-                             dci.device_id_cuda, mem_clock, graph_clock);
+                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_eth.sh %i %i %i %i",
+                             dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock);
                     break;
                 case currency_type::ZEC:
-                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_zec.sh %i %i %i",
-                             dci.device_id_cuda, mem_clock, graph_clock);
+                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_zec.sh %i %i %i %i",
+                             dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock);
                     break;
                 case currency_type::XMR:
-                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_xmr.sh %i %i %i",
-                             dci.device_id_cuda, mem_clock, graph_clock);
+                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_xmr.sh %i %i %i %i",
+                             dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock);
                     break;
                 default:
                     throw std::runtime_error("Invalid enum value");
@@ -42,7 +42,7 @@ namespace frequency_scaling {
         //get last measurement from data file
         float data[5] = {0};
         {
-            std::string filename = "result_" + std::to_string(dci.device_id_cuda) + ".dat";
+            std::string filename = "result_" + std::to_string(dci.device_id_nvml) + ".dat";
             std::ifstream file(filename, std::ios_base::ate);//open file
             if (file) {
                 std::string tmp;

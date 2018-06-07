@@ -2,10 +2,10 @@
 BIN_DIR=../bin
 DEVICE_ID=1
 
-function move_result_files{
+function move_result_files {
 	local METHOD=$1
 	local CURRENCY=$2
-	local OUTDIR=result_dir_$METHOD_$CURRENCY
+	local OUTDIR=result_dir_${METHOD}_${CURRENCY}
 	mkdir $OUTDIR
 	mkdir $OUTDIR/data
 	mv result_$DEVICE_ID* $OUTDIR
