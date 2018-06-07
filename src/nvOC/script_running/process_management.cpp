@@ -195,7 +195,7 @@ namespace frequency_scaling {
             //parent
             if(!is_kill){
                 std::lock_guard<std::mutex> lock(process_management::all_processes_mutex_);
-                process_management::all_processes_.emplace_back(dwPid, background);
+                process_management::all_processes_.emplace_back(pid, background);
             }
             std::cout << "Started process: " << cmd << " (PID: " << pid << ")" << std::endl;
             if (!background) {
