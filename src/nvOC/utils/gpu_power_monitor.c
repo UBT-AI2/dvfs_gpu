@@ -76,3 +76,6 @@ int main(int argc, char **argv) {
     fclose(data);
     return 0;
 }
+
+
+#undef BUFFER_SIZE
