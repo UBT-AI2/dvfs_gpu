@@ -1,23 +1,20 @@
 //
 // Created by alex on 30.05.18.
 //
-
 #include "process_management.h"
+
 #include <iostream>
 #include <algorithm>
 #include <signal.h>
-
 #ifdef _WIN32
-
 #include <windows.h>
-
 #else
-
 #include <unistd.h>
 #include <sys/wait.h>
-
 #endif
 
+#include "../nvapi/nvapiOC.h"
+#include "../nvml/nvmlOC.h"
 #include "../exceptions.h"
 
 namespace frequency_scaling {
@@ -29,8 +26,11 @@ namespace frequency_scaling {
     std::mutex process_management::gpu_background_processes_mutex_;
 
     static void sig_handler(int signo) {
-        if (signo == SIGINT)
+        if (signo == SIGINT) {
             process_management::kill_all_processes(false);
+            nvapiUnload(1);
+            nvmlShutdown_(true);
+        }
     }
 
 

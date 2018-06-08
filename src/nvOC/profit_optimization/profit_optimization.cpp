@@ -14,6 +14,7 @@
 #include "../freq_simulated_annealing/freq_simulated_annealing.h"
 #include "../nvml/nvmlOC.h"
 #include "../script_running/process_management.h"
+#include "../exceptions.h"
 #include "network_requests.h"
 
 namespace frequency_scaling {
@@ -54,31 +55,40 @@ namespace frequency_scaling {
         //start power monitoring
         start_power_monitoring_script(dci.device_id_nvml);
         for (currency_type ct : currencies) {
-            measurement optimal_config;
-            switch (opt_info.method_) {
-                case optimization_method::NELDER_MEAD:
-                    optimal_config = freq_nelder_mead(ct, dci, 1,
-                                                      opt_info.max_iterations_, opt_info.mem_step_,
-                                                      opt_info.graph_idx_step_, opt_info.min_hashrate_);
-                    break;
-                case optimization_method::HILL_CLIMBING:
-                    optimal_config = freq_hill_climbing(ct, dci,
-                                                        opt_info.max_iterations_, opt_info.mem_step_,
-                                                        opt_info.graph_idx_step_, opt_info.min_hashrate_);
-                    break;
-                case optimization_method::SIMULATED_ANNEALING:
-                    optimal_config = freq_simulated_annealing(ct, dci,
-                                                              opt_info.max_iterations_, opt_info.mem_step_,
-                                                              opt_info.graph_idx_step_, opt_info.min_hashrate_);
-                    break;
-                default:
-                    throw std::runtime_error("Invalid enum value");
+            try {
+                measurement optimal_config;
+                switch (opt_info.method_) {
+                    case optimization_method::NELDER_MEAD:
+                        optimal_config = freq_nelder_mead(ct, dci, 1,
+                                                          opt_info.max_iterations_, opt_info.mem_step_,
+                                                          opt_info.graph_idx_step_, opt_info.min_hashrate_);
+                        break;
+                    case optimization_method::HILL_CLIMBING:
+                        optimal_config = freq_hill_climbing(ct, dci,
+                                                            opt_info.max_iterations_, opt_info.mem_step_,
+                                                            opt_info.graph_idx_step_, opt_info.min_hashrate_);
+                        break;
+                    case optimization_method::SIMULATED_ANNEALING:
+                        optimal_config = freq_simulated_annealing(ct, dci,
+                                                                  opt_info.max_iterations_, opt_info.mem_step_,
+                                                                  opt_info.graph_idx_step_, opt_info.min_hashrate_);
+                        break;
+                    default:
+                        throw std::runtime_error("Invalid enum value");
+                }
+                //save result
+                energy_hash_infos.emplace(ct, energy_hash_info(ct, optimal_config));
+                //move result files
+                char cmd[BUFFER_SIZE];
+                snprintf(cmd, BUFFER_SIZE, "bash ../scripts/move_result_files.sh %i %s",
+                         dci.device_id_nvml, enum_to_string(ct).c_str());
+                process_management::start_process(cmd, false);
+            }catch (const optimization_error& err){
+                std::cerr << "Optimization for currency " << enum_to_string(ct) <<
+                          " on GPU " << dci.device_id_nvml << "failed: " << err.what() << std::endl;
             }
-            energy_hash_infos.emplace(ct, energy_hash_info(ct, optimal_config));
-            char cmd[BUFFER_SIZE];
-            snprintf(cmd, BUFFER_SIZE, "bash ../scripts/move_result_files.sh %i %s",
-                     dci.device_id_nvml, enum_to_string(ct).c_str());
-            process_management::start_process(cmd, false);
+            //sleep 60 seconds to let gpu cool down
+            std::this_thread::sleep_for(std::chrono::seconds(60));
         }
         stop_power_monitoring_script(dci.device_id_nvml);
         return energy_hash_infos;
@@ -109,7 +119,7 @@ namespace frequency_scaling {
                 stat = cond_var.wait_for(lock, std::chrono::milliseconds(remaining_sleep_ms));
                 remaining_sleep_ms -= std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::steady_clock::now() - start).count();
-            } while (stat == std::cv_status::no_timeout && !terminate);
+            } while (stat == std::cv_status::no_timeout && !terminate);//prevent spurious wakeups
             if (terminate)
                 break;
             //monitoring code
@@ -121,8 +131,8 @@ namespace frequency_scaling {
                     stop_mining_script(profit_calc.getDci_().device_id_nvml);
                     start_mining_best_currency(profit_calc, user_infos);
                 }
-            } catch (const std::exception &ex) {
-                std::cout << "Exception: " << ex.what() << std::endl;
+            } catch (const network_error &err) {
+                std::cerr << "Network request for currency update failed: " << err.what() << std::endl;
             }
         }
     }
@@ -225,7 +235,7 @@ namespace frequency_scaling {
                     optimization_results.emplace(gpu_dci.device_id_nvml, gpu_optimal_config);
                 });
             }
-
+            //join threads
             for (auto &t : threads)
                 t.join();
         }
@@ -257,8 +267,8 @@ namespace frequency_scaling {
                     start_profit_monitoring(pc, user_infos, monitoring_interval_sec, mutex, cond_var, terminate);
                 });
             }
-            //
-            std::cout << "Performing mining and monitoring...\nEnter q to stop" << std::endl;
+            //wait for user to terminate
+            std::cout << "Performing mining and monitoring...\nEnter q to stop." << std::endl;
             while (true) {
                 char c;
                 std::cin >> c;
@@ -268,7 +278,11 @@ namespace frequency_scaling {
                     cond_var.notify_all();
                     break;
                 }
+                else{
+                    std::cout << "Performing mining and monitoring...\nEnter q to stop." << std::endl;
+                }
             }
+            //join threads
             for (auto &t : threads)
                 t.join();
             //cleanup processes

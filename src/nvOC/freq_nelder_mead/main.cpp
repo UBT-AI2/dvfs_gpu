@@ -1,5 +1,5 @@
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <iostream>
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
 #include "../script_running/benchmark.h"
@@ -10,8 +10,8 @@ using namespace frequency_scaling;
 
 int main(int argc, char **argv) {
     if (argc < 8) {
-        printf("Usage: %s <currency_type> <device_id> <max_iterations> <mem_step> "
-               "<graph_idx_step> <min_mem_oc> <max_mem_oc> [<min_hashrate>]", argv[0]);
+        std::cout << "Usage: " << argv[0] << " <currency_type> <device_id> <max_iterations> <mem_step> "
+                                             "<graph_idx_step> <min_mem_oc> <max_mem_oc> [<min_hashrate>]" << std::endl;
         return 1;
     }
     currency_type ct = string_to_currency_type(argv[1]);
@@ -25,27 +25,37 @@ int main(int argc, char **argv) {
     if (argc > 8)
         min_hashrate = atof(argv[8]);
 
-    //init apis
-    nvapiInit();
-    nvmlInit_();
-    process_management::register_process_cleanup_sighandler();
+    try {
+        //init apis
+        nvapiInit();
+        nvmlInit_();
+        process_management::register_process_cleanup_sighandler();
 
-    //start power monitoring
-    start_power_monitoring_script(device_id);
+        //start power monitoring
+        start_power_monitoring_script(device_id);
 
-    //
-    device_clock_info dci(device_id, min_mem_oc, 0, max_mem_oc, 0);
+        //
+        device_clock_info dci(device_id, min_mem_oc, 0, max_mem_oc, 0);
 
-    //
-    const measurement &m = freq_nelder_mead(ct, dci, 1, max_iterations, mem_step, graph_idx_step,
-                                            min_hashrate);
-    printf("Best energy-hash value: %f\n", m.energy_hash_);
+        //
+        const measurement &m = freq_nelder_mead(ct, dci, 1, max_iterations, mem_step, graph_idx_step,
+                                                min_hashrate);
+        std::cout << "Best energy-hash value: " << m.energy_hash_ << std::endl;
 
-    //stop power monitoring
-    stop_power_monitoring_script(device_id);
+        //stop power monitoring
+        stop_power_monitoring_script(device_id);
 
-    //unload apis
-    nvapiUnload(1);
-    nvmlShutdown_(true);
+        //unload apis
+        nvapiUnload(1);
+        nvmlShutdown_(true);
+    } catch (const std::exception &ex) {
+        std::cerr << "Main caught exception: " << ex.what() << std::endl;
+        std::cerr << "Perform cleanup and exit..." << std::endl;
+        process_management::kill_all_processes(false);
+        nvapiUnload(1);
+        nvmlShutdown_(true);
+        return 1;
+    }
+
     return 0;
 }

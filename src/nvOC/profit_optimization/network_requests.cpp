@@ -1,6 +1,7 @@
 #include "network_requests.h"
 
 #include <sstream>
+#include <iostream>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <curl/curl.h>
@@ -18,6 +19,7 @@ namespace frequency_scaling {
         if (!curl)
             throw network_error("CURL initialization failed");
         curl_easy_setopt(curl, CURLOPT_URL, request_url);
+        //curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
@@ -26,19 +28,36 @@ namespace frequency_scaling {
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeFunction);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_string);
 
+        CURLcode res = curl_easy_perform(curl);
+        if (res != CURLE_OK) {
+            curl_easy_cleanup(curl);
+            throw network_error("CURL perform failed: " + std::string(curl_easy_strerror(res)));
+        }
+
         char *url;
         long response_code;
         double elapsed;
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
         curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &elapsed);
         curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &url);
+        std::cout << "Network request URL : " << url << std::endl;
+        std::cout << "Network request elapsed time: " << elapsed << std::endl;
 
-        curl_easy_perform(curl);
         curl_easy_cleanup(curl);
 
         if (response_code != 200)
-            throw network_error("Response code: " + std::to_string(response_code));
+            throw network_error("CURL invalid response code: " + std::to_string(response_code));
         return response_string;
+    }
+
+    static void safe_read_json(std::istringstream& is,
+                               boost::property_tree::ptree& tree){
+        try {
+            boost::property_tree::json_parser::read_json(is, tree);
+        }catch(const boost::property_tree::json_parser_error& err){
+            throw network_error("Boost json parser failed to parse network response: " +
+                                std::string(err.what()));
+        }
     }
 
     static std::string get_nanopool_url(currency_type type) {
@@ -61,10 +80,10 @@ namespace frequency_scaling {
         //
         std::istringstream is(json_response);
         boost::property_tree::ptree root;
-        boost::property_tree::json_parser::read_json(is, root);
+        safe_read_json(is, root);
         std::string status = root.get<std::string>("status", "false");
         if (status != "true")
-            throw network_error("API error: " + root.get<std::string>("data"));
+            throw network_error("Nanopool REST API error: " + root.get<std::string>("data"));
         return root.get<double>("data.hour.euros");
     }
 
@@ -76,10 +95,10 @@ namespace frequency_scaling {
         //
         std::istringstream is(json_response);
         boost::property_tree::ptree root;
-        boost::property_tree::json_parser::read_json(is, root);
+        safe_read_json(is, root);
         std::string status = root.get<std::string>("status", "false");
         if (status != "true")
-            throw network_error("API error: " + root.get<std::string>("data"));
+            throw network_error("Nanopool REST API error: " + root.get<std::string>("data"));
         std::map<std::string, double> res;
         for (const boost::property_tree::ptree::value_type &array_elem : root.get_child("data")) {
             const boost::property_tree::ptree &subtree = array_elem.second;
@@ -94,10 +113,10 @@ namespace frequency_scaling {
                 get_nanopool_url(type) + "/prices");
         std::istringstream is(json_response);
         boost::property_tree::ptree root;
-        boost::property_tree::json_parser::read_json(is, root);
+        safe_read_json(is, root);
         std::string status = root.get<std::string>("status", "false");
         if (status != "true")
-            throw network_error("API error: " + root.get<std::string>("data"));
+            throw network_error("Nanopool REST API error: " + root.get<std::string>("data"));
         return root.get<double>("data.price_eur");
     }
 
@@ -107,7 +126,7 @@ namespace frequency_scaling {
                 "https://stromdao.de/crm/service/gsi/?plz=" + std::to_string(plz));
         std::istringstream is(json_response);
         boost::property_tree::ptree root;
-        boost::property_tree::json_parser::read_json(is, root);
+        safe_read_json(is, root);
         return root.get<double>("tarif.centPerKWh") / 100.0;
     }
 
