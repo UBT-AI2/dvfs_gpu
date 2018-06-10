@@ -78,15 +78,15 @@ namespace frequency_scaling {
                 }
                 //save result
                 energy_hash_infos.emplace(ct, energy_hash_info(ct, optimal_config));
-                //move result files
-                char cmd[BUFFER_SIZE];
-                snprintf(cmd, BUFFER_SIZE, "bash ../scripts/move_result_files.sh %i %s",
-                         dci.device_id_nvml, enum_to_string(ct).c_str());
-                process_management::start_process(cmd, false);
             }catch (const optimization_error& err){
                 std::cerr << "Optimization for currency " << enum_to_string(ct) <<
                           " on GPU " << dci.device_id_nvml << "failed: " << err.what() << std::endl;
             }
+            //move generated result files
+            char cmd[BUFFER_SIZE];
+            snprintf(cmd, BUFFER_SIZE, "bash ../scripts/move_result_files.sh %i %s",
+                     dci.device_id_nvml, enum_to_string(ct).c_str());
+            process_management::start_process(cmd, false);
             //sleep 60 seconds to let gpu cool down
             std::this_thread::sleep_for(std::chrono::seconds(60));
         }
@@ -227,12 +227,17 @@ namespace frequency_scaling {
             std::mutex mutex;
             for (int i = 0; i < dcis.size(); i++) {
                 threads.emplace_back([i, &mutex, &dcis, &gpu_distr, &opt_info, &optimization_results]() {
-                    const device_clock_info &gpu_dci = dcis[i];
-                    const std::map<currency_type, energy_hash_info> &gpu_optimal_config =
-                            find_optimal_config(gpu_dci, gpu_distr.at(gpu_dci.device_id_nvml),
-                                                opt_info);
-                    std::lock_guard<std::mutex> lock(mutex);
-                    optimization_results.emplace(gpu_dci.device_id_nvml, gpu_optimal_config);
+                    try{
+                        const device_clock_info &gpu_dci = dcis[i];
+                        const std::map<currency_type, energy_hash_info> &gpu_optimal_config =
+                                find_optimal_config(gpu_dci, gpu_distr.at(gpu_dci.device_id_nvml),
+                                                    opt_info);
+                        std::lock_guard<std::mutex> lock(mutex);
+                        optimization_results.emplace(gpu_dci.device_id_nvml, gpu_optimal_config);
+                    }catch (const std::exception& ex){
+                        std::cerr << "Exception in optimization thread for GPU " <<
+                              dcis[i].device_id_nvml << ": "<< ex.what() << std::endl;
+                    }
                 });
             }
             //join threads
@@ -256,15 +261,20 @@ namespace frequency_scaling {
             for (int i = 0; i < dcis.size(); i++) {
                 threads.emplace_back([i, energy_cost_kwh, monitoring_interval_sec,
                                              &dcis, &user_infos, &optimization_results, &mutex, &cond_var, &terminate]() {
-                    const device_clock_info &gpu_dci = dcis[i];
-                    const std::map<currency_type, energy_hash_info> &gpu_opt_res =
-                            optimization_results.at(gpu_dci.device_id_nvml);
-                    const std::map<currency_type, currency_info> &gpu_currency_infos =
-                            get_currency_infos_nanopool(gpu_opt_res);
-
-                    profit_calculator pc(gpu_dci, gpu_currency_infos, gpu_opt_res, energy_cost_kwh);
-                    start_mining_best_currency(pc, user_infos);
-                    start_profit_monitoring(pc, user_infos, monitoring_interval_sec, mutex, cond_var, terminate);
+                    try {
+                        const device_clock_info &gpu_dci = dcis[i];
+                        const std::map<currency_type, energy_hash_info> &gpu_opt_res =
+                                optimization_results.at(gpu_dci.device_id_nvml);
+                        const std::map<currency_type, currency_info> &gpu_currency_infos =
+                                get_currency_infos_nanopool(gpu_opt_res);
+                        //create profit calculator for gpu
+                        profit_calculator pc(gpu_dci, gpu_currency_infos, gpu_opt_res, energy_cost_kwh);
+                        start_mining_best_currency(pc, user_infos);
+                        start_profit_monitoring(pc, user_infos, monitoring_interval_sec, mutex, cond_var, terminate);
+                    }catch (const std::exception& ex){
+                        std::cerr << "Exception in mining/monitoring thread for GPU " <<
+                                  dcis[i].device_id_nvml << ": "<< ex.what() << std::endl;
+                    }
                 });
             }
             //wait for user to terminate

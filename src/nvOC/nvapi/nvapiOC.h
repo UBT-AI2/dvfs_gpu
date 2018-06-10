@@ -1,21 +1,17 @@
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+namespace frequency_scaling {
 
-int nvapiInit();
+    void nvapiInit();
 
-int nvapiUnload(int restoreClocks);
+    void nvapiUnload(int restoreClocks);
 
-int nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz);
+    int nvapiGetDeviceIndexByBusId(int busId);
 
-int nvapiGetDeviceIndexByBusId(int busId);
+    int nvapiGetCurrentMemClock(int deviceId);
 
-int nvapiGetCurrentMemClock(int deviceId);
+    int nvapiGetCurrentGraphClock(int deviceId);
 
-int nvapiGetCurrentGraphClock(int deviceId);
+    void nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz);
 
-#ifdef __cplusplus
 }
-#endif

@@ -19,7 +19,7 @@ function move_result_files {
 	mkdir $OUTDIR
 	mkdir $OUTDIR/data
 	mv result_${DEVICE_ID}* $OUTDIR
-	mv log_${DEVICE_ID}* power_results_${DEVICE_ID}_* $OUTDIR/data
+	mv log_${DEVICE_ID}_* power_results_${DEVICE_ID}_* $OUTDIR/data
 }
 
 function optimization_test {

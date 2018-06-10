@@ -1,6 +1,6 @@
 
 set(NVAPI_FILES
-        nvapi/nvapiOC.h nvapi/nvapiOC.c)
+        nvapi/nvapiOC.h nvapi/nvapiOC.cpp)
 set(NVML_FILES
         nvml/nvmlOC.h nvml/nvmlOC.cpp)
 set(SCRIPT_RUNNING_FILES
@@ -34,7 +34,7 @@ add_executable(gpu_power_monitor
 add_library(nvapiOC_lib
         ${NVAPI_FILES})
 add_executable(nvapiOC
-        nvapi/main.c)
+        nvapi/main.cpp)
 target_link_libraries(nvapiOC
         nvapiOC_lib)
 
