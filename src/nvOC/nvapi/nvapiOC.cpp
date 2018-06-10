@@ -261,7 +261,7 @@ namespace frequency_scaling {
         NV_GPU_PERF_PSTATES20_INFO_V1 pstates_info;
         pstates_info.version = 0x11c94;
         safeNVAPICall(NvGetPstates(hdlGPU[deviceIdNvapi], &pstates_info));
-        int curGraph = (int) ((pstates_info.pstates[0].clocks[0]).data.single.freq_kHz) / 1000;
+        int curGraph = (int) ((pstates_info.pstates[0].clocks[0]).data.range.maxFreq_kHz) / 1000;
         //int curGraphOC = (int) ((pstates_info.pstates[0].clocks[0]).freqDelta_kHz.value) / 1000;
         return curGraph;
     }

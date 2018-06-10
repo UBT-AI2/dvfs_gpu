@@ -14,13 +14,14 @@ namespace frequency_scaling {
 
     static const int BUFFER_SIZE = 1024;
 
-    static measurement run_benchmark_script(currency_type ms, const device_clock_info &dci,
+    static measurement run_benchmark_script(currency_type ct, const device_clock_info &dci,
                                             int graph_clock, int mem_clock) {
         {
-            printf("Running script_running with clocks: mem:%i,graph:%i\n", mem_clock, graph_clock);
+            printf("Running %s benchmark script with clocks: mem:%i,graph:%i\n",
+                   enum_to_string(ct).c_str(), mem_clock, graph_clock);
             //run script_running command
             char cmd2[BUFFER_SIZE];
-            switch (ms) {
+            switch (ct) {
                 case currency_type::ETH:
                     snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_eth.sh %i %i %i %i",
                              dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock);

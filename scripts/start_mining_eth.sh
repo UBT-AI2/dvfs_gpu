@@ -15,6 +15,7 @@ MINER_BINARY=../../miner/binaries/linux/ethminer-build/ethminer
 fi
 #################################################################################
 
-${MINER_BINARY} --farm-recheck 200 -U -S eth-eu1.nanopool.org:9999 -FS eth-eu2.nanopool.org:9999 \
--O ${wallet_address}.${worker_name}/${email} --cuda-devices $device_id_cuda --cuda-parallel-hash 8
+${MINER_BINARY} --farm-recheck 2000 -U \
+-P stratum+tcp://${wallet_address}@eu1.nanopool.org:9999/${worker_name}/${email} \
+--cuda-devices ${device_id_cuda} --cuda-parallel-hash 8
 
