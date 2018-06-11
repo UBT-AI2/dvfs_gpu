@@ -16,6 +16,6 @@ fi
 #################################################################################
 
 ${MINER_BINARY} --farm-recheck 2000 -U \
--P stratum+tcp://${wallet_address}@eu1.nanopool.org:9999/${worker_name}/${email} \
+-P stratum+tcp://${wallet_address}@eth-eu1.nanopool.org:9999/${worker_name}/${email} \
 --cuda-devices ${device_id_cuda} --cuda-parallel-hash 8
 

@@ -11,17 +11,19 @@ namespace frequency_scaling {
 
     static const int BUFFER_SIZE = 1024;
 
+
     miner_user_info::miner_user_info(const std::string &combined_user_info) {
         std::string regex = "/";
         //regex = "\\.|/";
         std::regex re(regex);
         std::sregex_token_iterator first{combined_user_info.begin(), combined_user_info.end(), re, -1}, last;
         std::vector<std::string> vec(first, last);
-        if (vec.size() != 3)
+        if (vec.size() != 2 && vec.size() != 3)
             throw std::runtime_error("Invalid miner user info");
         wallet_address_ = vec[0];
         worker_name_ = vec[1];
-        email_adress_ = vec[2];
+		if(vec.size() == 3)
+			email_adress_ = vec[2];
     }
 
     miner_user_info::miner_user_info(const std::string &wallet_adress_, const std::string &worker_name_,

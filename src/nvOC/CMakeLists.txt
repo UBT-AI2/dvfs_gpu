@@ -19,7 +19,8 @@ set(FREQ_SIMULATED_ANNEALING_FILES
 set(PROFIT_OPTIMIZATION_FILES
         profit_optimization/profit_calculation.h profit_optimization/profit_calculation.cpp
         profit_optimization/profit_optimization.h profit_optimization/profit_optimization.cpp
-        profit_optimization/network_requests.h profit_optimization/network_requests.cpp profit_optimization/start_config.cpp profit_optimization/start_config.h)
+        profit_optimization/network_requests.h profit_optimization/network_requests.cpp
+        profit_optimization/optimization_config.h profit_optimization/optimization_config.cpp)
 
 
 #

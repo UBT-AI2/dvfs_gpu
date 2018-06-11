@@ -4,7 +4,7 @@
 #include "../nvml/nvmlOC.h"
 #include "../script_running/process_management.h"
 #include "profit_optimization.h"
-#include "start_config.h"
+#include "optimization_config.h"
 
 using namespace frequency_scaling;
 
@@ -15,13 +15,10 @@ int main(int argc, char **argv) {
         nvmlInit_();
         process_management::register_process_cleanup_sighandler();
 
-        std::vector<device_clock_info> dcis;
-        std::map<currency_type, miner_user_info> miner_user_infos;
-        user_dialog(dcis, miner_user_infos);
+        const optimization_config& opt_config = get_config_user_dialog();
 
         //start mining and monitoring best currency;
-        mine_most_profitable_currency(miner_user_infos, dcis, optimization_info(optimization_method::NELDER_MEAD, -1),
-                                      300);
+        mine_most_profitable_currency(opt_config);
 
         //unload apis
         nvapiUnload(1);
