@@ -15,7 +15,18 @@ int main(int argc, char **argv) {
         nvmlInit_();
         process_management::register_process_cleanup_sighandler();
 
-        const optimization_config& opt_config = get_config_user_dialog();
+        optimization_config opt_config;
+        if(argc > 1){
+            std::string arg(argv[1]);
+            if(arg == "-h" || arg == "--help") {
+                std::cout << "Usage: " << argv[0] << " <config_file>" << std::endl;
+                return 0;
+            }
+            opt_config = parse_config_json(arg);
+        }
+        else{
+            opt_config = get_config_user_dialog();
+        }
 
         //start mining and monitoring best currency;
         mine_most_profitable_currency(opt_config);
@@ -26,6 +37,13 @@ int main(int argc, char **argv) {
     } catch (const std::exception &ex) {
         std::cerr << "Main caught exception: " << ex.what() << std::endl;
         std::cerr << "Perform cleanup and exit..." << std::endl;
+        process_management::kill_all_processes(false);
+        nvapiUnload(1);
+        nvmlShutdown_(true);
+        return 1;
+    }
+    catch (...){
+        std::cerr << "Main caught unknown exception" << std::endl;
         process_management::kill_all_processes(false);
         nvapiUnload(1);
         nvmlShutdown_(true);

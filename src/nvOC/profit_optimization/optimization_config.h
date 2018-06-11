@@ -13,6 +13,7 @@ namespace frequency_scaling{
         NELDER_MEAD, HILL_CLIMBING, SIMULATED_ANNEALING, count
     };
 
+
     struct optimization_method_params {
         optimization_method_params(optimization_method method, int min_hashrate);
 
@@ -36,5 +37,7 @@ namespace frequency_scaling{
     optimization_config get_config_user_dialog();
     void write_config_json(const std::string& filename, const optimization_config& opt_config);
     optimization_config parse_config_json(const std::string& filename);
+    std::string enum_to_string(optimization_method opt_method);
+    optimization_method string_to_opt_method(const std::string& str);
 
 }
