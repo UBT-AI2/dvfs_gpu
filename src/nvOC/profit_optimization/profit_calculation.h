@@ -2,6 +2,7 @@
 
 #include <map>
 #include "../script_running/benchmark.h"
+#include "../script_running/mining.h"
 
 namespace frequency_scaling {
 
@@ -34,6 +35,9 @@ namespace frequency_scaling {
         std::pair<currency_type, double> calc_best_currency() const;
 
         void update_currency_info_nanopool();
+
+        void update_opt_config_hashrate_nanopool(const std::map<currency_type, miner_user_info> &user_infos,
+                                                 double period_hours);
 
         void update_energy_cost_stromdao(int plz);
 

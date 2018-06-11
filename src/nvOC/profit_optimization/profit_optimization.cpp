@@ -53,6 +53,9 @@ namespace frequency_scaling {
                         throw std::runtime_error("Invalid enum value");
                 }
                 //save result
+                std::cout << "GPU " << dci.device_id_nvml <<
+                          ": Computed optimal energy-hash ratio for currency " << enum_to_string(ct)
+                          << ": " << optimal_config.energy_hash_ << std::endl;
                 energy_hash_infos.emplace(ct, energy_hash_info(ct, optimal_config));
                 //move generated result files
                 char cmd[BUFFER_SIZE];
@@ -91,6 +94,7 @@ namespace frequency_scaling {
     start_profit_monitoring(profit_calculator &profit_calc,
                             const std::map<currency_type, miner_user_info> &user_infos, int update_interval_sec,
                             std::mutex &mutex, std::condition_variable &cond_var, const std::atomic_bool &terminate) {
+        int current_monitoring_time_sec = 0;
         while (true) {
             std::cv_status stat;
             int remaining_sleep_ms = update_interval_sec * 1000;
@@ -105,12 +109,17 @@ namespace frequency_scaling {
                 break;
             //monitoring code
             try {
+                current_monitoring_time_sec += update_interval_sec;
                 const std::pair<currency_type, double> &old_best_currency = profit_calc.calc_best_currency();
+                //if(current_monitoring_time_sec > 3600)
+                //    profit_calc.update_opt_config_hashrate_nanopool(user_infos, current_monitoring_time_sec/3600.0);
                 profit_calc.update_currency_info_nanopool();
                 const std::pair<currency_type, double> &new_best_currency = profit_calc.calc_best_currency();
+                //
                 if (old_best_currency.first != new_best_currency.first) {
                     stop_mining_script(profit_calc.getDci_().device_id_nvml);
                     start_mining_best_currency(profit_calc, user_infos);
+                    current_monitoring_time_sec = 0;
                 }
             } catch (const network_error &err) {
                 std::cerr << "Network request for currency update failed: " << err.what() << std::endl;

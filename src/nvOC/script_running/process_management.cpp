@@ -175,6 +175,13 @@ namespace frequency_scaling {
             std::cout << "Started process: " << cmd << " (PID: " << dwPid << ")" << std::endl;
             if (!background) {
                 WaitForSingleObject(pi.hProcess, INFINITE);
+                DWORD exit_code;
+                GetExitCodeProcess(pi.hProcess, &exit_code);
+                if(exit_code != 0) {
+                    CloseHandle(pi.hThread);
+                    CloseHandle(pi.hProcess);
+                    throw process_error("Process " + cmd + " returned invalid exit code: " + std::to_string(exit_code));
+                }
             }
             CloseHandle(pi.hThread);
             CloseHandle(pi.hProcess);
@@ -199,7 +206,13 @@ namespace frequency_scaling {
             }
             std::cout << "Started process: " << cmd << " (PID: " << pid << ")" << std::endl;
             if (!background) {
-                waitpid(pid, NULL, 0);
+                int status;
+                waitpid(pid, &status, 0);
+                if(!WIFEXITED(status))
+                    throw process_error("Process " + cmd + " terminated unnormally");
+                int exit_code = WEXITSTATUS(status);
+                if(exit_code != 0)
+                    throw process_error("Process " + cmd + " returned invalid exit code: " + std::to_string(exit_code));
             }
         }
         return pid;
