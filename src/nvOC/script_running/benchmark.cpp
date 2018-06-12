@@ -17,9 +17,9 @@ namespace frequency_scaling {
     static measurement run_benchmark_script(currency_type ct, const device_clock_info &dci,
                                             int graph_clock, int mem_clock) {
         {
-            printf("Running %s benchmark script with clocks: mem:%i,graph:%i\n",
-                   enum_to_string(ct).c_str(), mem_clock, graph_clock);
-            //run script_running command
+            printf("Running %s benchmark script on GPU %i with clocks: mem:%i,graph:%i\n",
+                   enum_to_string(ct).c_str(), dci.device_id_nvml, mem_clock, graph_clock);
+            //run benchmark script to get measurement
             char cmd2[BUFFER_SIZE];
             switch (ct) {
                 case currency_type::ETH:
@@ -41,29 +41,29 @@ namespace frequency_scaling {
         }
 
         //get last measurement from data file
-        float data[5] = {0};
+        double data[5] = {0};
         {
             std::string filename = "result_" + std::to_string(dci.device_id_nvml) + ".dat";
-            std::ifstream file(filename, std::ios_base::ate);//open file
-            if (file) {
-                std::string tmp;
-                int c = 0;
-                int length = file.tellg();//Get file size
-                // loop backward over the file
-                for (int i = length - 2; i > 0; i--) {
-                    file.seekg(i);
-                    c = file.get();
-                    if (c == '\r' || c == '\n')//new line?
-                        break;
-                }
-                std::getline(file, tmp);//read last line
-                char *pt;
-                pt = strtok(&tmp[0], ",");
-                int idx = 0;
-                while (pt != nullptr) {
-                    data[idx++] = atof(pt);
-                    pt = strtok(nullptr, ",");
-                }
+            std::ifstream file;
+            file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+            file.open(filename, std::ios_base::ate);//open file
+            int c = 0;
+            int length = file.tellg();//Get file size
+            // loop backward over the file
+            for (int i = length - 2; i > 0; i--) {
+                file.seekg(i);
+                c = file.get();
+                if (c == '\r' || c == '\n')//new line?
+                    break;
+            }
+            std::string tmp;
+            std::getline(file, tmp);//read last line
+            char *pt;
+            pt = strtok(&tmp[0], ",");
+            int idx = 0;
+            while (pt != nullptr) {
+                data[idx++] = atof(pt);
+                pt = strtok(nullptr, ",");
             }
         }
         measurement m((int) data[0], (int) data[1], data[2], data[3]);
@@ -71,16 +71,34 @@ namespace frequency_scaling {
     }
 
 
-    void start_power_monitoring_script(int device_id) {
+    void start_power_monitoring_script(int device_id, int interval_sleep_ms) {
         //start power monitoring in background process
         char cmd[BUFFER_SIZE];
-        snprintf(cmd, BUFFER_SIZE, "./gpu_power_monitor %i", device_id);
+        snprintf(cmd, BUFFER_SIZE, "./gpu_power_monitor %i %i", device_id, interval_sleep_ms);
         process_management::gpu_start_process(cmd, device_id, process_type::POWER_MONITOR, true);
     }
 
     void stop_power_monitoring_script(int device_id) {
         //stop power monitoring
         process_management::gpu_kill_background_process(device_id, process_type::POWER_MONITOR);
+    }
+
+    double get_avg_power_usage(int device_id, long long int system_timestamp_ms) {
+        std::ifstream file;
+        file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        file.open("power_results_" + std::to_string(device_id) + ".txt");
+        std::string line;
+        std::string::size_type sz = 0;
+        double res = 0;
+        int count = 0;
+        while (std::getline(file, line)) {
+            long long int time = std::stoll(line, &sz);
+            if (time >= system_timestamp_ms) {
+                res += std::stod(line.substr(sz + 1, std::string::npos));
+                count++;
+            }
+        }
+        return res / count;
     }
 
     void change_clocks_nvml_nvapi(const device_clock_info &dci,

@@ -16,15 +16,14 @@ int main(int argc, char **argv) {
         process_management::register_process_cleanup_sighandler();
 
         optimization_config opt_config;
-        if(argc > 1){
+        if (argc > 1) {
             std::string arg(argv[1]);
-            if(arg == "-h" || arg == "--help") {
+            if (arg == "-h" || arg == "--help") {
                 std::cout << "Usage: " << argv[0] << " <config_file>" << std::endl;
                 return 0;
             }
             opt_config = parse_config_json(arg);
-        }
-        else{
+        } else {
             opt_config = get_config_user_dialog();
         }
 
@@ -42,7 +41,7 @@ int main(int argc, char **argv) {
         nvmlShutdown_(true);
         return 1;
     }
-    catch (...){
+    catch (...) {
         std::cerr << "Main caught unknown exception" << std::endl;
         process_management::kill_all_processes(false);
         nvapiUnload(1);

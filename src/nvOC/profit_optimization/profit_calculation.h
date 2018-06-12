@@ -32,12 +32,14 @@ namespace frequency_scaling {
                           const std::map<currency_type, energy_hash_info> &energy_hash_info,
                           double power_cost_kwh);
 
-        std::pair<currency_type, double> calc_best_currency() const;
+        void recalculate_best_currency();
 
         void update_currency_info_nanopool();
 
-        void update_opt_config_hashrate_nanopool(const std::map<currency_type, miner_user_info> &user_infos,
-                                                 double period_hours);
+        void update_opt_config_hashrate_nanopool(currency_type current_mined_ct,
+                                                 const miner_user_info &user_info, double period_hours);
+
+        void update_power_consumption(currency_type current_mined_ct, long long int system_time_start_ms);
 
         void update_energy_cost_stromdao(int plz);
 
@@ -49,11 +51,17 @@ namespace frequency_scaling {
 
         const device_clock_info &getDci_() const;
 
+        currency_type getBest_currency_() const;
+
+        double getBest_currency_profit_() const;
+
     private:
         device_clock_info dci_;
         std::map<currency_type, currency_info> currency_info_;
         std::map<currency_type, energy_hash_info> energy_hash_info_;
         double power_cost_kwh_;
+        currency_type best_currency_;
+        double best_currency_profit_;
     };
 
 

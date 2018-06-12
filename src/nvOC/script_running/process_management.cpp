@@ -4,10 +4,12 @@
 #include "process_management.h"
 
 #include <iostream>
-#include <algorithm>
 #include <signal.h>
+
 #ifdef _WIN32
+
 #include <windows.h>
+
 #else
 #include <unistd.h>
 #include <sys/wait.h>
@@ -30,6 +32,7 @@ namespace frequency_scaling {
             process_management::kill_all_processes(false);
             nvapiUnload(1);
             nvmlShutdown_(true);
+            exit(1);
         }
     }
 
@@ -63,9 +66,7 @@ namespace frequency_scaling {
         char line[BUFFER_SIZE];
         /* Read the output a line at a time - output it. */
         while (fgets(line, BUFFER_SIZE, fp) != NULL) {
-            std::string linestr(line);
-            if (!std::all_of(linestr.begin(), linestr.end(), isspace))
-                res += linestr;
+            res += line;
         }
         fclose(fp);
         return res;
@@ -177,7 +178,7 @@ namespace frequency_scaling {
                 WaitForSingleObject(pi.hProcess, INFINITE);
                 DWORD exit_code;
                 GetExitCodeProcess(pi.hProcess, &exit_code);
-                if(exit_code != 0) {
+                if (exit_code != 0) {
                     CloseHandle(pi.hThread);
                     CloseHandle(pi.hProcess);
                     throw process_error("Process " + cmd + " returned invalid exit code: " + std::to_string(exit_code));

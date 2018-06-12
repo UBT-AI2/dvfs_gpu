@@ -8,6 +8,6 @@
 
 namespace frequency_scaling {
 
-    void mine_most_profitable_currency(const optimization_config& opt_config);
+    void mine_most_profitable_currency(const optimization_config &opt_config);
 
 }

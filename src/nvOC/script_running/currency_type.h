@@ -9,5 +9,6 @@ namespace frequency_scaling {
     };
 
     std::string enum_to_string(currency_type ct);
-    currency_type string_to_currency_type(const std::string& str);
+
+    currency_type string_to_currency_type(const std::string &str);
 }

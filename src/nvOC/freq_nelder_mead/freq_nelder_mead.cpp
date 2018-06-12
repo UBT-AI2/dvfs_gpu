@@ -37,7 +37,7 @@ namespace frequency_scaling {
 
         // function to optimize
         measurement best_measurement;
-        best_measurement.energy_hash_ = std::numeric_limits<float>::lowest();
+        best_measurement.energy_hash_ = std::numeric_limits<double>::lowest();
         int num_func_evals = 0;
 
         auto function = [ms, &dci, dimension_, &best_measurement, mem_step, graph_idx_step,

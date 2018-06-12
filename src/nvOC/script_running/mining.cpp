@@ -22,21 +22,21 @@ namespace frequency_scaling {
             throw std::runtime_error("Invalid miner user info");
         wallet_address_ = vec[0];
         worker_name_prefix_ = vec[1];
-		if(vec.size() == 3)
-			email_adress_ = vec[2];
+        if (vec.size() == 3)
+            email_adress_ = vec[2];
     }
 
     miner_user_info::miner_user_info(const std::string &wallet_adress, const std::string &worker_name_prefix,
                                      const std::string &email_adress) : wallet_address_(wallet_adress),
-                                                                         email_adress_(email_adress),
-                                                                         worker_name_prefix_(worker_name_prefix){}
+                                                                        email_adress_(email_adress),
+                                                                        worker_name_prefix_(worker_name_prefix) {}
 
-    const std::string& miner_user_info::get_worker_name_prefix() const{
+    const std::string &miner_user_info::get_worker_name_prefix() const {
         return worker_name_prefix_;
     }
 
-    std::string miner_user_info::get_worker_name(int device_id) const{
-        return worker_name_prefix_ + std::to_string(device_id);
+    std::string miner_user_info::get_worker_name(int device_id) const {
+        return worker_name_prefix_ + "_gpu" + std::to_string(device_id);
     }
 
 

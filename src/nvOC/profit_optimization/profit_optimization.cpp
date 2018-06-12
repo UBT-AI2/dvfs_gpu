@@ -15,7 +15,6 @@
 #include "../nvml/nvmlOC.h"
 #include "../script_running/process_management.h"
 #include "../exceptions.h"
-#include "network_requests.h"
 
 namespace frequency_scaling {
 
@@ -81,12 +80,16 @@ namespace frequency_scaling {
 
     static void start_mining_best_currency(const profit_calculator &profit_calc,
                                            const std::map<currency_type, miner_user_info> &user_infos) {
-        const std::pair<currency_type, double> &best_currency = profit_calc.calc_best_currency();
-        const energy_hash_info &ehi = profit_calc.getEnergy_hash_info_().at(best_currency.first);
+        currency_type best_currency = profit_calc.getBest_currency_();
+        const energy_hash_info &ehi = profit_calc.getEnergy_hash_info_().at(best_currency);
         //
         change_clocks_nvml_nvapi(profit_calc.getDci_(), ehi.optimal_configuration_.mem_oc,
                                  ehi.optimal_configuration_.nvml_graph_clock_idx);
-        start_mining_script(best_currency.first, profit_calc.getDci_(), user_infos.at(best_currency.first));
+        start_mining_script(best_currency, profit_calc.getDci_(), user_infos.at(best_currency));
+        std::cout << "GPU " << profit_calc.getDci_().device_id_nvml <<
+                  ": Started mining best currency " << enum_to_string(best_currency)
+                  << " with approximated profit of " << profit_calc.getBest_currency_profit_() << " euro/h"
+                  << std::endl;
     }
 
 
@@ -95,6 +98,8 @@ namespace frequency_scaling {
                             const std::map<currency_type, miner_user_info> &user_infos, int update_interval_sec,
                             std::mutex &mutex, std::condition_variable &cond_var, const std::atomic_bool &terminate) {
         int current_monitoring_time_sec = 0;
+        long long int system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
         while (true) {
             std::cv_status stat;
             int remaining_sleep_ms = update_interval_sec * 1000;
@@ -107,20 +112,30 @@ namespace frequency_scaling {
             } while (stat == std::cv_status::no_timeout && !terminate);//prevent spurious wakeups
             if (terminate)
                 break;
+            current_monitoring_time_sec += update_interval_sec;
             //monitoring code
             try {
-                current_monitoring_time_sec += update_interval_sec;
-                const std::pair<currency_type, double> &old_best_currency = profit_calc.calc_best_currency();
-                if(current_monitoring_time_sec > 3600) {
-                    profit_calc.update_opt_config_hashrate_nanopool(user_infos, current_monitoring_time_sec / 3600.0);
+                //currently mined currency
+                currency_type old_best_currency = profit_calc.getBest_currency_();
+                //update with pool hashrates and long time power_consumption if currency is mined > 1h
+                if (current_monitoring_time_sec > 3600) {
+                    profit_calc.update_opt_config_hashrate_nanopool(old_best_currency, user_infos.at(old_best_currency),
+                                                                    current_monitoring_time_sec / 3600.0);
+                    profit_calc.update_power_consumption(old_best_currency, system_time_start_ms);
                 }
+                //update approximated earnings based on current hashrate and stock price
                 profit_calc.update_currency_info_nanopool();
-                const std::pair<currency_type, double> &new_best_currency = profit_calc.calc_best_currency();
-                //
-                if (old_best_currency.first != new_best_currency.first) {
+                // recalc and check for new best currency
+                profit_calc.recalculate_best_currency();
+                currency_type new_best_currency = profit_calc.getBest_currency_();
+                if (old_best_currency != new_best_currency) {
                     stop_mining_script(profit_calc.getDci_().device_id_nvml);
+                    std::cout << "GPU " << profit_calc.getDci_().device_id_nvml <<
+                              ": Stopped mining currency " << enum_to_string(old_best_currency) << std::endl;
                     start_mining_best_currency(profit_calc, user_infos);
                     current_monitoring_time_sec = 0;
+                    system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::system_clock::now().time_since_epoch()).count();
                 }
             } catch (const network_error &err) {
                 std::cerr << "Network request for currency update failed: " << err.what() << std::endl;

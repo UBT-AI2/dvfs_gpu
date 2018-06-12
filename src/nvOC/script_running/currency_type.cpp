@@ -19,12 +19,12 @@ namespace frequency_scaling {
         }
     }
 
-    currency_type string_to_currency_type(const std::string& str){
-        if(str == "eth" || str == "ETH")
+    currency_type string_to_currency_type(const std::string &str) {
+        if (str == "eth" || str == "ETH")
             return currency_type::ETH;
-        else if(str == "zec" || str == "ZEC")
+        else if (str == "zec" || str == "ZEC")
             return currency_type::ZEC;
-        else if(str == "xmr" || str == "XMR")
+        else if (str == "xmr" || str == "XMR")
             return currency_type::XMR;
         else
             throw std::runtime_error("Currency " + str + " not available");

@@ -1,21 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <omp.h>
-#include <time.h>
+#include <chrono>
+#include <thread>
 
-#ifdef _MSC_VER
-#include <windows.h>
-#else
-#endif
-
-#define BUFFER_SIZE 1024
+static const int BUFFER_SIZE = 1024;
 
 int main(int argc, char **argv) {
-    if (argc != 2) {
-        printf("error: must give CUDA device ID as command line argument (use nvidia-smi to determine id)\n");
+    if (argc < 3) {
+        printf("Usage: %s <device_id> <interval_sleep_ms>\n", argv[0]);
         return 1;
     }
     int device_id = atoi(argv[1]);
+    int sleep_time_ms = atoi(argv[2]);
 
     char cmd[BUFFER_SIZE];
     snprintf(cmd, BUFFER_SIZE,
@@ -36,8 +32,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    double start = omp_get_wtime();
-    while (1) {
+    while (true) {
 
         FILE *fp;
         char path[1035];
@@ -57,7 +52,15 @@ int main(int argc, char **argv) {
         /* Read the output a line at a time - output it. */
         while (fgets(path, sizeof(path) - 1, fp) != NULL) {
             //printf("%s", path);
-            fprintf(data, "%lf %.2lf\n", omp_get_wtime() - start, atof(path));
+            auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now().time_since_epoch());
+#ifdef _WIN32
+            fprintf(data, "%I64d %.2lf\n",
+                    dur.count(), atof(path));
+#else
+            fprintf(data, "%lld %.2lf\n",
+                    dur.count(), atof(path));
+#endif
         }
 
         fflush(data);
@@ -65,17 +68,12 @@ int main(int argc, char **argv) {
         /* close */
 #ifdef _MSC_VER
         _pclose(fp);
-        Sleep(100);
 #else
         pclose(fp);
-        const struct timespec spec = {0, 1.0e8};
-        nanosleep(&spec, NULL);
 #endif
+        std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time_ms));
     }
 
     fclose(data);
     return 0;
 }
-
-
-#undef BUFFER_SIZE

@@ -21,9 +21,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+
 #ifdef _WIN32
+
 #include <windows.h>
+
 #endif
+
 #include "../exceptions.h"
 
 namespace frequency_scaling {

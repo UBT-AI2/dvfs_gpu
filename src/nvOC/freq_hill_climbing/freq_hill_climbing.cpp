@@ -175,7 +175,7 @@ namespace frequency_scaling {
         if (allow_start_node_result)
             best_node = current_node;
         else
-            best_node.energy_hash_ = std::numeric_limits<float>::lowest();
+            best_node.energy_hash_ = std::numeric_limits<double>::lowest();
         std::default_random_engine eng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
         std::uniform_real_distribution<double> distr_stepsize(1.0, 2.0);
 
@@ -195,7 +195,7 @@ namespace frequency_scaling {
                                                                              cur_mem_step,
                                                                              cur_graph_idx_step, min_hashrate, false);
             measurement last_node = current_node;
-            float tmp_val = std::numeric_limits<float>::lowest();
+            double tmp_val = std::numeric_limits<double>::lowest();
             for (const measurement &n : neighbors) {
                 if (n.energy_hash_ > tmp_val) {
                     current_node = n;

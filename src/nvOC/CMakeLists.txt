@@ -29,7 +29,7 @@ add_executable(calc_inner_mean
 
 #
 add_executable(gpu_power_monitor
-        utils/gpu_power_monitor.c)
+        utils/gpu_power_monitor.cpp)
 
 #
 add_library(nvapiOC_lib
