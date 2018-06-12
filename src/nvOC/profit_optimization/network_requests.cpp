@@ -50,11 +50,11 @@ namespace frequency_scaling {
         return response_string;
     }
 
-    static void safe_read_json(std::istringstream& is,
-                               boost::property_tree::ptree& tree){
+    static void safe_read_json(std::istringstream &is,
+                               boost::property_tree::ptree &tree) {
         try {
             boost::property_tree::json_parser::read_json(is, tree);
-        }catch(const boost::property_tree::json_parser_error& err){
+        } catch (const boost::property_tree::json_parser_error &err) {
             throw network_error("Boost json parser failed to parse network response: " +
                                 std::string(err.what()));
         }
@@ -88,9 +88,9 @@ namespace frequency_scaling {
     }
 
     std::map<std::string, double>
-    get_avg_hashrate_per_worker_nanopool(currency_type type, const std::string &wallet_address, double period_hours) {
+    get_avg_hashrate_per_worker_nanopool(currency_type ct, const std::string &wallet_address, double period_hours) {
         const std::string &json_response = curl_https_get(
-                get_nanopool_url(type) + "/avghashrateworkers/" + wallet_address + "/" +
+                get_nanopool_url(ct) + "/avghashrateworkers/" + wallet_address + "/" +
                 std::to_string(period_hours));
         //
         std::istringstream is(json_response);
@@ -102,15 +102,17 @@ namespace frequency_scaling {
         std::map<std::string, double> res;
         for (const boost::property_tree::ptree::value_type &array_elem : root.get_child("data")) {
             const boost::property_tree::ptree &subtree = array_elem.second;
-            res.emplace(subtree.get<std::string>("worker"), subtree.get<double>("hashrate"));
+            double worker_hashrate_mhs = subtree.get<double>("hashrate");
+            res.emplace(subtree.get<std::string>("worker"),
+                        ((ct == currency_type::ETH) ? worker_hashrate_mhs * 1e6 : worker_hashrate_mhs));
         }
         return res;
     };
 
 
-    double get_current_stock_price_nanopool(currency_type type) {
+    double get_current_stock_price_nanopool(currency_type ct) {
         const std::string &json_response = curl_https_get(
-                get_nanopool_url(type) + "/prices");
+                get_nanopool_url(ct) + "/prices");
         std::istringstream is(json_response);
         boost::property_tree::ptree root;
         safe_read_json(is, root);

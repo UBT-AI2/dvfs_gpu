@@ -111,8 +111,9 @@ namespace frequency_scaling {
             try {
                 current_monitoring_time_sec += update_interval_sec;
                 const std::pair<currency_type, double> &old_best_currency = profit_calc.calc_best_currency();
-                //if(current_monitoring_time_sec > 3600)
-                //    profit_calc.update_opt_config_hashrate_nanopool(user_infos, current_monitoring_time_sec/3600.0);
+                if(current_monitoring_time_sec > 3600) {
+                    profit_calc.update_opt_config_hashrate_nanopool(user_infos, current_monitoring_time_sec / 3600.0);
+                }
                 profit_calc.update_currency_info_nanopool();
                 const std::pair<currency_type, double> &new_best_currency = profit_calc.calc_best_currency();
                 //

@@ -150,7 +150,7 @@ namespace frequency_scaling{
             pt::ptree pt_currency;
             pt::ptree pt_miner_user_info, pt_opt_method_params;
             pt_miner_user_info.put("wallet_address", it_mui->second.wallet_address_);
-            pt_miner_user_info.put("worker_name", it_mui->second.worker_name_);
+            pt_miner_user_info.put("worker_name", it_mui->second.get_worker_name_prefix());
             pt_miner_user_info.put("email", it_mui->second.email_adress_);
             pt_opt_method_params.put("method", enum_to_string(it_omp->second.method_));
             pt_opt_method_params.put("min_hashrate", it_omp->second.min_hashrate_);

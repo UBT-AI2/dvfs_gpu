@@ -18,8 +18,9 @@ fi
 #################################################################################
 
 bench_start=$(tail -n 1 ${POWERFILE} | awk '{print $1}')
+#warmuptime strongly affects performance
 ${MINER_BINARY} -U -M \
---benchmark-trials 1 --benchmark-warmup 10 --cuda-devices $device_id_cuda &> ${BENCH_LOGFILE}
+--benchmark-trials 1 --benchmark-warmup 15 --cuda-devices $device_id_cuda &> ${BENCH_LOGFILE}
 
 if [[ -z $bench_start ]]
 then

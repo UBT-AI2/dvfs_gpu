@@ -66,7 +66,7 @@ namespace frequency_scaling {
                         ct, it_ui->second.wallet_address_, period_hours);
                 //update hashrate
                 it_ehi->second.optimal_configuration_.hashrate_ =
-                        avg_hashrates.at("profit_opt_device" + std::to_string(dci_.device_id_nvml));
+                        avg_hashrates.at(it_ui->second.get_worker_name(dci_.device_id_nvml));
             }catch (const network_error& err){
                 std::cerr << "Failed to get avg hashrate for currency " <<
                           enum_to_string(ct) << ": " << err.what() << std::endl;
