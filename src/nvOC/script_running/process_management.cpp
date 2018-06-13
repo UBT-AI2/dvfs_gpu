@@ -120,7 +120,9 @@ namespace frequency_scaling {
             process_management::kill_process(pid);
     }
 
+
     void process_management::kill_process(int pid) {
+		process_management::remove_pid(pid);
 		try {
 			process_management::start_process("kill " + std::to_string(pid), false, true, pid);
 		}
@@ -132,28 +134,7 @@ namespace frequency_scaling {
 #endif
 		}
 		//
-        {
-            std::lock_guard<std::mutex> lock(process_management::all_processes_mutex_);
-            for (auto it = process_management::all_processes_.begin();
-                 it != process_management::all_processes_.end();) {
-                if (it->first == pid) {
-                    it = process_management::all_processes_.erase(it);
-                    break;
-                } else
-                    ++it;
-            }
-        }
-        {
-            std::lock_guard<std::mutex> lock(process_management::gpu_background_processes_mutex_);
-            for (auto it = process_management::gpu_background_processes_.begin();
-                 it != process_management::gpu_background_processes_.end();) {
-                if (it->second == pid) {
-                    it = process_management::gpu_background_processes_.erase(it);
-                    break;
-                } else
-                    ++it;
-            }
-        }
+        
     }
 
     int process_management::start_process(const std::string &cmd, bool background) {
@@ -228,5 +209,33 @@ namespace frequency_scaling {
         return pid;
 #endif
     }
+
+
+	void process_management::remove_pid(int pid) {
+		{
+			std::lock_guard<std::mutex> lock(process_management::all_processes_mutex_);
+			for (auto it = process_management::all_processes_.begin();
+				it != process_management::all_processes_.end();) {
+				if (it->first == pid) {
+					it = process_management::all_processes_.erase(it);
+					break;
+				}
+				else
+					++it;
+			}
+		}
+		{
+			std::lock_guard<std::mutex> lock(process_management::gpu_background_processes_mutex_);
+			for (auto it = process_management::gpu_background_processes_.begin();
+				it != process_management::gpu_background_processes_.end();) {
+				if (it->second == pid) {
+					it = process_management::gpu_background_processes_.erase(it);
+					break;
+				}
+				else
+					++it;
+			}
+		}
+	}
 
 }

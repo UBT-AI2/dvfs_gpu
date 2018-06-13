@@ -40,6 +40,7 @@ namespace frequency_scaling {
     private:
         static int start_process(const std::string &cmd, bool background,
                                  bool is_kill, int pid_to_kill, bool is_bash_cmd = true);
+		static void remove_pid(int pid);
 
         static std::vector<std::pair<int, bool>> all_processes_;
         static std::mutex all_processes_mutex_;

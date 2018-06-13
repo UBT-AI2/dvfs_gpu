@@ -304,4 +304,14 @@ namespace frequency_scaling {
     }
 
 
+	void save_optimization_result(const std::string& filename,
+		const std::map<int, std::map<currency_type, energy_hash_info>>& opt_results) {
+
+	}
+
+	std::map<int, std::map<currency_type, energy_hash_info>> load_optimization_result(const std::string& filename) {
+		return std::map<int, std::map<currency_type, energy_hash_info>>();
+	}
+
+
 }

@@ -18,8 +18,8 @@ namespace frequency_scaling {
         CURL *curl = curl_easy_init();
         if (!curl)
             throw network_error("CURL initialization failed");
-        curl_easy_setopt(curl, CURLOPT_URL, request_url);
-        //curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_URL, request_url.c_str());
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
@@ -31,7 +31,8 @@ namespace frequency_scaling {
         CURLcode res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
             curl_easy_cleanup(curl);
-            throw network_error("CURL perform failed: " + std::string(curl_easy_strerror(res)));
+            throw network_error("CURL perform failed: " + 
+				std::string(curl_easy_strerror(res)) + " (" + request_url + ")");
         }
 
         char *url;
@@ -46,7 +47,8 @@ namespace frequency_scaling {
         curl_easy_cleanup(curl);
 
         if (response_code != 200)
-            throw network_error("CURL invalid response code: " + std::to_string(response_code));
+            throw network_error("CURL invalid response code: " + 
+				std::to_string(response_code) + " (" + url + ")");
         return response_string;
     }
 
