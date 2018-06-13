@@ -121,8 +121,17 @@ namespace frequency_scaling {
     }
 
     void process_management::kill_process(int pid) {
-        process_management::start_process("kill " + std::to_string(pid), false, true, pid);
-        //
+		try {
+			process_management::start_process("kill " + std::to_string(pid), false, true, pid);
+		}
+		catch (const process_error& ex) {
+#ifdef _WIN32
+			process_management::start_process("taskkill /F /pid " + std::to_string(pid), false, true, pid, false);
+#else
+			throw;
+#endif
+		}
+		//
         {
             std::lock_guard<std::mutex> lock(process_management::all_processes_mutex_);
             for (auto it = process_management::all_processes_.begin();
@@ -152,11 +161,11 @@ namespace frequency_scaling {
     }
 
     int process_management::start_process(const std::string &cmd, bool background,
-                                          bool is_kill, int pid_to_kill) {
+                                          bool is_kill, int pid_to_kill, bool is_bash_cmd) {
 #ifdef _WIN32
         STARTUPINFO startup_info = {sizeof(startup_info)};
         PROCESS_INFORMATION pi;
-        std::string full_cmd = "bash -c '" + cmd + "'";
+        std::string full_cmd = (is_bash_cmd)? "bash -c '" + cmd + "'" : cmd;
 
         if (CreateProcess(NULL,
                           &full_cmd[0],

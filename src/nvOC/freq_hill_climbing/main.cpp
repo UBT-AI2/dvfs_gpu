@@ -42,7 +42,6 @@ int main(int argc, char **argv) {
                                                   min_hashrate);
         std::cout << "Best energy-hash value: " << m.energy_hash_ << std::endl;
 
-
         //stop power monitoring
         stop_power_monitoring_script(device_id);
 
