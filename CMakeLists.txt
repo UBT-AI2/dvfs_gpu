@@ -51,8 +51,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/numerical_methods/inclu
 
 if (WIN32)
 	if(MSVC)
-		include_directories($ENV{GLOG_DIR_VS}/include)
-		link_directories($ENV{GLOG_DIR_VS}/lib)
+		include_directories($ENV{GLOG_DIR}/vs/include)
+		link_directories($ENV{GLOG_DIR}/vs/lib)
 		set(GLOG_LIB_NAME glog)
 	else(MSVC)
 		include_directories($ENV{GLOG_DIR}/include)

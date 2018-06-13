@@ -1,38 +1,53 @@
-#include <stdlib.h>
-#include <stdio.h>
+
+#include <iostream>
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
-#include "../script_running/benchmark.h"
+#include "../script_running/process_management.h"
 #include "profit_optimization.h"
+#include "optimization_config.h"
+
+using namespace frequency_scaling;
 
 int main(int argc, char **argv) {
-    if (argc < 8) {
-        printf("Usage: %s mining_user_info device_id max_iterations mem_step graph_idx_step min_mem_oc max_mem_oc",
-               argv[0]);
+    try {
+        //init apis
+        nvapiInit();
+        nvmlInit_();
+        process_management::register_process_cleanup_sighandler();
+
+        optimization_config opt_config;
+        if (argc > 1) {
+            std::string arg(argv[1]);
+            if (arg == "-h" || arg == "--help") {
+                std::cout << "Usage: " << argv[0] << " <config_file>" << std::endl;
+                return 0;
+            }
+            opt_config = parse_config_json(arg);
+        } else {
+            opt_config = get_config_user_dialog();
+        }
+
+        //start mining and monitoring best currency;
+        mine_most_profitable_currency(opt_config);
+
+        //unload apis
+        nvapiUnload(1);
+        nvmlShutdown_(true);
+    } catch (const std::exception &ex) {
+        std::cerr << "Main caught exception: " << ex.what() << std::endl;
+        std::cerr << "Perform cleanup and exit..." << std::endl;
+        process_management::kill_all_processes(false);
+        nvapiUnload(1);
+        nvmlShutdown_(true);
         return 1;
     }
-    std::string mining_user_info(argv[1]);
-    unsigned int device_id = atoi(argv[2]);
-    int max_iterations = atoi(argv[3]);
-    int mem_step = atoi(argv[4]);
-    int graph_idx_step = atoi(argv[5]);
-    int min_mem_oc = atoi(argv[6]);
-    int max_mem_oc = atoi(argv[7]);
-
-
-    using namespace frequency_scaling;
-    //init apis
-    nvapiInit();
-    nvmlInit_();
-
-    //TODO: start a thread for each GPU
-    //start mining and monitoring best currency
-    device_clock_info dci(device_id, min_mem_oc, 0, max_mem_oc, 0);
-    mine_most_profitable_currency(mining_user_info, dci, max_iterations, mem_step, graph_idx_step);
-
-    //unload apis
-    nvapiUnload(0);
-    nvmlShutdown_(false);
+    catch (...) {
+        std::cerr << "Main caught unknown exception" << std::endl;
+        process_management::kill_all_processes(false);
+        nvapiUnload(1);
+        nvmlShutdown_(true);
+        return 1;
+    }
 
     return 0;
 }

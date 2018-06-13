@@ -1,13 +1,13 @@
 
 set(NVAPI_FILES
-        nvapi/nvapiOC.h nvapi/nvapiOC.c)
+        nvapi/nvapiOC.h nvapi/nvapiOC.cpp)
 set(NVML_FILES
         nvml/nvmlOC.h nvml/nvmlOC.cpp)
 set(SCRIPT_RUNNING_FILES
-        script_running/miner_script.h
+        script_running/currency_type.h
         script_running/benchmark.h script_running/benchmark.cpp
         script_running/mining.h script_running/mining.cpp
-        script_running/process_management.h script_running/process_management.cpp)
+        script_running/process_management.h script_running/process_management.cpp script_running/currency_type.cpp)
 set(FREQ_EXHAUSTIVE_FILES
         freq_exhaustive/freq_exhaustive.h freq_exhaustive/freq_exhaustive.cpp)
 set(FREQ_HILL_CLIMBING_FILES
@@ -19,7 +19,8 @@ set(FREQ_SIMULATED_ANNEALING_FILES
 set(PROFIT_OPTIMIZATION_FILES
         profit_optimization/profit_calculation.h profit_optimization/profit_calculation.cpp
         profit_optimization/profit_optimization.h profit_optimization/profit_optimization.cpp
-        profit_optimization/network_requests.h profit_optimization/network_requests.cpp)
+        profit_optimization/network_requests.h profit_optimization/network_requests.cpp
+        profit_optimization/optimization_config.h profit_optimization/optimization_config.cpp)
 
 
 #
@@ -28,13 +29,13 @@ add_executable(calc_inner_mean
 
 #
 add_executable(gpu_power_monitor
-        utils/gpu_power_monitor.c)
+        utils/gpu_power_monitor.cpp)
 
 #
 add_library(nvapiOC_lib
         ${NVAPI_FILES})
 add_executable(nvapiOC
-        nvapi/main.c)
+        nvapi/main.cpp)
 target_link_libraries(nvapiOC
         nvapiOC_lib)
 
@@ -102,7 +103,7 @@ target_link_libraries(freq_simulated_annealing
 add_library(profit_optimization_lib
         ${PROFIT_OPTIMIZATION_FILES})
 target_link_libraries(profit_optimization_lib
-        freq_hill_climbing_lib
+        freq_simulated_annealing_lib
         freq_nelder_mead_lib
         ${CURL_LIBRARIES})
 add_executable(profit_optimization

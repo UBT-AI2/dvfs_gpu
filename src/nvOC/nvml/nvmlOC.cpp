@@ -3,10 +3,10 @@
 #include <nvml.h>
 #include "../exceptions.h"
 
-#define BUFFER_SIZE 1024
 
 namespace frequency_scaling {
 
+    static const int BUFFER_SIZE = 1024;
 
     static void safeNVMLCall(nvmlReturn_t result) {
         if (result != NVML_SUCCESS) {
@@ -19,9 +19,11 @@ namespace frequency_scaling {
 
     void nvmlInit_() {
         safeNVMLCall(nvmlInit());
-
         unsigned int deviceCount;
         safeNVMLCall(nvmlDeviceGetCount(&deviceCount));
+        printf("NVML initialization...\n");
+        printf("Number of GPUs: %i\n", deviceCount);
+
         for (int device_id = 0; device_id < deviceCount; device_id++) {
             nvmlDevice_t device;
             char name[BUFFER_SIZE];
@@ -32,7 +34,7 @@ namespace frequency_scaling {
             // pci.busId is very useful to know which device physically you're talking to
             // Using PCI identifier you can also match nvmlDevice handle to CUDA device.
             safeNVMLCall(nvmlDeviceGetPciInfo(device, &pci));
-            printf("%d. %s [%s]\n", device_id, name, pci.busId);
+            printf("GPU %d: %s [%s]\n", device_id, name, pci.busId);
 
             //enable persistence mode
             //safeNVMLCall(nvmlDeviceSetPersistenceMode(device, 1));
@@ -45,6 +47,7 @@ namespace frequency_scaling {
     }
 
     void nvmlShutdown_(bool restoreClocks) {
+        printf("NVML shutdown...\n");
         if (restoreClocks) {
             unsigned int deviceCount;
             safeNVMLCall(nvmlDeviceGetCount(&deviceCount));
@@ -55,7 +58,7 @@ namespace frequency_scaling {
                 safeNVMLCall(nvmlDeviceResetApplicationsClocks(device));
                 //safeNVMLCall(nvmlDeviceSetDefaultAutoBoostedClocksEnabled(device, 1, 0));
                 //safeNVMLCall(nvmlDeviceSetAutoBoostedClocksEnabled(device, 1));
-                printf("Restored clocks for device %i\n", device_id);
+                printf("NVML restored clocks for device %i\n", device_id);
             }
         }
         safeNVMLCall(nvmlShutdown());
@@ -110,6 +113,15 @@ namespace frequency_scaling {
         return pci.busId;
     }
 
+    std::string nvmlGetDeviceName(int device_id) {
+        nvmlDevice_t device;
+        safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
+        char name[BUFFER_SIZE];
+        safeNVMLCall(nvmlDeviceGetName(device, name, BUFFER_SIZE));
+        return name;
+    }
+
+
     int nvmlGetTemperature(int device_id) {
         nvmlDevice_t device;
         safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
@@ -131,7 +143,6 @@ namespace frequency_scaling {
         safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
         //change graph and mem clocks
         safeNVMLCall(nvmlDeviceSetApplicationsClocks(device, memClock, graphClock));
-        //printf("\t Changed device clocks: mem:%i,graph:%i\n", memClock, graphClock);
     }
 
 }

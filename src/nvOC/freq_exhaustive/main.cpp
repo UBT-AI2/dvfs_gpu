@@ -1,44 +1,57 @@
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <iostream>
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
 #include "../script_running/benchmark.h"
+#include "../script_running/process_management.h"
 #include "freq_exhaustive.h"
 
+using namespace frequency_scaling;
 
 int main(int argc, char **argv) {
-    if (argc < 7) {
-        printf("Usage: %s device_id use_nvmlUC min_mem_oc max_mem_oc min_graph_oc max_graph_oc", argv[0]);
+    if (argc < 8) {
+        std::cout << "Usage: " << argv[0] << " <currency_type> <device_id> <use_nvmlUC> <min_mem_oc> "
+                                             "<max_mem_oc> <min_graph_oc> <max_graph_oc>" << std::endl;
         return 1;
     }
-    unsigned int device_id = atoi(argv[1]);
+    currency_type ct = string_to_currency_type(argv[1]);
+    unsigned int device_id = atoi(argv[2]);
     int interval = 50;
-    int use_nvmlUC = atoi(argv[2]);
-    int min_mem_oc = atoi(argv[3]), max_mem_oc = atoi(argv[4]);
-    int min_graph_oc = atoi(argv[5]), max_graph_oc = atoi(argv[6]);
+    int use_nvmlUC = atoi(argv[3]);
+    int min_mem_oc = atoi(argv[4]), max_mem_oc = atoi(argv[5]);
+    int min_graph_oc = atoi(argv[6]), max_graph_oc = atoi(argv[7]);
     if (use_nvmlUC)
         min_graph_oc = interval;
 
-    using namespace frequency_scaling;
-    //init apis
-    nvapiInit();
-    nvmlInit_();
+    try {
+        //init apis
+        nvapiInit();
+        nvmlInit_();
+        process_management::register_process_cleanup_sighandler();
 
-    //start power monitoring
-    start_power_monitoring_script(device_id);
+        //start power monitoring
+        start_power_monitoring_script(device_id);
+        //
+        device_clock_info dci(device_id, min_mem_oc, min_graph_oc, max_mem_oc, max_graph_oc);
 
-    //
-    device_clock_info dci(device_id, min_mem_oc, min_graph_oc, max_mem_oc, max_graph_oc);
+        //
+        const measurement &m = freq_exhaustive(ct, dci, interval, use_nvmlUC, 2);
+        std::cout << "Best energy-hash value: " << m.energy_hash_ << std::endl;
 
-    //
-    const measurement &m = freq_exhaustive(miner_script::ETHMINER, dci, interval, use_nvmlUC, 2);
-    printf("Best energy-hash value: %f\n", m.energy_hash_);
+        //stop power monitoring
+        stop_power_monitoring_script(device_id);
 
-    //stop power monitoring
-    stop_power_monitoring_script(device_id);
+        //unload apis
+        nvapiUnload(1);
+        nvmlShutdown_(true);
+    } catch (const std::exception &ex) {
+        std::cerr << "Main caught exception: " << ex.what() << std::endl;
+        std::cerr << "Perform cleanup and exit..." << std::endl;
+        process_management::kill_all_processes(false);
+        nvapiUnload(1);
+        nvmlShutdown_(true);
+        return 1;
+    }
 
-    //unload apis
-    nvapiUnload(1);
-    nvmlShutdown_(true);
     return 0;
 }

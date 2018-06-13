@@ -1,27 +1,28 @@
 #pragma once
 
 #include <string>
-#include "miner_script.h"
+#include "currency_type.h"
 #include "benchmark.h"
 
 namespace frequency_scaling {
 
-    class miner_user_info {
-    public:
-        miner_user_info(const std::string &combined_user_info, miner_script ms);
+    struct miner_user_info {
+        miner_user_info(const std::string &combined_user_info);
 
-        miner_user_info(const std::string &wallet_adress_, const std::string &worker_name_,
-                        const std::string &email_adress_);
+        miner_user_info(const std::string &wallet_adress, const std::string &worker_name_prefix,
+                        const std::string &email_adress);
 
-        std::string get_combined_user_info(miner_script ms) const;
+        const std::string &get_worker_name_prefix() const;
 
+        std::string get_worker_name(int device_id) const;
+
+        std::string wallet_address_, email_adress_;
     private:
-        std::string wallet_adress_, worker_name_, email_adress_;
+        std::string worker_name_prefix_;
     };
 
-    void start_mining_script(miner_script ms, const device_clock_info &dci, const miner_user_info &user_info);
+    void start_mining_script(currency_type ct, const device_clock_info &dci, const miner_user_info &user_info);
 
-    void stop_mining_script(miner_script ms);
-
+    void stop_mining_script(int device_id);
 
 }

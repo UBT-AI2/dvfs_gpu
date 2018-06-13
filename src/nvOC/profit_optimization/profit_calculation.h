@@ -2,12 +2,9 @@
 
 #include <map>
 #include "../script_running/benchmark.h"
+#include "../script_running/mining.h"
 
 namespace frequency_scaling {
-
-    enum class currency_type {
-        ZEC, ETH, XMR, count
-    };
 
     struct currency_info {
         currency_info(currency_type type, double approximated_earnings_eur_hour,
@@ -21,24 +18,28 @@ namespace frequency_scaling {
 
     struct energy_hash_info {
         energy_hash_info(currency_type type,
-                         const device_clock_info &dci,
                          const measurement &optimal_configuration);
 
         currency_type type_;
-        device_clock_info dci_;
         measurement optimal_configuration_;
     };
 
 
     class profit_calculator {
     public:
-        profit_calculator(const std::map<currency_type, currency_info> &currency_info,
+        profit_calculator(const device_clock_info &dci,
+                          const std::map<currency_type, currency_info> &currency_info,
                           const std::map<currency_type, energy_hash_info> &energy_hash_info,
                           double power_cost_kwh);
 
-        std::pair<currency_type, double> calc_best_currency() const;
+        void recalculate_best_currency();
 
         void update_currency_info_nanopool();
+
+        void update_opt_config_hashrate_nanopool(currency_type current_mined_ct,
+                                                 const miner_user_info &user_info, double period_hours);
+
+        void update_power_consumption(currency_type current_mined_ct, long long int system_time_start_ms);
 
         void update_energy_cost_stromdao(int plz);
 
@@ -48,14 +49,21 @@ namespace frequency_scaling {
 
         double getPower_cost_kwh_() const;
 
+        const device_clock_info &getDci_() const;
+
+        currency_type getBest_currency_() const;
+
+        double getBest_currency_profit_() const;
+
     private:
+        device_clock_info dci_;
         std::map<currency_type, currency_info> currency_info_;
         std::map<currency_type, energy_hash_info> energy_hash_info_;
         double power_cost_kwh_;
+        currency_type best_currency_;
+        double best_currency_profit_;
     };
 
-
-    miner_script get_miner_for_currency(currency_type ct);
 
     std::map<currency_type, currency_info> get_currency_infos_nanopool(
             const std::map<currency_type, energy_hash_info> &ehi);

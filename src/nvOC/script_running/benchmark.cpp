@@ -3,66 +3,67 @@
 //
 #include "benchmark.h"
 
-#include <stdio.h>
 #include <string.h>
-#include <string>
 #include <fstream>
 #include <cuda.h>
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
+#include "process_management.h"
 
 namespace frequency_scaling {
 
     static const int BUFFER_SIZE = 1024;
 
-    static measurement run_benchmark_script(miner_script ms, const device_clock_info &dci,
+    static measurement run_benchmark_script(currency_type ct, const device_clock_info &dci,
                                             int graph_clock, int mem_clock) {
         {
-            printf("Running script_running with clocks: mem:%i,graph:%i\n", mem_clock, graph_clock);
-            //run script_running command
+            printf("Running %s benchmark script on GPU %i with clocks: mem:%i,graph:%i\n",
+                   enum_to_string(ct).c_str(), dci.device_id_nvml, mem_clock, graph_clock);
+            //run benchmark script to get measurement
             char cmd2[BUFFER_SIZE];
-            switch (ms) {
-                case miner_script::ETHMINER:
-                    snprintf(cmd2, BUFFER_SIZE, "sh ../scripts/run_benchmark_ethminer.sh %i %i %i",
-                             dci.device_id_cuda, mem_clock, graph_clock);
+            switch (ct) {
+                case currency_type::ETH:
+                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_eth.sh %i %i %i %i",
+                             dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock);
                     break;
-                case miner_script::EXCAVATOR:
-                    snprintf(cmd2, BUFFER_SIZE, "sh ../scripts/run_benchmark_excavator.sh %i %i %i",
-                             dci.device_id_cuda, mem_clock, graph_clock);
+                case currency_type::ZEC:
+                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_zec.sh %i %i %i %i",
+                             dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock);
                     break;
-                case miner_script::XMRSTAK:
-                    snprintf(cmd2, BUFFER_SIZE, "sh ../scripts/run_benchmark_xmrstak.sh %i %i %i",
-                             dci.device_id_cuda, mem_clock, graph_clock);
+                case currency_type::XMR:
+                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_xmr.sh %i %i %i %i",
+                             dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock);
                     break;
                 default:
                     throw std::runtime_error("Invalid enum value");
             }
-            system(cmd2);
+            process_management::gpu_start_process(cmd2, dci.device_id_nvml, process_type::MINER, false);
         }
 
         //get last measurement from data file
-        float data[5] = {0};
+        double data[5] = {0};
         {
-            std::ifstream file("result.dat", std::ios_base::ate);//open file
-            if (file) {
-                std::string tmp;
-                int c = 0;
-                int length = file.tellg();//Get file size
-                // loop backward over the file
-                for (int i = length - 2; i > 0; i--) {
-                    file.seekg(i);
-                    c = file.get();
-                    if (c == '\r' || c == '\n')//new line?
-                        break;
-                }
-                std::getline(file, tmp);//read last line
-                char *pt;
-                pt = strtok(&tmp[0], ",");
-                int idx = 0;
-                while (pt != nullptr) {
-                    data[idx++] = atof(pt);
-                    pt = strtok(nullptr, ",");
-                }
+            std::string filename = "result_" + std::to_string(dci.device_id_nvml) + ".dat";
+            std::ifstream file;
+            file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+            file.open(filename, std::ios_base::ate);//open file
+            int c = 0;
+            int length = file.tellg();//Get file size
+            // loop backward over the file
+            for (int i = length - 2; i > 0; i--) {
+                file.seekg(i);
+                c = file.get();
+                if (c == '\r' || c == '\n')//new line?
+                    break;
+            }
+            std::string tmp;
+            std::getline(file, tmp);//read last line
+            char *pt;
+            pt = strtok(&tmp[0], ",");
+            int idx = 0;
+            while (pt != nullptr) {
+                data[idx++] = atof(pt);
+                pt = strtok(nullptr, ",");
             }
         }
         measurement m((int) data[0], (int) data[1], data[2], data[3]);
@@ -70,18 +71,34 @@ namespace frequency_scaling {
     }
 
 
-    void start_power_monitoring_script(int device_id) {
+    void start_power_monitoring_script(int device_id, int interval_sleep_ms) {
         //start power monitoring in background process
-        char cmd1[BUFFER_SIZE];
-        snprintf(cmd1, BUFFER_SIZE, "sh ../scripts/start_pm.sh %i", device_id);
-        system(cmd1);
+        char cmd[BUFFER_SIZE];
+        snprintf(cmd, BUFFER_SIZE, "./gpu_power_monitor %i %i", device_id, interval_sleep_ms);
+        process_management::gpu_start_process(cmd, device_id, process_type::POWER_MONITOR, true);
     }
 
     void stop_power_monitoring_script(int device_id) {
         //stop power monitoring
-        char cmd3[BUFFER_SIZE];
-        snprintf(cmd3, BUFFER_SIZE, "sh ../scripts/kill_process.sh %s", "gpu_power_monitor");
-        system(cmd3);
+        process_management::gpu_kill_background_process(device_id, process_type::POWER_MONITOR);
+    }
+
+    double get_avg_power_usage(int device_id, long long int system_timestamp_ms) {
+        std::ifstream file;
+        file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        file.open("power_results_" + std::to_string(device_id) + ".txt");
+        std::string line;
+        std::string::size_type sz = 0;
+        double res = 0;
+        int count = 0;
+        while (std::getline(file, line)) {
+            long long int time = std::stoll(line, &sz);
+            if (time >= system_timestamp_ms) {
+                res += std::stod(line.substr(sz + 1, std::string::npos));
+                count++;
+            }
+        }
+        return res / count;
     }
 
     void change_clocks_nvml_nvapi(const device_clock_info &dci,
@@ -96,28 +113,28 @@ namespace frequency_scaling {
         nvapiOC(dci.device_id_nvapi, graph_oc, mem_oc);
     }
 
-    measurement run_benchmark_script_nvml_nvapi(miner_script ms, const device_clock_info &dci,
+    measurement run_benchmark_script_nvml_nvapi(currency_type ct, const device_clock_info &dci,
                                                 int mem_oc, int nvml_graph_clock_idx) {
         //change graph and mem clocks
         change_clocks_nvml_nvapi(dci, mem_oc, nvml_graph_clock_idx);
         int mem_clock = dci.nvapi_default_mem_clock + mem_oc;
         int graph_clock = dci.nvml_graph_clocks[nvml_graph_clock_idx];
         //run script_running
-        measurement &&m = run_benchmark_script(ms, dci, graph_clock, mem_clock);
+        measurement &&m = run_benchmark_script(ct, dci, graph_clock, mem_clock);
         m.nvml_graph_clock_idx = nvml_graph_clock_idx;
         m.mem_oc = mem_oc;
         m.graph_oc = 0;
         return m;
     }
 
-    measurement run_benchmark_script_nvapi_only(miner_script ms, const device_clock_info &dci,
+    measurement run_benchmark_script_nvapi_only(currency_type ct, const device_clock_info &dci,
                                                 int mem_oc, int graph_oc) {
         //change graph and mem clocks
         change_clocks_nvapi_only(dci, mem_oc, graph_oc);
         int mem_clock = dci.nvapi_default_mem_clock + mem_oc;
         int graph_clock = dci.nvapi_default_graph_clock + graph_oc;
         //run script_running
-        measurement &&m = run_benchmark_script(ms, dci, graph_clock, mem_clock);
+        measurement &&m = run_benchmark_script(ct, dci, graph_clock, mem_clock);
         m.nvml_graph_clock_idx = -1;
         m.mem_oc = mem_oc;
         m.graph_oc = graph_oc;
