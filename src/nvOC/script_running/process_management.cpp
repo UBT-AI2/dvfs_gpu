@@ -128,7 +128,7 @@ namespace frequency_scaling {
 		}
 		catch (const process_error& ex) {
 #ifdef _WIN32
-			process_management::start_process("taskkill /F /pid " + std::to_string(pid), false, true, pid, false);
+			process_management::start_process("taskkill /f /t /pid " + std::to_string(pid), false, true, pid, false);
 #else
 			throw;
 #endif

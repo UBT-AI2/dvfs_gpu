@@ -2,7 +2,7 @@
 
 device_id=$1
 currency=$2
-RESULT_DIR=result_gpu${device_id}_${currency}
+RESULT_DIR=$(date +%Y-%m-%d_%H-%M-%S)_result_gpu${device_id}_${currency}
 ############################################
 
 mkdir ${RESULT_DIR}

@@ -225,7 +225,7 @@ namespace frequency_scaling {
         //launch one thread per gpu
         std::cout << "Starting optimization phase..." << std::endl;
         std::map<int, std::map<currency_type, energy_hash_info>> optimization_results;
-        {
+        /*{
             std::vector<std::thread> threads;
             std::mutex mutex;
             for (int i = 0; i < opt_config.dcis_.size(); i++) {
@@ -250,7 +250,41 @@ namespace frequency_scaling {
 
         //exchange frequency configurations (equal gpus have same optimal frequency configurations)
         complete_optimization_results(optimization_results, equal_gpus);
-        std::cout << "Finished optimization phase..." << std::endl;
+        std::cout << "Finished optimization phase..." << std::endl;*/
+
+		for (auto& dci : opt_config.dcis_) {
+			std::map<currency_type, energy_hash_info> cur;
+			measurement meth, mzec, mxmr;
+			meth.energy_hash_ = 262372;
+			meth.power_ = 121.16;
+			meth.hashrate_ = 31788991;
+			meth.nvml_graph_clock_idx = 60;
+			meth.mem_oc = 300;
+			meth.mem_clock_ = 5305;
+			meth.graph_clock_ = 1151;
+			//
+			mzec.energy_hash_ = 4.01;
+			mzec.power_ = 108.37;
+			mzec.hashrate_ = 435.37;
+			mzec.nvml_graph_clock_idx = 57;
+			mzec.mem_oc = -667;
+			mzec.mem_clock_ = 4338;
+			mzec.graph_clock_ = 1189;
+			//
+			mxmr.energy_hash_ = 8.384;
+			mxmr.power_ = 103.59;
+			mxmr.hashrate_ = 868.5;
+			mxmr.nvml_graph_clock_idx = 41;
+			mxmr.mem_oc = 900;
+			mxmr.mem_clock_ = 5905;
+			mxmr.graph_clock_ = 1392;
+			//
+			cur.emplace(currency_type::ETH, energy_hash_info(currency_type::ETH, meth));
+			cur.emplace(currency_type::ZEC, energy_hash_info(currency_type::ZEC, mzec));
+			cur.emplace(currency_type::XMR, energy_hash_info(currency_type::XMR, mxmr));
+			//
+			optimization_results.emplace(dci.device_id_nvml, cur);
+		}
 
         //start mining and monitoring currency with highest profit
         //launch one thread per gpu
@@ -274,6 +308,7 @@ namespace frequency_scaling {
                         start_mining_best_currency(pc, opt_config.miner_user_infos_);
                         start_profit_monitoring(pc, opt_config.miner_user_infos_, opt_config.monitoring_interval_sec_,
                                                 mutex, cond_var, terminate);
+						stop_mining_script(gpu_dci.device_id_nvml);
                     } catch (const std::exception &ex) {
                         std::cerr << "Exception in mining/monitoring thread for GPU " <<
                                   opt_config.dcis_[i].device_id_nvml << ": " << ex.what() << std::endl;
@@ -298,7 +333,7 @@ namespace frequency_scaling {
             for (auto &t : threads)
                 t.join();
             //cleanup processes
-            process_management::kill_all_processes(false);
+            //process_management::kill_all_processes(false);
         }
 
     }
