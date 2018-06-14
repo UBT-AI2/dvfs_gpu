@@ -18,7 +18,7 @@ fi
 #################################################################################
 
 bench_start=$(tail -n 1 ${POWERFILE} | awk '{print $1}')
-${MINER_BINARY} --noCPU --benchmark 6 --nvidia nvidia$device_id.txt &> ${BENCH_LOGFILE}
+${MINER_BINARY} --noCPU --benchmark 6 --nvidia nvidia${device_id}.txt &> ${BENCH_LOGFILE}
 
 if [[ -z $bench_start ]]
 then

@@ -97,9 +97,12 @@ namespace frequency_scaling {
     start_profit_monitoring(profit_calculator &profit_calc,
                             const std::map<currency_type, miner_user_info> &user_infos, int update_interval_sec,
                             std::mutex &mutex, std::condition_variable &cond_var, const std::atomic_bool &terminate) {
+		//start power monitoring
+		start_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
         int current_monitoring_time_sec = 0;
         long long int system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
+		//monitoring loop
         while (true) {
             std::cv_status stat;
             int remaining_sleep_ms = update_interval_sec * 1000;
@@ -129,9 +132,13 @@ namespace frequency_scaling {
                 profit_calc.recalculate_best_currency();
                 currency_type new_best_currency = profit_calc.getBest_currency_();
                 if (old_best_currency != new_best_currency) {
+					//stop mining former best currency
                     stop_mining_script(profit_calc.getDci_().device_id_nvml);
+					stop_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
                     std::cout << "GPU " << profit_calc.getDci_().device_id_nvml <<
                               ": Stopped mining currency " << enum_to_string(old_best_currency) << std::endl;
+					//start mining new best currency
+					start_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
                     start_mining_best_currency(profit_calc, user_infos);
                     current_monitoring_time_sec = 0;
                     system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -141,6 +148,8 @@ namespace frequency_scaling {
                 std::cerr << "Network request for currency update failed: " << err.what() << std::endl;
             }
         }
+		//
+		stop_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
     }
 
 
