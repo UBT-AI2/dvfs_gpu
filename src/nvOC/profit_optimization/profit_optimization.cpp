@@ -9,12 +9,15 @@
 #include <condition_variable>
 #include <atomic>
 #include <set>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include "../freq_nelder_mead/freq_nelder_mead.h"
 #include "../freq_hill_climbing/freq_hill_climbing.h"
 #include "../freq_simulated_annealing/freq_simulated_annealing.h"
 #include "../nvml/nvmlOC.h"
 #include "../script_running/process_management.h"
 #include "../exceptions.h"
+#include "cli_utils.h"
 
 namespace frequency_scaling {
 
@@ -97,12 +100,12 @@ namespace frequency_scaling {
     start_profit_monitoring(profit_calculator &profit_calc,
                             const std::map<currency_type, miner_user_info> &user_infos, int update_interval_sec,
                             std::mutex &mutex, std::condition_variable &cond_var, const std::atomic_bool &terminate) {
-		//start power monitoring
-		start_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
+        //start power monitoring
+        start_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
         int current_monitoring_time_sec = 0;
         long long int system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
-		//monitoring loop
+        //monitoring loop
         while (true) {
             std::cv_status stat;
             int remaining_sleep_ms = update_interval_sec * 1000;
@@ -132,13 +135,13 @@ namespace frequency_scaling {
                 profit_calc.recalculate_best_currency();
                 currency_type new_best_currency = profit_calc.getBest_currency_();
                 if (old_best_currency != new_best_currency) {
-					//stop mining former best currency
+                    //stop mining former best currency
                     stop_mining_script(profit_calc.getDci_().device_id_nvml);
-					stop_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
+                    stop_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
                     std::cout << "GPU " << profit_calc.getDci_().device_id_nvml <<
                               ": Stopped mining currency " << enum_to_string(old_best_currency) << std::endl;
-					//start mining new best currency
-					start_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
+                    //start mining new best currency
+                    start_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
                     start_mining_best_currency(profit_calc, user_infos);
                     current_monitoring_time_sec = 0;
                     system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -148,8 +151,8 @@ namespace frequency_scaling {
                 std::cerr << "Network request for currency update failed: " << err.what() << std::endl;
             }
         }
-		//
-		stop_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
+        //
+        stop_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
     }
 
 
@@ -221,6 +224,60 @@ namespace frequency_scaling {
     }
 
 
+    void mine_most_profitable_currency(const optimization_config &opt_config,
+                                       const std::map<int, std::map<currency_type, energy_hash_info>> &opt_result) {
+        //start mining and monitoring currency with highest profit
+        //launch one thread per gpu
+        std::cout << "Starting mining and monitoring..." << std::endl;
+
+        std::vector<std::thread> threads;
+        std::mutex mutex;
+        std::condition_variable cond_var;
+        std::atomic_bool terminate = ATOMIC_VAR_INIT(false);
+        for (int i = 0; i < opt_config.dcis_.size(); i++) {
+            threads.emplace_back([i, &opt_config, &opt_result,
+                                         &mutex, &cond_var, &terminate]() {
+                try {
+                    const device_clock_info &gpu_dci = opt_config.dcis_[i];
+                    const std::map<currency_type, energy_hash_info> &gpu_opt_res =
+                            opt_result.at(gpu_dci.device_id_nvml);
+                    const std::map<currency_type, currency_info> &gpu_currency_infos =
+                            get_currency_infos_nanopool(gpu_opt_res);
+                    //create profit calculator for gpu
+                    profit_calculator pc(gpu_dci, gpu_currency_infos, gpu_opt_res, opt_config.energy_cost_kwh_);
+                    start_mining_best_currency(pc, opt_config.miner_user_infos_);
+                    start_profit_monitoring(pc, opt_config.miner_user_infos_, opt_config.monitoring_interval_sec_,
+                                            mutex, cond_var, terminate);
+                    stop_mining_script(gpu_dci.device_id_nvml);
+                } catch (const std::exception &ex) {
+                    std::cerr << "Exception in mining/monitoring thread for GPU " <<
+                              opt_config.dcis_[i].device_id_nvml << ": " << ex.what() << std::endl;
+                }
+            });
+        }
+        //wait for user to terminate
+        std::string user_in = cli_get_string("Performing mining and monitoring...\nEnter q to stop.", "q");
+        if (user_in == "q") {
+            terminate = true;
+            cond_var.notify_all();
+        }
+        //join threads
+        for (auto &t : threads)
+            t.join();
+
+        //cleanup processes
+        //process_management::kill_all_processes(false);
+
+        //save opt results dialog
+        user_in = cli_get_string("Save optimization results? [y/n]", "[yn]");
+        if (user_in == "y") {
+            user_in = cli_get_string("Enter filename:", "\\w+\\.\\w+");
+            save_optimization_result(user_in, opt_result);
+        }
+
+    }
+
+
     void mine_most_profitable_currency(const optimization_config &opt_config) {
         //check for equal gpus and distribute optimization work accordingly
         const std::vector<std::vector<int>> &equal_gpus = find_equal_gpus(opt_config.dcis_);
@@ -234,7 +291,7 @@ namespace frequency_scaling {
         //launch one thread per gpu
         std::cout << "Starting optimization phase..." << std::endl;
         std::map<int, std::map<currency_type, energy_hash_info>> optimization_results;
-        /*{
+        {
             std::vector<std::thread> threads;
             std::mutex mutex;
             for (int i = 0; i < opt_config.dcis_.size(); i++) {
@@ -259,103 +316,66 @@ namespace frequency_scaling {
 
         //exchange frequency configurations (equal gpus have same optimal frequency configurations)
         complete_optimization_results(optimization_results, equal_gpus);
-        std::cout << "Finished optimization phase..." << std::endl;*/
+        std::cout << "Finished optimization phase..." << std::endl;
 
-		for (auto& dci : opt_config.dcis_) {
-			std::map<currency_type, energy_hash_info> cur;
-			measurement meth, mzec, mxmr;
-			meth.energy_hash_ = 262372;
-			meth.power_ = 121.16;
-			meth.hashrate_ = 31788991;
-			meth.nvml_graph_clock_idx = 60;
-			meth.mem_oc = 300;
-			meth.mem_clock_ = 5305;
-			meth.graph_clock_ = 1151;
-			//
-			mzec.energy_hash_ = 4.01;
-			mzec.power_ = 108.37;
-			mzec.hashrate_ = 435.37;
-			mzec.nvml_graph_clock_idx = 57;
-			mzec.mem_oc = -667;
-			mzec.mem_clock_ = 4338;
-			mzec.graph_clock_ = 1189;
-			//
-			mxmr.energy_hash_ = 8.384;
-			mxmr.power_ = 103.59;
-			mxmr.hashrate_ = 868.5;
-			mxmr.nvml_graph_clock_idx = 41;
-			mxmr.mem_oc = 900;
-			mxmr.mem_clock_ = 5905;
-			mxmr.graph_clock_ = 1392;
-			//
-			cur.emplace(currency_type::ETH, energy_hash_info(currency_type::ETH, meth));
-			cur.emplace(currency_type::ZEC, energy_hash_info(currency_type::ZEC, mzec));
-			cur.emplace(currency_type::XMR, energy_hash_info(currency_type::XMR, mxmr));
-			//
-			optimization_results.emplace(dci.device_id_nvml, cur);
-		}
-
-        //start mining and monitoring currency with highest profit
-        //launch one thread per gpu
-        std::cout << "Starting mining and monitoring..." << std::endl;
-        {
-            std::vector<std::thread> threads;
-            std::mutex mutex;
-            std::condition_variable cond_var;
-            std::atomic_bool terminate = ATOMIC_VAR_INIT(false);
-            for (int i = 0; i < opt_config.dcis_.size(); i++) {
-                threads.emplace_back([i, &opt_config, &optimization_results,
-                                             &mutex, &cond_var, &terminate]() {
-                    try {
-                        const device_clock_info &gpu_dci = opt_config.dcis_[i];
-                        const std::map<currency_type, energy_hash_info> &gpu_opt_res =
-                                optimization_results.at(gpu_dci.device_id_nvml);
-                        const std::map<currency_type, currency_info> &gpu_currency_infos =
-                                get_currency_infos_nanopool(gpu_opt_res);
-                        //create profit calculator for gpu
-                        profit_calculator pc(gpu_dci, gpu_currency_infos, gpu_opt_res, opt_config.energy_cost_kwh_);
-                        start_mining_best_currency(pc, opt_config.miner_user_infos_);
-                        start_profit_monitoring(pc, opt_config.miner_user_infos_, opt_config.monitoring_interval_sec_,
-                                                mutex, cond_var, terminate);
-						stop_mining_script(gpu_dci.device_id_nvml);
-                    } catch (const std::exception &ex) {
-                        std::cerr << "Exception in mining/monitoring thread for GPU " <<
-                                  opt_config.dcis_[i].device_id_nvml << ": " << ex.what() << std::endl;
-                    }
-                });
-            }
-            //wait for user to terminate
-            std::cout << "Performing mining and monitoring...\nEnter q to stop." << std::endl;
-            while (true) {
-                char c;
-                std::cin >> c;
-                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-                if (c == 'q') {
-                    terminate = true;
-                    cond_var.notify_all();
-                    break;
-                } else {
-                    std::cout << "Performing mining and monitoring...\nEnter q to stop." << std::endl;
-                }
-            }
-            //join threads
-            for (auto &t : threads)
-                t.join();
-            //cleanup processes
-            //process_management::kill_all_processes(false);
-        }
-
+        //
+        mine_most_profitable_currency(opt_config, optimization_results);
     }
 
 
-	void save_optimization_result(const std::string& filename,
-		const std::map<int, std::map<currency_type, energy_hash_info>>& opt_results) {
+    void save_optimization_result(const std::string &filename,
+                                  const std::map<int, std::map<currency_type, energy_hash_info>> &opt_results) {
+        namespace pt = boost::property_tree;
+        pt::ptree root;
+        //write devices to use
+        for (auto &device : opt_results) {
+            //write currencies to use for device
+            pt::ptree pt_currencies;
+            for (auto &currency : device.second) {
+                pt::ptree pt_ehi;
+                pt_ehi.put("power", currency.second.optimal_configuration_.power_);
+                pt_ehi.put("hashrate", currency.second.optimal_configuration_.hashrate_);
+                pt_ehi.put("energy_hash", currency.second.optimal_configuration_.energy_hash_);
+                pt_ehi.put("nvml_graph_clock_idx", currency.second.optimal_configuration_.nvml_graph_clock_idx);
+                pt_ehi.put("mem_oc", currency.second.optimal_configuration_.mem_oc);
+                pt_ehi.put("graph_oc", currency.second.optimal_configuration_.graph_oc);
+                pt_ehi.put("graph_clock", currency.second.optimal_configuration_.graph_clock_);
+                pt_ehi.put("mem_clock", currency.second.optimal_configuration_.mem_clock_);
+                pt_currencies.add_child(enum_to_string(currency.first), pt_ehi);
+            }
+            root.add_child(std::to_string(device.first), pt_currencies);
+        }
+        pt::write_json(filename, root);
+    }
 
-	}
 
-	std::map<int, std::map<currency_type, energy_hash_info>> load_optimization_result(const std::string& filename) {
-		return std::map<int, std::map<currency_type, energy_hash_info>>();
-	}
+    std::map<int, std::map<currency_type, energy_hash_info>> load_optimization_result(const std::string &filename) {
+        std::map<int, std::map<currency_type, energy_hash_info>> opt_results;
+        namespace pt = boost::property_tree;
+        pt::ptree root;
+        pt::read_json(filename, root);
+        //read device infos
+        for (const pt::ptree::value_type &array_elem : root) {
+            const boost::property_tree::ptree &pt_device = array_elem.second;
+            std::map<currency_type, energy_hash_info> cur_ehi;
+            for (const pt::ptree::value_type &array_elem2 : pt_device) {
+                const boost::property_tree::ptree &pt_ehi = array_elem2.second;
+                currency_type ct = string_to_currency_type(array_elem2.first);
+                measurement opt_config;
+                opt_config.mem_clock_ = pt_ehi.get<int>("mem_clock");
+                opt_config.graph_clock_ = pt_ehi.get<int>("graph_clock");
+                opt_config.mem_oc = pt_ehi.get<int>("mem_oc");
+                opt_config.graph_oc = pt_ehi.get<int>("graph_oc");
+                opt_config.nvml_graph_clock_idx = pt_ehi.get<int>("nvml_graph_clock_idx");
+                opt_config.power_ = pt_ehi.get<double>("power");
+                opt_config.hashrate_ = pt_ehi.get<double>("hashrate");
+                opt_config.energy_hash_ = pt_ehi.get<double>("energy_hash");
+                cur_ehi.emplace(ct, energy_hash_info(ct, opt_config));
+            }
+            opt_results.emplace(std::stoi(array_elem.first), cur_ehi);
+        }
+        return opt_results;
+    }
 
 
 }

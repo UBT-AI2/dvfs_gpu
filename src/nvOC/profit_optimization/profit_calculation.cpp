@@ -43,8 +43,9 @@ namespace frequency_scaling {
             const currency_info &ci = it_ci->second;
             double costs_per_hour = ehi.optimal_configuration_.power_ * (power_cost_kwh_ / 1000.0);
             double profit_per_hour = ci.approximated_earnings_eur_hour_ - costs_per_hour;
-			std::cout << enum_to_string(ct) + ": Calculated profit [eur/hour]: approximated earnings=" <<
-				ci.approximated_earnings_eur_hour_ << ", energy_cost=" << costs_per_hour << ", profit=" << profit_per_hour << std::endl;
+            std::cout << enum_to_string(ct) + ": Calculated profit [eur/hour]: approximated earnings=" <<
+                      ci.approximated_earnings_eur_hour_ << ", energy_cost=" << costs_per_hour << ", profit="
+                      << profit_per_hour << std::endl;
             if (profit_per_hour > best_profit) {
                 best_idx = i;
                 best_profit = profit_per_hour;
@@ -59,17 +60,17 @@ namespace frequency_scaling {
     }
 
     void profit_calculator::update_opt_config_hashrate_nanopool(currency_type current_mined_ct,
-            const miner_user_info &user_info, double period_hours) {
-            try {
-                const std::map<std::string, double> &avg_hashrates = get_avg_hashrate_per_worker_nanopool(
-                        current_mined_ct, user_info.wallet_address_, period_hours);
-                //update hashrate
-                energy_hash_info_.at(current_mined_ct).optimal_configuration_.hashrate_ =
-                        avg_hashrates.at(user_info.get_worker_name(dci_.device_id_nvml));
-            } catch (const network_error &err) {
-                std::cerr << "Failed to get avg hashrate for currency " <<
-                          enum_to_string(current_mined_ct) << ": " << err.what() << std::endl;
-            }
+                                                                const miner_user_info &user_info, double period_hours) {
+        try {
+            const std::map<std::string, double> &avg_hashrates = get_avg_hashrate_per_worker_nanopool(
+                    current_mined_ct, user_info.wallet_address_, period_hours);
+            //update hashrate
+            energy_hash_info_.at(current_mined_ct).optimal_configuration_.hashrate_ =
+                    avg_hashrates.at(user_info.get_worker_name(dci_.device_id_nvml));
+        } catch (const network_error &err) {
+            std::cerr << "Failed to get avg hashrate for currency " <<
+                      enum_to_string(current_mined_ct) << ": " << err.what() << std::endl;
+        }
     }
 
     void profit_calculator::update_power_consumption(currency_type current_mined_ct,

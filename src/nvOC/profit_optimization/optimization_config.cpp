@@ -6,10 +6,10 @@
 #include <iostream>
 #include <fstream>
 #include <limits>
-#include <regex>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include "../nvml/nvmlOC.h"
+#include "cli_utils.h"
 
 
 namespace frequency_scaling {
@@ -44,29 +44,6 @@ namespace frequency_scaling {
                                                                                                            min_hashrate) {}
 
 
-    static std::string cli_get_string(const std::string &user_msg,
-                                      const std::string &regex_to_match) {
-        std::cout << user_msg << std::endl;
-        while (true) {
-            std::string str;
-            std::cin >> str;
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            if (std::regex_match(str, std::regex(regex_to_match)))
-                return str;
-            std::cout << "Invalid input. Try again." << std::endl;
-        }
-    }
-
-
-    static int cli_get_int(const std::string &user_msg) {
-        return std::stoi(cli_get_string(user_msg, "[+-]?[[:digit:]]+"));
-    }
-
-    static double cli_get_float(const std::string &user_msg) {
-        return std::stod(cli_get_string(user_msg, "[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?"));
-    }
-
-
     optimization_config get_config_user_dialog() {
         optimization_config opt_config;
         //input energy costs
@@ -92,9 +69,9 @@ namespace frequency_scaling {
         }
         if (opt_config.dcis_.empty())
             throw std::runtime_error("No device selected");
-		std::string eth_address = "0x8291ca623a1f1a877fa189b594f6098c74aad0b3";
-		std::string zec_address = "t1Z8gLLGyxGRkjRFbNnJ2n6yvHb1Vo3pXKH";
-		std::string xmr_address = "49obKYMTctj2owFCjjPwmDELGNCc7kz3WBVLGgpF1MC3cWYH3psdpyV8rBdZUycYPr3qU9ChEmj4ZMFLLf2gN2bcFEzNPpv";
+        std::string eth_address = "0x8291ca623a1f1a877fa189b594f6098c74aad0b3";
+        std::string zec_address = "t1Z8gLLGyxGRkjRFbNnJ2n6yvHb1Vo3pXKH";
+        std::string xmr_address = "49obKYMTctj2owFCjjPwmDELGNCc7kz3WBVLGgpF1MC3cWYH3psdpyV8rBdZUycYPr3qU9ChEmj4ZMFLLf2gN2bcFEzNPpv";
         //select currencies to mine
         for (int i = 0; i < static_cast<int>(currency_type::count); i++) {
             currency_type ct = static_cast<currency_type>(i);
@@ -105,21 +82,20 @@ namespace frequency_scaling {
             //user_msg = "Enter mining user info in the format <wallet_address/worker_name[/e-mail]>:";
             //^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,6}$
             //user_in = cli_get_string(user_msg, "[a-zA-Z0-9]+/\\w+(/\\w+(\\.\\w+)?@\\w+\\.[a-zA-Z]{2,6})?");
-			switch (ct)
-			{
-			case frequency_scaling::currency_type::ETH:
-				user_in = eth_address + "/eth_worker";
-				break;
-			case frequency_scaling::currency_type::ZEC:
-				user_in = zec_address + "/zec_worker";
-				break;
-			case frequency_scaling::currency_type::XMR:
-				user_in = xmr_address + "/xmr_worker";
-				break;
-			default:
-				break;
-			}
-			opt_config.miner_user_infos_.emplace(ct, miner_user_info(user_in));
+            switch (ct) {
+                case frequency_scaling::currency_type::ETH:
+                    user_in = eth_address + "/eth_worker";
+                    break;
+                case frequency_scaling::currency_type::ZEC:
+                    user_in = zec_address + "/zec_worker";
+                    break;
+                case frequency_scaling::currency_type::XMR:
+                    user_in = xmr_address + "/xmr_worker";
+                    break;
+                default:
+                    break;
+            }
+            opt_config.miner_user_infos_.emplace(ct, miner_user_info(user_in));
             //choose optimization method
             user_msg = "Select method used to optimize energy-hash ratio: [NM/HC/SA]";
             user_in = cli_get_string(user_msg, "NM|HC|SA");

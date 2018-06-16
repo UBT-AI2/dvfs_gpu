@@ -122,19 +122,19 @@ namespace frequency_scaling {
 
 
     void process_management::kill_process(int pid) {
-		process_management::remove_pid(pid);
-		try {
-			process_management::start_process("kill " + std::to_string(pid), false, true, pid);
-		}
-		catch (const process_error& ex) {
+        process_management::remove_pid(pid);
+        try {
+            process_management::start_process("kill " + std::to_string(pid), false, true, pid);
+        }
+        catch (const process_error &ex) {
 #ifdef _WIN32
-			process_management::start_process("taskkill /f /t /pid " + std::to_string(pid), false, true, pid, false);
+            process_management::start_process("taskkill /f /t /pid " + std::to_string(pid), false, true, pid, false);
 #else
-			throw;
+            throw;
 #endif
-		}
-		//
-        
+        }
+        //
+
     }
 
     int process_management::start_process(const std::string &cmd, bool background) {
@@ -146,7 +146,7 @@ namespace frequency_scaling {
 #ifdef _WIN32
         STARTUPINFO startup_info = {sizeof(startup_info)};
         PROCESS_INFORMATION pi;
-        std::string full_cmd = (is_bash_cmd)? "bash -c '" + cmd + "'" : cmd;
+        std::string full_cmd = (is_bash_cmd) ? "bash -c '" + cmd + "'" : cmd;
 
         if (CreateProcess(NULL,
                           &full_cmd[0],
@@ -211,31 +211,29 @@ namespace frequency_scaling {
     }
 
 
-	void process_management::remove_pid(int pid) {
-		{
-			std::lock_guard<std::mutex> lock(process_management::all_processes_mutex_);
-			for (auto it = process_management::all_processes_.begin();
-				it != process_management::all_processes_.end();) {
-				if (it->first == pid) {
-					it = process_management::all_processes_.erase(it);
-					break;
-				}
-				else
-					++it;
-			}
-		}
-		{
-			std::lock_guard<std::mutex> lock(process_management::gpu_background_processes_mutex_);
-			for (auto it = process_management::gpu_background_processes_.begin();
-				it != process_management::gpu_background_processes_.end();) {
-				if (it->second == pid) {
-					it = process_management::gpu_background_processes_.erase(it);
-					break;
-				}
-				else
-					++it;
-			}
-		}
-	}
+    void process_management::remove_pid(int pid) {
+        {
+            std::lock_guard<std::mutex> lock(process_management::all_processes_mutex_);
+            for (auto it = process_management::all_processes_.begin();
+                 it != process_management::all_processes_.end();) {
+                if (it->first == pid) {
+                    it = process_management::all_processes_.erase(it);
+                    break;
+                } else
+                    ++it;
+            }
+        }
+        {
+            std::lock_guard<std::mutex> lock(process_management::gpu_background_processes_mutex_);
+            for (auto it = process_management::gpu_background_processes_.begin();
+                 it != process_management::gpu_background_processes_.end();) {
+                if (it->second == pid) {
+                    it = process_management::gpu_background_processes_.erase(it);
+                    break;
+                } else
+                    ++it;
+            }
+        }
+    }
 
 }

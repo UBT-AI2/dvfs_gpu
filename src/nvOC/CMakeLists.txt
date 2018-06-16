@@ -20,7 +20,8 @@ set(PROFIT_OPTIMIZATION_FILES
         profit_optimization/profit_calculation.h profit_optimization/profit_calculation.cpp
         profit_optimization/profit_optimization.h profit_optimization/profit_optimization.cpp
         profit_optimization/network_requests.h profit_optimization/network_requests.cpp
-        profit_optimization/optimization_config.h profit_optimization/optimization_config.cpp)
+        profit_optimization/optimization_config.h profit_optimization/optimization_config.cpp
+        profit_optimization/cli_utils.h profit_optimization/cli_utils.cpp)
 
 
 #

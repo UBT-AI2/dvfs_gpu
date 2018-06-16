@@ -32,8 +32,8 @@ namespace frequency_scaling {
         CURLcode res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
             curl_easy_cleanup(curl);
-            throw network_error("CURL perform failed: " + 
-				std::string(curl_easy_strerror(res)) + " (" + request_url + ")");
+            throw network_error("CURL perform failed: " +
+                                std::string(curl_easy_strerror(res)) + " (" + request_url + ")");
         }
 
         char *url;
@@ -48,8 +48,8 @@ namespace frequency_scaling {
         curl_easy_cleanup(curl);
 
         if (response_code != 200)
-            throw network_error("CURL invalid response code: " + 
-				std::to_string(response_code) + " (" + url + ")");
+            throw network_error("CURL invalid response code: " +
+                                std::to_string(response_code) + " (" + url + ")");
         return response_string;
     }
 
