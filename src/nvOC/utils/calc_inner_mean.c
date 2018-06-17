@@ -8,9 +8,9 @@ int main(int argc, char **argv) {
     }
 
     int max_idx, min_idx;
-    float max = -1e37, min = 1e37;
+    double max = -1e37, min = 1e37;
     for (int i = 1; i < argc; i++) {
-        int cur = atof(argv[i]);
+        double cur = atof(argv[i]);
         if (cur < min) {
             min = cur;
             min_idx = i;
@@ -20,7 +20,8 @@ int main(int argc, char **argv) {
             max_idx = i;
         }
     }
-    float res = 0, c = 0;
+    double res = 0;
+    int c = 0;
     for (int i = 1; i < argc; i++)
         if (i != min_idx && i != max_idx) {
             res += atof(argv[i]);

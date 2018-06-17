@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
             fprintf(data, "%I64d %.2lf\n",
                     dur.count(), atof(path));
 #else
-            fprintf(data, "%lld %.2lf\n",
+            fprintf(data, "%ld %.2lf\n",
                     dur.count(), atof(path));
 #endif
         }

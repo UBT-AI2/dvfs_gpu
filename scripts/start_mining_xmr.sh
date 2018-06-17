@@ -13,7 +13,8 @@ else
 #Linux
 MINER_BINARY=../../miner/binaries/linux/xmr-stak-build/xmr-stak
 fi
+LOGFILE=$(date +%Y-%m-%d_%H-%M-%S)_gpu_${device_id}_xmr-stak_log.txt
 #################################################################################
 
 ${MINER_BINARY} --noCPU --nvidia nvidia${device_id}.txt \
--O xmr-eu1.nanopool.org:14433 -u ${wallet_address}.${worker_name}/${email} --currency monero7 -i 0 -p "" -r ""
+-O xmr-eu1.nanopool.org:14433 -u ${wallet_address}.${worker_name}/${email} --currency monero7 -i 0 -p "" -r "" &> ${LOGFILE}
