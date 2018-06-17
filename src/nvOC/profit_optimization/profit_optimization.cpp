@@ -82,13 +82,13 @@ namespace frequency_scaling {
 
 
     static void start_mining_best_currency(const profit_calculator &profit_calc,
-                                           const std::map<currency_type, miner_user_info> &user_infos) {
+                                           const miner_user_info& user_infos) {
         currency_type best_currency = profit_calc.getBest_currency_();
         const energy_hash_info &ehi = profit_calc.getEnergy_hash_info_().at(best_currency);
         //
         change_clocks_nvml_nvapi(profit_calc.getDci_(), ehi.optimal_configuration_.mem_oc,
                                  ehi.optimal_configuration_.nvml_graph_clock_idx);
-        start_mining_script(best_currency, profit_calc.getDci_(), user_infos.at(best_currency));
+        start_mining_script(best_currency, profit_calc.getDci_(), user_infos);
         std::cout << "GPU " << profit_calc.getDci_().device_id_nvml <<
                   ": Started mining best currency " << enum_to_string(best_currency)
                   << " with approximated profit of " << profit_calc.getBest_currency_profit_() << " euro/h"
@@ -98,7 +98,7 @@ namespace frequency_scaling {
 
     static void
     start_profit_monitoring(profit_calculator &profit_calc,
-                            const std::map<currency_type, miner_user_info> &user_infos, int update_interval_sec,
+                            const miner_user_info &user_infos, int update_interval_sec,
                             std::mutex &mutex, std::condition_variable &cond_var, const std::atomic_bool &terminate) {
         //start power monitoring
         start_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
@@ -125,7 +125,7 @@ namespace frequency_scaling {
                 currency_type old_best_currency = profit_calc.getBest_currency_();
                 //update with pool hashrates and long time power_consumption if currency is mined > 1h
                 if (current_monitoring_time_sec > 3600) {
-                    profit_calc.update_opt_config_hashrate_nanopool(old_best_currency, user_infos.at(old_best_currency),
+                    profit_calc.update_opt_config_hashrate_nanopool(old_best_currency, user_infos,
                                                                     current_monitoring_time_sec / 3600.0);
                     profit_calc.update_power_consumption(old_best_currency, system_time_start_ms);
                 }
@@ -271,7 +271,7 @@ namespace frequency_scaling {
         //save opt results dialog
         user_in = cli_get_string("Save optimization results? [y/n]", "[yn]");
         if (user_in == "y") {
-            user_in = cli_get_string("Enter filename:", "\\w+\\.\\w+");
+            user_in = cli_get_string("Enter filename:", "[\\w-.]+");
             save_optimization_result(user_in, opt_result);
         }
 
@@ -282,7 +282,7 @@ namespace frequency_scaling {
         //check for equal gpus and distribute optimization work accordingly
         const std::vector<std::vector<int>> &equal_gpus = find_equal_gpus(opt_config.dcis_);
         std::set<currency_type> currencies;
-        for (auto &ui : opt_config.miner_user_infos_)
+        for (auto &ui : opt_config.miner_user_infos_.wallet_addresses_)
             currencies.insert(ui.first);
         const std::map<int, std::set<currency_type>> &gpu_distr =
                 find_optimization_gpu_distr(equal_gpus, currencies);

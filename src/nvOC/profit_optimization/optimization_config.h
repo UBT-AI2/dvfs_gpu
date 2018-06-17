@@ -27,7 +27,7 @@ namespace frequency_scaling {
 
     struct optimization_config {
         std::vector<device_clock_info> dcis_;
-        std::map<currency_type, miner_user_info> miner_user_infos_;
+        miner_user_info miner_user_infos_;
         std::map<currency_type, optimization_method_params> opt_method_params_;
         double energy_cost_kwh_;
         int monitoring_interval_sec_;

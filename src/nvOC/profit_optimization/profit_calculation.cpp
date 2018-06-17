@@ -63,10 +63,10 @@ namespace frequency_scaling {
                                                                 const miner_user_info &user_info, double period_hours) {
         try {
             const std::map<std::string, double> &avg_hashrates = get_avg_hashrate_per_worker_nanopool(
-                    current_mined_ct, user_info.wallet_address_, period_hours);
+                    current_mined_ct, user_info.wallet_addresses_.at(current_mined_ct), period_hours);
             //update hashrate
             energy_hash_info_.at(current_mined_ct).optimal_configuration_.hashrate_ =
-                    avg_hashrates.at(user_info.get_worker_name(dci_.device_id_nvml));
+                    avg_hashrates.at(user_info.worker_names_.at(dci_.device_id_nvml));
         } catch (const network_error &err) {
             std::cerr << "Failed to get avg hashrate for currency " <<
                       enum_to_string(current_mined_ct) << ": " << err.what() << std::endl;

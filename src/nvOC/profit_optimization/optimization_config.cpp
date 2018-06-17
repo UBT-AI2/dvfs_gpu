@@ -1,13 +1,21 @@
 //
 // Created by Alex on 10.06.2018.
 //
-
 #include "optimization_config.h"
 #include <iostream>
 #include <fstream>
 #include <limits>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+
+#ifdef _WIN32
+
+#include <windows.h>
+
+#else
+#include <unistd.h>
+#endif
+
 #include "../nvml/nvmlOC.h"
 #include "cli_utils.h"
 
@@ -44,8 +52,21 @@ namespace frequency_scaling {
                                                                                                            min_hashrate) {}
 
 
+    static std::string getworker_name(int device_id) {
+        char buf[1024];
+#ifdef _WIN32
+        DWORD size = sizeof(buf);
+        GetComputerName(buf, &size);
+#else
+        gethostname(buf, sizeof(buf));
+#endif
+        return buf + std::string("_gpu") + std::to_string(device_id);
+    }
+
+
     optimization_config get_config_user_dialog() {
         optimization_config opt_config;
+        std::string user_in, user_msg;
         //input energy costs
         //double energy_cost_kwh = get_energy_cost_stromdao(95440);
         double energy_cost_kwh = cli_get_float("Enter energy cost in euro per kwh:");
@@ -53,12 +74,18 @@ namespace frequency_scaling {
         //select monitoring interval
         int monitoring_interval_sec = cli_get_int("Enter miner monitoring interval in seconds:");
         opt_config.monitoring_interval_sec_ = monitoring_interval_sec;
+        //
+        user_in = cli_get_string("Let miner notify you via email? [y/n]", "[yn]");
+        if (user_in == "y") {
+            user_in = cli_get_string("Enter email address:", "[\\w-.]+@[\\w-.]+\\.[a-zA-Z]{2,6}");
+            opt_config.miner_user_infos_.email_adress_ = user_in;
+        }
         //select GPUs to mine on
         int device_count = nvmlGetNumDevices();
         for (int device_id = 0; device_id < device_count; device_id++) {
-            std::string user_msg = "Mine on GPU " + std::to_string(device_id) +
-                                   " (" + nvmlGetDeviceName(device_id) + ")? [y/n]";
-            std::string user_in = cli_get_string(user_msg, "[yn]");
+            user_msg = "Mine on GPU " + std::to_string(device_id) +
+                       " (" + nvmlGetDeviceName(device_id) + ")? [y/n]";
+            user_in = cli_get_string(user_msg, "[yn]");
             if (user_in != "y")
                 continue;
             user_msg = "Enter min_mem_oc:";
@@ -66,36 +93,27 @@ namespace frequency_scaling {
             user_msg = "Enter max_mem_oc:";
             int max_mem_oc = cli_get_int(user_msg);
             opt_config.dcis_.emplace_back(device_id, min_mem_oc, 0, max_mem_oc, 0);
+            opt_config.miner_user_infos_.worker_names_.emplace(device_id, getworker_name(device_id));
         }
         if (opt_config.dcis_.empty())
             throw std::runtime_error("No device selected");
-        std::string eth_address = "0x8291ca623a1f1a877fa189b594f6098c74aad0b3";
-        std::string zec_address = "t1Z8gLLGyxGRkjRFbNnJ2n6yvHb1Vo3pXKH";
-        std::string xmr_address = "49obKYMTctj2owFCjjPwmDELGNCc7kz3WBVLGgpF1MC3cWYH3psdpyV8rBdZUycYPr3qU9ChEmj4ZMFLLf2gN2bcFEzNPpv";
+
+        opt_config.miner_user_infos_.wallet_addresses_.emplace(currency_type::ETH,
+                                                               "0x8291ca623a1f1a877fa189b594f6098c74aad0b3");
+        opt_config.miner_user_infos_.wallet_addresses_.emplace(currency_type::ZEC,
+                                                               "t1Z8gLLGyxGRkjRFbNnJ2n6yvHb1Vo3pXKH");
+        opt_config.miner_user_infos_.wallet_addresses_.emplace(currency_type::XMR,
+                                                               "49obKYMTctj2owFCjjPwmDELGNCc7kz3WBVLGgpF1MC3cWYH3psdpyV8rBdZUycYPr3qU9ChEmj4ZMFLLf2gN2bcFEzNPpv");
         //select currencies to mine
         for (int i = 0; i < static_cast<int>(currency_type::count); i++) {
             currency_type ct = static_cast<currency_type>(i);
-            std::string user_msg = "Include currency " + enum_to_string(ct) + "? [y/n]";
-            std::string user_in = cli_get_string(user_msg, "[yn]");
+            user_msg = "Include currency " + enum_to_string(ct) + "? [y/n]";
+            user_in = cli_get_string(user_msg, "[yn]");
             if (user_in != "y")
                 continue;
-            //user_msg = "Enter mining user info in the format <wallet_address/worker_name[/e-mail]>:";
-            //^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,6}$
-            //user_in = cli_get_string(user_msg, "[a-zA-Z0-9]+/\\w+(/\\w+(\\.\\w+)?@\\w+\\.[a-zA-Z]{2,6})?");
-            switch (ct) {
-                case frequency_scaling::currency_type::ETH:
-                    user_in = eth_address + "/eth_worker";
-                    break;
-                case frequency_scaling::currency_type::ZEC:
-                    user_in = zec_address + "/zec_worker";
-                    break;
-                case frequency_scaling::currency_type::XMR:
-                    user_in = xmr_address + "/xmr_worker";
-                    break;
-                default:
-                    break;
-            }
-            opt_config.miner_user_infos_.emplace(ct, miner_user_info(user_in));
+            //user_msg = "Enter wallet_address:";
+            //user_in = cli_get_string(user_msg, "[a-zA-Z0-9]+");
+            //opt_config.miner_user_infos_.wallet_addresses_.emplace(ct, user_in);
             //choose optimization method
             user_msg = "Select method used to optimize energy-hash ratio: [NM/HC/SA]";
             user_in = cli_get_string(user_msg, "NM|HC|SA");
@@ -105,14 +123,14 @@ namespace frequency_scaling {
             int min_hashrate = cli_get_int(user_msg);
             opt_config.opt_method_params_.emplace(ct, optimization_method_params(opt_method, min_hashrate));
         }
-        if (opt_config.miner_user_infos_.empty())
+        if (opt_config.miner_user_infos_.wallet_addresses_.empty())
             throw std::runtime_error("No currency selected");
         //save config dialog
-        std::string user_in = cli_get_string("Save configuration? [y/n]", "[yn]");
-        if (user_in != "y")
-            return opt_config;
-        user_in = cli_get_string("Enter filename:", "\\w+\\.\\w+");
-        write_config_json(user_in, opt_config);
+        user_in = cli_get_string("Save configuration? [y/n]", "[yn]");
+        if (user_in == "y") {
+            user_in = cli_get_string("Enter filename:", "[\\w-.]+");
+            write_config_json(user_in, opt_config);
+        }
         return opt_config;
     }
 
@@ -122,6 +140,7 @@ namespace frequency_scaling {
         pt::ptree root;
         root.put("energy_cost", opt_config.energy_cost_kwh_);
         root.put("monitoring_interval", opt_config.monitoring_interval_sec_);
+        root.put("email", opt_config.miner_user_infos_.email_adress_);
         //write devices to use
         pt::ptree devices_to_use;
         for (auto &dci : opt_config.dcis_) {
@@ -129,6 +148,7 @@ namespace frequency_scaling {
             pt_device.put("index", dci.device_id_nvml);
             pt_device.put("min_mem_oc", dci.min_mem_oc);
             pt_device.put("max_mem_oc", dci.max_mem_oc);
+            pt_device.put("worker_name", opt_config.miner_user_infos_.worker_names_.at(dci.device_id_nvml));
             devices_to_use.push_back(std::make_pair("", pt_device));
         }
         root.add_child("devices_to_use", devices_to_use);
@@ -136,20 +156,17 @@ namespace frequency_scaling {
         pt::ptree currencies_to_use;
         for (int i = 0; i < static_cast<int>(currency_type::count); i++) {
             currency_type ct = static_cast<currency_type>(i);
-            auto it_mui = opt_config.miner_user_infos_.find(ct);
+            auto it_mui = opt_config.miner_user_infos_.wallet_addresses_.find(ct);
             auto it_omp = opt_config.opt_method_params_.find(ct);
-            if (it_mui == opt_config.miner_user_infos_.end() ||
+            if (it_mui == opt_config.miner_user_infos_.wallet_addresses_.end() ||
                 it_omp == opt_config.opt_method_params_.end())
                 continue;
             //
             pt::ptree pt_currency;
-            pt::ptree pt_miner_user_info, pt_opt_method_params;
-            pt_miner_user_info.put("wallet_address", it_mui->second.wallet_address_);
-            pt_miner_user_info.put("worker_name", it_mui->second.get_worker_name_prefix());
-            pt_miner_user_info.put("email", it_mui->second.email_adress_);
+            pt::ptree pt_opt_method_params;
+            pt_currency.put("wallet_address", it_mui->second);
             pt_opt_method_params.put("method", enum_to_string(it_omp->second.method_));
             pt_opt_method_params.put("min_hashrate", it_omp->second.min_hashrate_);
-            pt_currency.add_child("miner_user_info", pt_miner_user_info);
             pt_currency.add_child("opt_method_params", pt_opt_method_params);
             currencies_to_use.push_back(std::make_pair(enum_to_string(ct), pt_currency));
         }
@@ -164,21 +181,21 @@ namespace frequency_scaling {
         optimization_config opt_config;
         opt_config.energy_cost_kwh_ = root.get<double>("energy_cost");
         opt_config.monitoring_interval_sec_ = root.get<int>("monitoring_interval");
+        opt_config.miner_user_infos_.email_adress_ = root.get<std::string>("email");
         //read device infos
         for (const pt::ptree::value_type &array_elem : root.get_child("devices_to_use")) {
             const boost::property_tree::ptree &pt_device = array_elem.second;
-            opt_config.dcis_.emplace_back(pt_device.get<int>("index"), pt_device.get<int>("min_mem_oc"),
+            int device_id = pt_device.get<int>("index");
+            opt_config.dcis_.emplace_back(device_id, pt_device.get<int>("min_mem_oc"),
                                           0, pt_device.get<int>("max_mem_oc"), 0);
+            opt_config.miner_user_infos_.worker_names_.emplace(device_id, pt_device.get<std::string>("worker_name"));
         }
         //read currencies to use
         for (const pt::ptree::value_type &array_elem : root.get_child("currencies_to_use")) {
             currency_type ct = string_to_currency_type(array_elem.first);
-            const boost::property_tree::ptree &pt_miner_user_info = array_elem.second.get_child("miner_user_info");
+            const boost::property_tree::ptree &pt_currency = array_elem.second;
             const boost::property_tree::ptree &pt_opt_method_params = array_elem.second.get_child("opt_method_params");
-            opt_config.miner_user_infos_.emplace(ct,
-                                                 miner_user_info(pt_miner_user_info.get<std::string>("wallet_address"),
-                                                                 pt_miner_user_info.get<std::string>("worker_name"),
-                                                                 pt_miner_user_info.get<std::string>("email")));
+            opt_config.miner_user_infos_.wallet_addresses_.emplace(ct, pt_currency.get<std::string>("wallet_address"));
             opt_config.opt_method_params_.emplace(ct, optimization_method_params(
                     string_to_opt_method(pt_opt_method_params.get<std::string>("method")),
                     pt_opt_method_params.get<int>("min_hashrate")));
