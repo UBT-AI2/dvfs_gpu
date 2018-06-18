@@ -38,9 +38,9 @@ if(WIN32)
     STRING(REPLACE "\ " "\\ " CURL_DIR2 ${CURL_DIR2})
     set(CURL_INCLUDE_DIRS ${CURL_DIR2}/include)
     set(CURL_LIBRARIES "${CURL_DIR2}/lib/libcurl.lib")
-else()
+else(WIN32)
     find_package(CURL REQUIRED)
-endif()
+endif(WIN32)
 
 #include and link cuda toolkit headers/libs
 include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
@@ -61,7 +61,7 @@ if (WIN32)
 	endif(MSVC)
     link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
     set(NVML_LIB_NAME nvml)
-else ()
+else (WIN32)
     execute_process(
             COMMAND bash -c "nvidia-smi | grep Driver | cut -f 3 -d' ' | cut -f 1 -d '.'"
             OUTPUT_VARIABLE DRIVER-BRANCH
@@ -71,7 +71,7 @@ else ()
     link_directories(/usr/lib/nvidia-387)
     set(NVML_LIB_NAME nvidia-ml)
     set(GLOG_LIB_NAME glog)
-endif ()
+endif (WIN32)
 
 #set OpenMP flags
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")

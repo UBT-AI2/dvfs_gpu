@@ -115,6 +115,7 @@ target_link_libraries(profit_optimization
 
 #Specify install target for executable
 #INSTALL(TARGETS ${EXECUTABLENAME} RUNTIME DESTINATION ${CMAKE_PROJECT_NAME}/bin)
-
+if(WIN32)
 file(COPY ${CMAKE_SOURCE_DIR}/dlls/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
         FILES_MATCHING PATTERN "*.dll")
+endif(WIN32)
