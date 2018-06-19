@@ -73,7 +73,7 @@ namespace frequency_scaling {
 				return;
 			}
             //update hashrate
-            energy_hash_info_.at(current_mined_ct).optimal_configuration_.hashrate_ = it_hr->second;
+            energy_hash_info_.at(current_mined_ct).optimal_configuration_.update_hashrate(it_hr->second);
         } catch (const network_error &err) {
             std::cerr << "Failed to get avg hashrate for currency " <<
                       enum_to_string(current_mined_ct) << ": " << err.what() << std::endl;
@@ -82,8 +82,8 @@ namespace frequency_scaling {
 
     void profit_calculator::update_power_consumption(currency_type current_mined_ct,
                                                      long long int system_time_start_ms) {
-        energy_hash_info_.at(current_mined_ct).optimal_configuration_.power_ =
-                get_avg_power_usage(dci_.device_id_nvml, system_time_start_ms);
+        energy_hash_info_.at(current_mined_ct).optimal_configuration_.update_power(
+                get_avg_power_usage(dci_.device_id_nvml, system_time_start_ms));
     }
 
     void profit_calculator::update_energy_cost_stromdao(int plz) {

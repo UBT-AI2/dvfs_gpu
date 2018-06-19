@@ -15,6 +15,47 @@ namespace frequency_scaling {
 
     static const int BUFFER_SIZE = 1024;
 
+	device_clock_info::device_clock_info(int device_id_nvml, int min_mem_oc, int min_graph_oc, int max_mem_oc,
+		int max_graph_oc) : device_id_nvml(device_id_nvml), min_mem_oc(min_mem_oc),
+		min_graph_oc(min_graph_oc), max_mem_oc(max_mem_oc),
+		max_graph_oc(max_graph_oc) {
+		device_id_nvapi = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id_nvml));
+		CUresult res = cuDeviceGetByPCIBusId(&device_id_cuda, nvmlGetBusIdString(device_id_nvml).c_str());
+		if (res == CUDA_ERROR_NOT_INITIALIZED) {
+			cuInit(0);
+			cuDeviceGetByPCIBusId(&device_id_cuda, nvmlGetBusIdString(device_id_nvml).c_str());
+		}
+		try {
+			nvml_mem_clocks = nvmlGetAvailableMemClocks(device_id_nvml);
+			nvml_graph_clocks = nvmlGetAvailableGraphClocks(device_id_nvml, nvml_mem_clocks[1]);
+		}
+		catch (const nvml_error& ex) {}
+		nvapi_default_mem_clock = nvapiGetCurrentMemClock(device_id_nvapi);
+		nvapi_default_graph_clock = nvapiGetCurrentGraphClock(device_id_nvapi);
+	}
+
+
+	measurement::measurement() : mem_clock_(0), graph_clock_(0), power_(0),
+		hashrate_(0), energy_hash_(0),
+		nvml_graph_clock_idx(-1), mem_oc(0), graph_oc(0) {}
+
+	measurement::measurement(int mem_clock, int graph_clock, double power, double hashrate) :
+		mem_clock_(mem_clock), graph_clock_(graph_clock), power_(power),
+		hashrate_(hashrate), energy_hash_(hashrate / power),
+		nvml_graph_clock_idx(-1), mem_oc(0), graph_oc(0) {}
+
+
+	void measurement::update_power(double power) {
+		power_ = power;
+		energy_hash_ = hashrate_ / power;
+	}
+
+	void measurement::update_hashrate(double hashrate) {
+		hashrate_ = hashrate;
+		energy_hash_ = hashrate / power_;
+	}
+
+
     static measurement run_benchmark_script(currency_type ct, const device_clock_info &dci,
                                             int graph_clock, int mem_clock) {
         {
@@ -142,25 +183,6 @@ namespace frequency_scaling {
         m.mem_oc = mem_oc;
         m.graph_oc = graph_oc;
         return m;
-    }
-
-    device_clock_info::device_clock_info(int device_id_nvml, int min_mem_oc, int min_graph_oc, int max_mem_oc,
-                                         int max_graph_oc) : device_id_nvml(device_id_nvml), min_mem_oc(min_mem_oc),
-                                                             min_graph_oc(min_graph_oc), max_mem_oc(max_mem_oc),
-                                                             max_graph_oc(max_graph_oc) {
-        device_id_nvapi = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id_nvml));
-        CUresult res = cuDeviceGetByPCIBusId(&device_id_cuda, nvmlGetBusIdString(device_id_nvml).c_str());
-        if (res == CUDA_ERROR_NOT_INITIALIZED) {
-            cuInit(0);
-            cuDeviceGetByPCIBusId(&device_id_cuda, nvmlGetBusIdString(device_id_nvml).c_str());
-        }
-		try {
-			nvml_mem_clocks = nvmlGetAvailableMemClocks(device_id_nvml);
-			nvml_graph_clocks = nvmlGetAvailableGraphClocks(device_id_nvml, nvml_mem_clocks[1]);
-		}
-		catch (const nvml_error& ex) {}
-		nvapi_default_mem_clock = nvapiGetCurrentMemClock(device_id_nvapi);
-		nvapi_default_graph_clock = nvapiGetCurrentGraphClock(device_id_nvapi);
     }
 
 

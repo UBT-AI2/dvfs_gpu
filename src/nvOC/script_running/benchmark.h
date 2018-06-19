@@ -16,14 +16,11 @@ namespace frequency_scaling {
     };
 
     struct measurement {
-        measurement() : mem_clock_(0), graph_clock_(0), power_(0),
-                        hashrate_(0), energy_hash_(0),
-                        nvml_graph_clock_idx(-1), mem_oc(0), graph_oc(0) {}
+		measurement();
+		measurement(int mem_clock, int graph_clock, double power, double hashrate);
 
-        measurement(int mem_clock, int graph_clock, double power, double hashrate) :
-                mem_clock_(mem_clock), graph_clock_(graph_clock), power_(power),
-                hashrate_(hashrate), energy_hash_(hashrate / power),
-                nvml_graph_clock_idx(-1), mem_oc(0), graph_oc(0) {}
+		void update_power(double power);
+		void update_hashrate(double hashrate);
 
         int mem_clock_, graph_clock_;
         double power_, hashrate_, energy_hash_;
