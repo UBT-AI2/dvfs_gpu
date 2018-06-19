@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <thread>
+#include <future>
 #include <condition_variable>
 #include <atomic>
 #include <set>
@@ -95,6 +96,29 @@ namespace frequency_scaling {
                   << std::endl;
     }
 
+	static bool monitoring_sanity_check(const profit_calculator &profit_calc, const miner_user_info &user_infos,
+		long long int& system_time_start_ms, int& current_monitoring_time_sec) {
+		int device_id = profit_calc.getDci_().device_id_nvml;
+		//check if miner still running and restart if it somehow crashed
+		if (!process_management::gpu_has_background_process(device_id, process_type::MINER)) {
+			if (process_management::gpu_has_background_process(device_id, process_type::POWER_MONITOR))
+				stop_power_monitoring_script(device_id);
+			start_power_monitoring_script(device_id);
+			start_mining_best_currency(profit_calc, user_infos);
+			current_monitoring_time_sec = 0;
+			system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+				std::chrono::system_clock::now().time_since_epoch()).count();
+			return false;
+		}
+		//
+		if (!process_management::gpu_has_background_process(device_id, process_type::POWER_MONITOR)) {
+			start_power_monitoring_script(device_id);
+			system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+				std::chrono::system_clock::now().time_since_epoch()).count();
+			return false;
+		}
+		return true;
+	}
 
     static void
     start_profit_monitoring(profit_calculator &profit_calc,
@@ -105,6 +129,7 @@ namespace frequency_scaling {
         int current_monitoring_time_sec = 0;
         long long int system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
+		monitoring_sanity_check(profit_calc, user_infos, system_time_start_ms, current_monitoring_time_sec);
         //monitoring loop
         while (true) {
             std::cv_status stat;
@@ -119,15 +144,18 @@ namespace frequency_scaling {
             if (terminate)
                 break;
             current_monitoring_time_sec += update_interval_sec;
+			if (!monitoring_sanity_check(profit_calc, user_infos, system_time_start_ms, current_monitoring_time_sec))
+				continue;
             //monitoring code
             try {
                 //currently mined currency
                 currency_type old_best_currency = profit_calc.getBest_currency_();
-                //update with pool hashrates and long time power_consumption if currency is mined > 1h
+				//update with long time power_consumption
+				profit_calc.update_power_consumption(old_best_currency, system_time_start_ms);
+                //update with pool hashrates if currency is mined > 1h
                 if (current_monitoring_time_sec > 3600) {
                     profit_calc.update_opt_config_hashrate_nanopool(old_best_currency, user_infos,
                                                                     current_monitoring_time_sec / 3600.0);
-                    profit_calc.update_power_consumption(old_best_currency, system_time_start_ms);
                 }
                 //update approximated earnings based on current hashrate and stock price
                 profit_calc.update_currency_info_nanopool();
@@ -231,16 +259,21 @@ namespace frequency_scaling {
         std::cout << "Starting mining and monitoring..." << std::endl;
 
         std::vector<std::thread> threads;
+		std::vector<std::future<std::pair<int, std::map<currency_type, energy_hash_info>>>> futures;
         std::mutex mutex;
         std::condition_variable cond_var;
         std::atomic_bool terminate = ATOMIC_VAR_INIT(false);
         for (int i = 0; i < opt_config.dcis_.size(); i++) {
+			std::promise<std::pair<int, std::map<currency_type, energy_hash_info>>> promise;
+			futures.push_back(promise.get_future());
+			//
             threads.emplace_back([i, &opt_config, &opt_result,
-                                         &mutex, &cond_var, &terminate]() {
+                                         &mutex, &cond_var, &terminate](
+				std::promise<std::pair<int, std::map<currency_type, energy_hash_info>>>&& p) {
                 try {
                     const device_clock_info &gpu_dci = opt_config.dcis_[i];
                     const std::map<currency_type, energy_hash_info> &gpu_opt_res =
-                            opt_result.at(gpu_dci.device_id_nvml);
+						opt_result.at(gpu_dci.device_id_nvml);
                     const std::map<currency_type, currency_info> &gpu_currency_infos =
                             get_currency_infos_nanopool(gpu_opt_res);
                     //create profit calculator for gpu
@@ -249,11 +282,14 @@ namespace frequency_scaling {
                     start_profit_monitoring(pc, opt_config.miner_user_infos_, opt_config.monitoring_interval_sec_,
                                             mutex, cond_var, terminate);
                     stop_mining_script(gpu_dci.device_id_nvml);
+					//set return value
+					p.set_value(std::make_pair(gpu_dci.device_id_nvml, pc.getEnergy_hash_info_()));
                 } catch (const std::exception &ex) {
                     std::cerr << "Exception in mining/monitoring thread for GPU " <<
                               opt_config.dcis_[i].device_id_nvml << ": " << ex.what() << std::endl;
+					p.set_exception(std::current_exception()); //future.get() triggers the exception
                 }
-            });
+            }, std::move(promise));
         }
         //wait for user to terminate
         std::string user_in = cli_get_string("Performing mining and monitoring...\nEnter q to stop.", "q");
@@ -265,14 +301,16 @@ namespace frequency_scaling {
         for (auto &t : threads)
             t.join();
 
-        //cleanup processes
-        //process_management::kill_all_processes(false);
+		std::map<int, std::map<currency_type, energy_hash_info>> updated_opt_result;
+		for (auto& f : futures) {
+			updated_opt_result.insert(f.get());
+		}
 
         //save opt results dialog
         user_in = cli_get_string("Save optimization results? [y/n]", "[yn]");
         if (user_in == "y") {
             user_in = cli_get_string("Enter filename:", "[\\w-.]+");
-            save_optimization_result(user_in, opt_result);
+            save_optimization_result(user_in, updated_opt_result);
         }
 
     }

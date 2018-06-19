@@ -31,6 +31,8 @@ namespace frequency_scaling {
         static bool gpu_start_process(const std::string &filename,
                                       int device_id, process_type pt, bool background);
 
+		static bool has_process(int pid);
+
         static void kill_all_processes(bool only_background);
 
         static void kill_process(int pid);

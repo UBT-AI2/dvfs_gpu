@@ -9,6 +9,7 @@
 #ifdef _WIN32
 
 #include <windows.h>
+#include <psapi.h>
 
 #else
 #include <unistd.h>
@@ -75,7 +76,9 @@ namespace frequency_scaling {
     bool process_management::gpu_has_background_process(int device_id, process_type pt) {
         std::lock_guard<std::mutex> lock(process_management::gpu_background_processes_mutex_);
         auto it = process_management::gpu_background_processes_.find(std::make_pair(device_id, pt));
-        return it != process_management::gpu_background_processes_.end();
+		if (it == process_management::gpu_background_processes_.end())
+			return false;
+		return process_management::has_process(it->second);
     }
 
     bool process_management::gpu_kill_background_process(int device_id, process_type pt) {
@@ -102,6 +105,26 @@ namespace frequency_scaling {
         return true;
     }
 
+
+	bool process_management::has_process(int pid) {
+#ifdef _WIN32
+		DWORD aProcesses[BUFFER_SIZE], cbNeeded;
+		if (!EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded)) {
+			return false;
+		}
+
+		DWORD numProcesses = cbNeeded / sizeof(DWORD);
+		for (int i = 0; i < numProcesses; i++){
+			if (aProcesses[i] == pid)
+				return true;
+		}
+		return false;
+#else
+		return kill(pid, 0) == 0;
+#endif
+	}
+
+
     void process_management::kill_all_processes(bool only_background) {
         std::vector<int> pids_to_kill;
         {
@@ -116,25 +139,46 @@ namespace frequency_scaling {
             }
         }
         //
-        for (int pid : pids_to_kill)
-            process_management::kill_process(pid);
+		for (int pid : pids_to_kill) {
+			if(process_management::has_process(pid))
+				process_management::kill_process(pid);
+		}
     }
 
 
     void process_management::kill_process(int pid) {
         process_management::remove_pid(pid);
         try {
-            process_management::start_process("kill " + std::to_string(pid), false, true, pid);
-        }
-        catch (const process_error &ex) {
 #ifdef _WIN32
-            process_management::start_process("taskkill /f /t /pid " + std::to_string(pid), false, true, pid, false);
+			process_management::start_process("taskkill /f /t /pid " + std::to_string(pid), 
+				false, true, pid, false);
 #else
-            throw;
+            process_management::start_process("kill " + std::to_string(pid), false, true, pid);
 #endif
         }
-        //
+        catch (const process_error &ex) {
+        }
 
+		/*
+#ifdef _WIN32
+		HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+		if (hProcess == NULL) {
+			throw process_error("Failed to kill process with pid " + std::to_string(pid));
+		}
+		if (!TerminateProcess(hProcess, 0)) {
+			CloseHandle(hProcess);
+			throw process_error("Failed to kill process with pid " + std::to_string(pid));
+		}
+		WaitForSingleObject(hProcess, INFINITE);
+		CloseHandle(hProcess);
+#else
+		if (kill(pid, SIGKILL) != 0) {
+			throw process_error("Failed to kill process with pid " + std::to_string(pid));
+		}
+#endif
+		*/
+		//
+		std::cout << "Killed process with pid " + std::to_string(pid) << std::endl;
     }
 
     int process_management::start_process(const std::string &cmd, bool background) {
@@ -174,8 +218,8 @@ namespace frequency_scaling {
                     throw process_error("Process " + cmd + " returned invalid exit code: " + std::to_string(exit_code));
                 }
             }
-            CloseHandle(pi.hThread);
-            CloseHandle(pi.hProcess);
+            //CloseHandle(pi.hThread);
+            //CloseHandle(pi.hProcess);
             return dwPid;
         } else {
             throw process_error("CreateProcess() failed: " + cmd);

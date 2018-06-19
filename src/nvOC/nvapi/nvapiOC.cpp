@@ -214,7 +214,7 @@ namespace frequency_scaling {
             printf("VRAM: %dMB GDDR%d\n", memsize / 1024, memtype <= 7 ? 3 : 5);
             printf("BIOS: %s\n", biosname);
             //
-            nvapiOC(idxGPU, 0, 0);
+            //nvapiOC(idxGPU, 0, 0);
         }
     }
 
@@ -225,7 +225,7 @@ namespace frequency_scaling {
             int nGPU;
             safeNVAPICall(NvEnumPhysicalGPUs(hdlGPU, &nGPU));
             for (int idxGPU = 0; idxGPU < nGPU; idxGPU++) {
-                nvapiOC(idxGPU, 0, 0);
+                //nvapiOC(idxGPU, 0, 0);
                 printf("NVAPI restored clocks for device %i\n", idxGPU);
             }
         }

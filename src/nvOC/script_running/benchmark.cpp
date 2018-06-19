@@ -8,6 +8,7 @@
 #include <cuda.h>
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
+#include "../exceptions.h"
 #include "process_management.h"
 
 namespace frequency_scaling {
@@ -47,6 +48,7 @@ namespace frequency_scaling {
             std::ifstream file;
             file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
             file.open(filename, std::ios_base::ate);//open file
+			file.exceptions(std::ifstream::badbit);
             int c = 0;
             int length = file.tellg();//Get file size
             // loop backward over the file
@@ -87,6 +89,7 @@ namespace frequency_scaling {
         std::ifstream file;
         file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         file.open("power_results_" + std::to_string(device_id) + ".txt");
+		file.exceptions(std::ifstream::badbit);
         std::string line;
         std::string::size_type sz = 0;
         double res = 0;
@@ -151,10 +154,13 @@ namespace frequency_scaling {
             cuInit(0);
             cuDeviceGetByPCIBusId(&device_id_cuda, nvmlGetBusIdString(device_id_nvml).c_str());
         }
-        nvml_mem_clocks = nvmlGetAvailableMemClocks(device_id_nvml);
-        nvml_graph_clocks = nvmlGetAvailableGraphClocks(device_id_nvml, nvml_mem_clocks[1]);
-        nvapi_default_mem_clock = nvml_mem_clocks[0];
-        nvapi_default_graph_clock = nvml_graph_clocks[0];
+		try {
+			nvml_mem_clocks = nvmlGetAvailableMemClocks(device_id_nvml);
+			nvml_graph_clocks = nvmlGetAvailableGraphClocks(device_id_nvml, nvml_mem_clocks[1]);
+		}
+		catch (const nvml_error& ex) {}
+		nvapi_default_mem_clock = nvapiGetCurrentMemClock(device_id_nvapi);
+		nvapi_default_graph_clock = nvapiGetCurrentGraphClock(device_id_nvapi);
     }
 
 
