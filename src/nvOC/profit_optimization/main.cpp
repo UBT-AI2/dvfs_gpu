@@ -25,10 +25,7 @@ int main(int argc, char **argv) {
         nvapiInit();
         nvmlInit_();
         process_management::register_process_cleanup_sighandler();
-
-		start_power_monitoring_script(2);
-		stop_power_monitoring_script(2);
-
+        
         //start mining and monitoring best currency;
         const optimization_config &opt_config = (cmd_args.count("--user_config")) ? parse_config_json(
                 cmd_args.at("--user_config")) : get_config_user_dialog();

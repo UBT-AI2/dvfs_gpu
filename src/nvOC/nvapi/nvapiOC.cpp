@@ -233,6 +233,10 @@ namespace frequency_scaling {
         safeNVAPICall(NvUnload());
     }
 
+    bool checkNvapiSupport(int device_id_nvml){
+        return true;
+    }
+
     int nvapiGetDeviceIndexByBusId(int busId) {
         int *hdlGPU[64] = {0};
         int nGPU;
@@ -326,6 +330,10 @@ namespace frequency_scaling {
 
     void nvapiUnload(int restoreClocks) {
         throw nvapi_error("NVAPI not supported");
+    }
+
+    bool checkNvapiSupport(int device_id_nvml){
+        return false;
     }
 
     int nvapiGetDeviceIndexByBusId(int busId) {

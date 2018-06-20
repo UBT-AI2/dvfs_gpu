@@ -23,17 +23,17 @@ namespace frequency_scaling {
         return abs(max_node.energy_hash_ - min_node.energy_hash_);
     }
 
-    measurement freq_simulated_annealing(currency_type ms, const device_clock_info &dci, int max_iterations,
+    measurement freq_simulated_annealing(currency_type ct, const device_clock_info &dci, int max_iterations,
                                          int mem_step, int graph_idx_step, double min_hashrate) {
-        double start_temperature = guess_start_temperature(ms, dci);
+        double start_temperature = guess_start_temperature(ct, dci);
         //initial guess at maximum frequencies
         int initial_graph_idx = 0, initial_mem_oc = dci.max_mem_oc;
-        const measurement &initial_node = run_benchmark_script_nvml_nvapi(ms, dci, initial_mem_oc, initial_graph_idx);
-        return freq_simulated_annealing(ms, dci, initial_node, start_temperature,
+        const measurement &initial_node = run_benchmark_script_nvml_nvapi(ct, dci, initial_mem_oc, initial_graph_idx);
+        return freq_simulated_annealing(ct, dci, initial_node, start_temperature,
                                         max_iterations, mem_step, graph_idx_step, min_hashrate);
     }
 
-    measurement freq_simulated_annealing(currency_type ms, const device_clock_info &dci, const measurement &start_node,
+    measurement freq_simulated_annealing(currency_type ct, const device_clock_info &dci, const measurement &start_node,
                                          double start_temperature, int max_iterations,
                                          int mem_step, int graph_idx_step, double min_hashrate) {
         if (start_node.hashrate_ < min_hashrate) {
@@ -47,7 +47,7 @@ namespace frequency_scaling {
         double Tk = start_temperature;
         double c = 0.8;
         for (int k = 1; k <= max_iterations; k++) {
-            const measurement &neighbor_node = freq_hill_climbing(ms, dci, current_node, false, 1, mem_step,
+            const measurement &neighbor_node = freq_hill_climbing(ct, dci, current_node, false, 1, mem_step,
                                                                   graph_idx_step,
                                                                   min_hashrate);
             if (neighbor_node.energy_hash_ > best_node.energy_hash_)

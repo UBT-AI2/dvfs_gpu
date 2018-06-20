@@ -11,7 +11,7 @@ namespace frequency_scaling {
 
     typedef Eigen::Matrix<double, 2, 1> vec_type;
 
-    measurement freq_nelder_mead(currency_type ms, const device_clock_info &dci,
+    measurement freq_nelder_mead(currency_type ct, const device_clock_info &dci,
                                  int min_iterations, int max_iterations,
                                  int mem_step, int graph_idx_step,
                                  double min_hashrate,
@@ -20,11 +20,11 @@ namespace frequency_scaling {
         measurement start_node;
         start_node.mem_oc = dci.max_mem_oc;
         start_node.nvml_graph_clock_idx = 0;
-        return freq_nelder_mead(ms, dci, start_node, min_iterations, max_iterations, mem_step, graph_idx_step,
+        return freq_nelder_mead(ct, dci, start_node, min_iterations, max_iterations, mem_step, graph_idx_step,
                                 min_hashrate, mem_scale, graph_scale);
     }
 
-    measurement freq_nelder_mead(currency_type ms, const device_clock_info &dci, const measurement &start_node,
+    measurement freq_nelder_mead(currency_type ct, const device_clock_info &dci, const measurement &start_node,
                                  int min_iterations, int max_iterations,
                                  int mem_step, int graph_idx_step,
                                  double min_hashrate,
@@ -40,7 +40,7 @@ namespace frequency_scaling {
         best_measurement.energy_hash_ = std::numeric_limits<double>::lowest();
         int num_func_evals = 0;
 
-        auto function = [ms, &dci, dimension_, &best_measurement, mem_step, graph_idx_step,
+        auto function = [ct, &dci, dimension_, &best_measurement, mem_step, graph_idx_step,
                 min_hashrate, &num_func_evals](
                 const vec_type &x) -> double {
             num_func_evals++;
@@ -54,7 +54,7 @@ namespace frequency_scaling {
                 return std::numeric_limits<double>::max();
             }
             //
-            const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_oc, graph_idx);
+            const measurement &m = run_benchmark_script_nvml_nvapi(ct, dci, mem_oc, graph_idx);
             if (m.hashrate_ < min_hashrate) {
                 if (num_func_evals == 1)
                     throw optimization_error("Minimum hashrate cannot be reached");
@@ -84,7 +84,7 @@ namespace frequency_scaling {
         int mem_oc = dci.min_mem_oc + std::lround(glob_minimum(0) * mem_step);
         int graph_idx = std::lround(glob_minimum(1) * graph_idx_step);
         const measurement &glob_min_measurement =
-                run_benchmark_script_nvml_nvapi(ms, dci, mem_oc, graph_idx);
+                run_benchmark_script_nvml_nvapi(ct, dci, mem_oc, graph_idx);
         return (best_measurement.energy_hash_ > glob_min_measurement.energy_hash_) ?
                best_measurement : glob_min_measurement;
     }

@@ -9,6 +9,8 @@ namespace frequency_scaling {
 
     void nvmlShutdown_(bool restoreClocks);
 
+    bool nvmlCheckOCSupport(int device_id);
+
     std::vector<int> nvmlGetAvailableMemClocks(int device_id);
 
     std::vector<int> nvmlGetAvailableGraphClocks(int device_id, int mem_clock);

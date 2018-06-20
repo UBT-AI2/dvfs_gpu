@@ -88,11 +88,19 @@ namespace frequency_scaling {
             user_in = cli_get_string(user_msg, "[yn]");
             if (user_in != "y")
                 continue;
+            int min_graph_oc = 0, max_graph_oc = 0;
+            if(!nvmlCheckOCSupport(device_id)){
+                user_msg = "Enter min_graph_oc:";
+                min_graph_oc = cli_get_int(user_msg);
+                user_msg = "Enter max_graph_oc:";
+                max_graph_oc = cli_get_int(user_msg);
+            }
             user_msg = "Enter min_mem_oc:";
             int min_mem_oc = cli_get_int(user_msg);
             user_msg = "Enter max_mem_oc:";
             int max_mem_oc = cli_get_int(user_msg);
-            opt_config.dcis_.emplace_back(device_id, min_mem_oc, 0, max_mem_oc, 0);
+            opt_config.dcis_.emplace_back(device_id, min_mem_oc, min_graph_oc,
+                                          max_mem_oc, max_graph_oc);
             opt_config.miner_user_infos_.worker_names_.emplace(device_id, getworker_name(device_id));
         }
         if (opt_config.dcis_.empty())
@@ -147,7 +155,9 @@ namespace frequency_scaling {
             pt::ptree pt_device;
             pt_device.put("index", dci.device_id_nvml);
             pt_device.put("min_mem_oc", dci.min_mem_oc);
+            pt_device.put("min_graph_oc", dci.min_graph_oc);
             pt_device.put("max_mem_oc", dci.max_mem_oc);
+            pt_device.put("max_graph_oc", dci.max_graph_oc);
             pt_device.put("worker_name", opt_config.miner_user_infos_.worker_names_.at(dci.device_id_nvml));
             devices_to_use.push_back(std::make_pair("", pt_device));
         }
@@ -187,7 +197,9 @@ namespace frequency_scaling {
             const boost::property_tree::ptree &pt_device = array_elem.second;
             int device_id = pt_device.get<int>("index");
             opt_config.dcis_.emplace_back(device_id, pt_device.get<int>("min_mem_oc"),
-                                          0, pt_device.get<int>("max_mem_oc"), 0);
+                                          pt_device.get<int>("min_graph_oc"),
+                                          pt_device.get<int>("max_mem_oc"),
+                                          pt_device.get<int>("max_graph_oc"));
             opt_config.miner_user_infos_.worker_names_.emplace(device_id, pt_device.get<std::string>("worker_name"));
         }
         //read currencies to use

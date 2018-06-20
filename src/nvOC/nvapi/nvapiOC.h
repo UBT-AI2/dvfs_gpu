@@ -6,6 +6,8 @@ namespace frequency_scaling {
 
     void nvapiUnload(int restoreClocks);
 
+    bool checkNvapiSupport(int device_id_nvml);
+
     int nvapiGetDeviceIndexByBusId(int busId);
 
     int nvapiGetCurrentMemClock(int deviceId);

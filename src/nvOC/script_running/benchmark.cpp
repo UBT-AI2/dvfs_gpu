@@ -15,23 +15,35 @@ namespace frequency_scaling {
 
     static const int BUFFER_SIZE = 1024;
 
-	device_clock_info::device_clock_info(int device_id_nvml, int min_mem_oc, int min_graph_oc, int max_mem_oc,
+	device_clock_info::device_clock_info(int device_id_nvml, int min_mem_oc,
+                                         int min_graph_oc, int max_mem_oc,
 		int max_graph_oc) : device_id_nvml(device_id_nvml), min_mem_oc(min_mem_oc),
 		min_graph_oc(min_graph_oc), max_mem_oc(max_mem_oc),
 		max_graph_oc(max_graph_oc) {
+
+        nvml_supported_ = nvmlCheckOCSupport(device_id_nvml);
 		device_id_nvapi = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id_nvml));
 		CUresult res = cuDeviceGetByPCIBusId(&device_id_cuda, nvmlGetBusIdString(device_id_nvml).c_str());
 		if (res == CUDA_ERROR_NOT_INITIALIZED) {
 			cuInit(0);
 			cuDeviceGetByPCIBusId(&device_id_cuda, nvmlGetBusIdString(device_id_nvml).c_str());
 		}
-		try {
-			nvml_mem_clocks = nvmlGetAvailableMemClocks(device_id_nvml);
-			nvml_graph_clocks = nvmlGetAvailableGraphClocks(device_id_nvml, nvml_mem_clocks[1]);
-		}
-		catch (const nvml_error& ex) {}
-		nvapi_default_mem_clock = nvapiGetCurrentMemClock(device_id_nvapi);
-		nvapi_default_graph_clock = nvapiGetCurrentGraphClock(device_id_nvapi);
+
+        nvapi_default_mem_clock = nvapiGetCurrentMemClock(device_id_nvapi);
+        nvapi_default_graph_clock = nvapiGetCurrentGraphClock(device_id_nvapi);
+
+        if(nvml_supported_) {
+            nvml_mem_clocks = nvmlGetAvailableMemClocks(device_id_nvml);
+            nvml_graph_clocks = nvmlGetAvailableGraphClocks(device_id_nvml, nvml_mem_clocks[1]);
+        }else{
+            //fake nvml vectors
+            for(int graph_oc = max_graph_oc; graph_oc >= min_graph_oc; graph_oc-=10){
+                nvml_graph_clocks.push_back(nvapi_default_graph_clock  + graph_oc);
+            }
+            for(int mem_oc = max_mem_oc; mem_oc >= min_mem_oc; mem_oc-=10){
+                nvml_mem_clocks.push_back(nvapi_default_mem_clock  + mem_oc);
+            }
+        }
 	}
 
 
@@ -148,8 +160,13 @@ namespace frequency_scaling {
     void change_clocks_nvml_nvapi(const device_clock_info &dci,
                                   int mem_oc, int nvml_graph_clock_idx) {
         int graph_clock = dci.nvml_graph_clocks[nvml_graph_clock_idx];
-        nvapiOC(dci.device_id_nvapi, 0, mem_oc);
-        nvmlOC(dci.device_id_nvml, graph_clock, dci.nvml_mem_clocks[1]);
+        if(dci.nvml_supported_) {
+            nvapiOC(dci.device_id_nvapi, 0, mem_oc);
+            nvmlOC(dci.device_id_nvml, graph_clock, dci.nvml_mem_clocks[1]);
+        } else{
+            int graph_oc = graph_clock - dci.nvapi_default_graph_clock;
+            nvapiOC(dci.device_id_nvapi, graph_oc, mem_oc);
+        }
     }
 
     void change_clocks_nvapi_only(const device_clock_info &dci,

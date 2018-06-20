@@ -64,6 +64,13 @@ namespace frequency_scaling {
         safeNVMLCall(nvmlShutdown());
     }
 
+    bool nvmlCheckOCSupport(int device_id){
+        nvmlDevice_t device;
+        safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
+        nvmlReturn_t res = nvmlDeviceResetApplicationsClocks(device);
+        return res == NVML_SUCCESS;
+    }
+
     std::vector<int> nvmlGetAvailableMemClocks(int device_id) {
         nvmlDevice_t device;
         safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));

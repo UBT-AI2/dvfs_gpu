@@ -154,16 +154,16 @@ namespace frequency_scaling {
     }
 
 
-    measurement freq_hill_climbing(currency_type ms, const device_clock_info &dci,
+    measurement freq_hill_climbing(currency_type ct, const device_clock_info &dci,
                                    int max_iterations, int mem_step, int graph_idx_step, double min_hashrate) {
         //initial guess at maximum frequencies
         int initial_graph_idx = 0, initial_mem_oc = dci.max_mem_oc;
-        measurement start_node = run_benchmark_script_nvml_nvapi(ms, dci, initial_mem_oc, initial_graph_idx);
-        return freq_hill_climbing(ms, dci, start_node, true, max_iterations, mem_step, graph_idx_step, min_hashrate);
+        measurement start_node = run_benchmark_script_nvml_nvapi(ct, dci, initial_mem_oc, initial_graph_idx);
+        return freq_hill_climbing(ct, dci, start_node, true, max_iterations, mem_step, graph_idx_step, min_hashrate);
     }
 
 
-    measurement freq_hill_climbing(currency_type ms, const device_clock_info &dci, const measurement &start_node,
+    measurement freq_hill_climbing(currency_type ct, const device_clock_info &dci, const measurement &start_node,
                                    bool allow_start_node_result,
                                    int max_iterations, int mem_step, int graph_idx_step, double min_hashrate) {
 
@@ -191,7 +191,7 @@ namespace frequency_scaling {
                 cur_graph_idx_step = std::lround(std::max(graph_idx_step / distr_stepsize(eng), 1.0));
             }
 
-            const std::vector<measurement> &neighbors = explore_neighborhood(ms, dci, current_node, currentslope,
+            const std::vector<measurement> &neighbors = explore_neighborhood(ct, dci, current_node, currentslope,
                                                                              cur_mem_step,
                                                                              cur_graph_idx_step, min_hashrate, false);
             measurement last_node = current_node;
