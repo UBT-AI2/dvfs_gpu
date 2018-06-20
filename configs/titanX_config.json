@@ -4,10 +4,10 @@
     "email": "alexander.fiebig@uni-bayreuth.de",
     "devices_to_use": [
         {
-            "index": "2",
+            "index": "1",
             "min_mem_oc": "-1000",
             "max_mem_oc": "900",
-            "worker_name": "DESKTOP-6817PNB_gpu2"
+            "worker_name": "DESKTOP-6817PNB_gpu1"
         }
     ],
     "currencies_to_use": {

@@ -33,12 +33,12 @@
 
 "gpu_threads_conf" :
 [
-  // gpu: GeForce GTX 1080 architecture: 61
-  //      memory: 6757/8192 MiB
-  //      smx: 20
-  { "index" : 2,
-    "threads" : 22, "blocks" : 40,
-    "bfactor" : 6, "bsleep" :  25,
+  // gpu: TITAN X (Pascal) architecture: 61
+  //      memory: 10179/12288 MiB
+  //      smx: 28
+  { "index" : 0,
+    "threads" : 58, "blocks" : 64,
+    "bfactor" : 8, "bsleep" :  25,
     "affine_to_cpu" : false, "sync_mode" : 3,
   },
 ],

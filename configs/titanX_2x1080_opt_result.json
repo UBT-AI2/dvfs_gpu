@@ -1,0 +1,98 @@
+{
+    "0": {
+        "ETH": {
+            "power": "138.93872197905",
+            "hashrate": "24083333.333333336",
+            "energy_hash": "173337.80669844337",
+            "nvml_graph_clock_idx": "20",
+            "mem_oc": "900",
+            "graph_oc": "0",
+            "graph_clock": "1911",
+            "mem_clock": "5905"
+        },
+        "ZEC": {
+            "power": "154.39555081127216",
+            "hashrate": "394.46557200000001",
+            "energy_hash": "2.5549024562384006",
+            "nvml_graph_clock_idx": "15",
+            "mem_oc": "-163",
+            "graph_oc": "0",
+            "graph_clock": "1961",
+            "mem_clock": "4842"
+        },
+        "XMR": {
+            "power": "90.243399829385353",
+            "hashrate": "385",
+            "energy_hash": "4.2662399768612778",
+            "nvml_graph_clock_idx": "25",
+            "mem_oc": "588",
+            "graph_oc": "0",
+            "graph_clock": "1861",
+            "mem_clock": "5593"
+        }
+    },
+    "1": {
+        "ETH": {
+            "power": "125.57318390277661",
+            "hashrate": "28333333.333333336",
+            "energy_hash": "225632.03745212074",
+            "nvml_graph_clock_idx": "60",
+            "mem_oc": "300",
+            "graph_oc": "0",
+            "graph_clock": "1151",
+            "mem_clock": "5305"
+        },
+        "ZEC": {
+            "power": "152.99000000000001",
+            "hashrate": "513.31064900000001",
+            "energy_hash": "3.3551908556114776",
+            "nvml_graph_clock_idx": "3",
+            "mem_oc": "-254",
+            "graph_oc": "0",
+            "graph_clock": "1873",
+            "mem_clock": "4751"
+        },
+        "XMR": {
+            "power": "111.19218615451308",
+            "hashrate": "840",
+            "energy_hash": "7.5544876762539124",
+            "nvml_graph_clock_idx": "42",
+            "mem_oc": "900",
+            "graph_oc": "0",
+            "graph_clock": "1379",
+            "mem_clock": "5905"
+        }
+    },
+    "2": {
+        "ETH": {
+            "power": "157.28999999999999",
+            "hashrate": "25760147",
+            "energy_hash": "163774.85536270583",
+            "nvml_graph_clock_idx": "20",
+            "mem_oc": "900",
+            "graph_oc": "0",
+            "graph_clock": "1911",
+            "mem_clock": "5905"
+        },
+        "ZEC": {
+            "power": "113.53175461654678",
+            "hashrate": "315.83999999999997",
+            "energy_hash": "2.7819529528698714",
+            "nvml_graph_clock_idx": "15",
+            "mem_oc": "-163",
+            "graph_oc": "0",
+            "graph_clock": "1961",
+            "mem_clock": "4842"
+        },
+        "XMR": {
+            "power": "80.527787472033637",
+            "hashrate": "595",
+            "energy_hash": "7.3887538535271018",
+            "nvml_graph_clock_idx": "25",
+            "mem_oc": "588",
+            "graph_oc": "0",
+            "graph_clock": "1861",
+            "mem_clock": "5593"
+        }
+    }
+}
