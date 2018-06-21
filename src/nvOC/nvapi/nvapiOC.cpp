@@ -16,14 +16,13 @@
 
 //https://1vwjbxf1wko0yhnr.wordpress.com/author/2pkaqwtuqm2q7djg/
 #include "nvapiOC.h"
-
-
-#include <stdio.h>
-#include <stdlib.h>
 #include <string>
 
 #ifdef _WIN32
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <set>
 #include <windows.h>
 
 #endif
@@ -147,6 +146,7 @@ namespace frequency_scaling {
     static NvAPI_GetErrorMessage_t NvAPI_GetErrorMessage = 0;
 
     static const int BUFFER_SIZE = 1024;
+    static std::set<int> registered_gpus;
 
     static void safeNVAPICall(int result) {
         if (result != 0) {
@@ -181,59 +181,70 @@ namespace frequency_scaling {
         NvSetPstates = (NvAPI_GPU_SetPstates20_t) NvQueryInterface(0x0F4DAE6B);
         NvAPI_GetErrorMessage = (NvAPI_GetErrorMessage_t) NvQueryInterface(0x6C2D048C);
         //
+
+        printf("NVAPI initialization...\n");
+        safeNVAPICall(NvInit());
+    }
+
+    bool nvapi_register_gpu(int device_id) {
+        auto res = registered_gpus.emplace(device_id);
+        if (!res.second)
+            return false;
+
         int nGPU = 0, systype = 0, memsize = 0, memtype = 0, busId = 0;
         int *hdlGPU[64] = {0};
         char sysname[64] = {0}, biosname[64] = {0};
-
-        safeNVAPICall(NvInit());
         safeNVAPICall(NvEnumPhysicalGPUs(hdlGPU, &nGPU));
-        printf("NVAPI initialization...\n");
-        printf("Number of GPUs: %i\n", nGPU);
 
-        for (int idxGPU = 0; idxGPU < nGPU; idxGPU++) {
-            safeNVAPICall(NvGetSysType(hdlGPU[idxGPU], &systype));
-            safeNVAPICall(NvGetName(hdlGPU[idxGPU], sysname));
-            safeNVAPICall(NvGetMemSize(hdlGPU[idxGPU], &memsize));
-            safeNVAPICall(NvGetMemType(hdlGPU[idxGPU], &memtype));
-            safeNVAPICall(NvGetBiosName(hdlGPU[idxGPU], biosname));
-            safeNVAPICall(NvAPI_GetBusId(hdlGPU[idxGPU], &busId));
+        int idxGPU = device_id;
+        safeNVAPICall(NvGetSysType(hdlGPU[idxGPU], &systype));
+        safeNVAPICall(NvGetName(hdlGPU[idxGPU], sysname));
+        safeNVAPICall(NvGetMemSize(hdlGPU[idxGPU], &memsize));
+        safeNVAPICall(NvGetMemType(hdlGPU[idxGPU], &memtype));
+        safeNVAPICall(NvGetBiosName(hdlGPU[idxGPU], biosname));
+        safeNVAPICall(NvAPI_GetBusId(hdlGPU[idxGPU], &busId));
 
-            printf("GPU index %i\n", idxGPU);
-            switch (systype) {
-                case 1:
-                    printf("Type: Laptop\n");
-                    break;
-                case 2:
-                    printf("Type: Desktop\n");
-                    break;
-                default:
-                    printf("Type: Unknown\n");
-                    break;
-            }
-            printf("Name: %s\n", sysname);
-            printf("VRAM: %dMB GDDR%d\n", memsize / 1024, memtype <= 7 ? 3 : 5);
-            printf("BIOS: %s\n", biosname);
-            //
-            //nvapiOC(idxGPU, 0, 0);
+        printf("NVAPI GPU index %i\n", idxGPU);
+        switch (systype) {
+            case 1:
+                printf("Type: Laptop\n");
+                break;
+            case 2:
+                printf("Type: Desktop\n");
+                break;
+            default:
+                printf("Type: Unknown\n");
+                break;
         }
+        printf("Name: %s\n", sysname);
+        printf("VRAM: %dMB GDDR%d\n", memsize / 1024, memtype <= 7 ? 3 : 5);
+        printf("BIOS: %s\n", biosname);
+        //
+        nvapiOC(idxGPU, 0, 0);
+        return true;
     }
 
     void nvapiUnload(int restoreClocks) {
-        printf("NVAPI unload...\n");
-        if (restoreClocks) {
-            int *hdlGPU[64] = {0};
-            int nGPU;
-            safeNVAPICall(NvEnumPhysicalGPUs(hdlGPU, &nGPU));
-            for (int idxGPU = 0; idxGPU < nGPU; idxGPU++) {
-                //nvapiOC(idxGPU, 0, 0);
-                printf("NVAPI restored clocks for device %i\n", idxGPU);
+        //unload should not throw
+        try {
+            printf("NVAPI unload...\n");
+            if (restoreClocks) {
+                int *hdlGPU[64] = {0};
+                int nGPU;
+                safeNVAPICall(NvEnumPhysicalGPUs(hdlGPU, &nGPU));
+                for (int idxGPU : registered_gpus) {
+                    nvapiOC(idxGPU, 0, 0);
+                    printf("NVAPI restored clocks for device %i\n", idxGPU);
+                }
             }
-        }
+        }catch (const nvapi_error& ex){}
         //
-        safeNVAPICall(NvUnload());
+        try {
+            safeNVAPICall(NvUnload());
+        }catch (const nvapi_error& ex){}
     }
 
-    bool checkNvapiSupport(int device_id_nvml){
+    bool nvapiCheckSupport() {
         return true;
     }
 
@@ -328,11 +339,15 @@ namespace frequency_scaling {
         throw nvapi_error("NVAPI not supported");
     }
 
+    bool nvapi_register_gpu(int device_id) {
+        throw nvapi_error("NVAPI not supported");
+    }
+
     void nvapiUnload(int restoreClocks) {
         throw nvapi_error("NVAPI not supported");
     }
 
-    bool checkNvapiSupport(int device_id_nvml){
+    bool nvapiCheckSupport() {
         return false;
     }
 

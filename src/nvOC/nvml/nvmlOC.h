@@ -7,6 +7,8 @@ namespace frequency_scaling {
 
     void nvmlInit_();
 
+    bool nvml_register_gpu(int device_id);
+
     void nvmlShutdown_(bool restoreClocks);
 
     bool nvmlCheckOCSupport(int device_id);

@@ -1,12 +1,14 @@
 #include "nvmlOC.h"
 
 #include <nvml.h>
+#include <set>
 #include "../exceptions.h"
 
 
 namespace frequency_scaling {
 
     static const int BUFFER_SIZE = 1024;
+    static std::set<int> registered_gpus;
 
     static void safeNVMLCall(nvmlReturn_t result) {
         if (result != NVML_SUCCESS) {
@@ -18,53 +20,58 @@ namespace frequency_scaling {
     }
 
     void nvmlInit_() {
-        safeNVMLCall(nvmlInit());
-        unsigned int deviceCount;
-        safeNVMLCall(nvmlDeviceGetCount(&deviceCount));
         printf("NVML initialization...\n");
-        printf("Number of GPUs: %i\n", deviceCount);
+        safeNVMLCall(nvmlInit());
+    }
 
-        for (int device_id = 0; device_id < deviceCount; device_id++) {
-            nvmlDevice_t device;
-            char name[BUFFER_SIZE];
-            nvmlPciInfo_t pci;
-            // Query for device handle to perform operations on a device
-            safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
-            safeNVMLCall(nvmlDeviceGetName(device, name, BUFFER_SIZE));
-            // pci.busId is very useful to know which device physically you're talking to
-            // Using PCI identifier you can also match nvmlDevice handle to CUDA device.
-            safeNVMLCall(nvmlDeviceGetPciInfo(device, &pci));
-            printf("GPU %d: %s [%s]\n", device_id, name, pci.busId);
+    bool nvml_register_gpu(int device_id) {
+        auto res = registered_gpus.emplace(device_id);
+        if (!res.second)
+            return false;
 
-            //enable persistence mode
-            //safeNVMLCall(nvmlDeviceSetPersistenceMode(device, 1));
-            //disable auto boosting of clocks (for hardware < pascal)
-            //safeNVMLCall(nvmlDeviceSetDefaultAutoBoostedClocksEnabled(device, 0, 0));
-            //safeNVMLCall(nvmlDeviceSetAutoBoostedClocksEnabled(device, 0));
+        nvmlDevice_t device;
+        char name[BUFFER_SIZE];
+        nvmlPciInfo_t pci;
+        // Query for device handle to perform operations on a device
+        safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
+        safeNVMLCall(nvmlDeviceGetName(device, name, BUFFER_SIZE));
+        // pci.busId is very useful to know which device physically you're talking to
+        // Using PCI identifier you can also match nvmlDevice handle to CUDA device.
+        safeNVMLCall(nvmlDeviceGetPciInfo(device, &pci));
+        printf("NVML GPU %d: %s [%s]\n", device_id, name, pci.busId);
 
-            //nvmlDeviceResetApplicationsClocks(device);
-        }
+        //enable persistence mode
+        //safeNVMLCall(nvmlDeviceSetPersistenceMode(device, 1));
+        //disable auto boosting of clocks (for hardware < pascal)
+        //safeNVMLCall(nvmlDeviceSetDefaultAutoBoostedClocksEnabled(device, 0, 0));
+        //safeNVMLCall(nvmlDeviceSetAutoBoostedClocksEnabled(device, 0));
+
+        safeNVMLCall(nvmlDeviceResetApplicationsClocks(device));
+        return true;
     }
 
     void nvmlShutdown_(bool restoreClocks) {
-        printf("NVML shutdown...\n");
-        if (restoreClocks) {
-            unsigned int deviceCount;
-            safeNVMLCall(nvmlDeviceGetCount(&deviceCount));
-            for (int device_id = 0; device_id < deviceCount; device_id++) {
-                nvmlDevice_t device;
-                // Query for device handle to perform operations on a device
-                safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
-                //nvmlDeviceResetApplicationsClocks(device);
-                //safeNVMLCall(nvmlDeviceSetDefaultAutoBoostedClocksEnabled(device, 1, 0));
-                //safeNVMLCall(nvmlDeviceSetAutoBoostedClocksEnabled(device, 1));
-                printf("NVML restored clocks for device %i\n", device_id);
+        //shutdown should never throw
+        try {
+            printf("NVML shutdown...\n");
+            if (restoreClocks) {
+                for (int device_id : registered_gpus) {
+                    nvmlDevice_t device;
+                    // Query for device handle to perform operations on a device
+                    safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
+                    safeNVMLCall(nvmlDeviceResetApplicationsClocks(device));
+                    printf("NVML restored clocks for device %i\n", device_id);
+                    //safeNVMLCall(nvmlDeviceSetDefaultAutoBoostedClocksEnabled(device, 1, 0));
+                    //safeNVMLCall(nvmlDeviceSetAutoBoostedClocksEnabled(device, 1));
+                }
             }
-        }
-        safeNVMLCall(nvmlShutdown());
+        } catch (const nvml_error &ex) {}
+        try {
+            safeNVMLCall(nvmlShutdown());
+        } catch (const nvml_error &ex) {}
     }
 
-    bool nvmlCheckOCSupport(int device_id){
+    bool nvmlCheckOCSupport(int device_id) {
         nvmlDevice_t device;
         safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
         nvmlReturn_t res = nvmlDeviceResetApplicationsClocks(device);

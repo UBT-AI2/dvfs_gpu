@@ -13,8 +13,8 @@ namespace frequency_scaling {
 
 
     void start_mining_script(currency_type ct, const device_clock_info &dci, const miner_user_info &user_info) {
-        const std::string& wallet_addr = user_info.wallet_addresses_.at(ct);
-        const std::string& worker_name = user_info.worker_names_.at(dci.device_id_nvml);
+        const std::string &wallet_addr = user_info.wallet_addresses_.at(ct);
+        const std::string &worker_name = user_info.worker_names_.at(dci.device_id_nvml);
         //start mining in background process
         char cmd1[BUFFER_SIZE];
         switch (ct) {

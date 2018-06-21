@@ -4,9 +4,11 @@ namespace frequency_scaling {
 
     void nvapiInit();
 
+    bool nvapi_register_gpu(int device_id);
+
     void nvapiUnload(int restoreClocks);
 
-    bool checkNvapiSupport(int device_id_nvml);
+    bool nvapiCheckSupport();
 
     int nvapiGetDeviceIndexByBusId(int busId);
 

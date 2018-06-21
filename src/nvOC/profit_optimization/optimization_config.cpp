@@ -13,7 +13,9 @@
 #include <windows.h>
 
 #else
+
 #include <unistd.h>
+
 #endif
 
 #include "../nvml/nvmlOC.h"
@@ -89,7 +91,7 @@ namespace frequency_scaling {
             if (user_in != "y")
                 continue;
             int min_graph_oc = 0, max_graph_oc = 0;
-            if(!nvmlCheckOCSupport(device_id)){
+            if (!nvmlCheckOCSupport(device_id)) {
                 user_msg = "Enter min_graph_oc:";
                 min_graph_oc = cli_get_int(user_msg);
                 user_msg = "Enter max_graph_oc:";

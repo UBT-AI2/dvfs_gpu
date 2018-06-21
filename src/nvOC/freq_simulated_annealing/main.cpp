@@ -12,9 +12,10 @@
 using namespace frequency_scaling;
 
 int main(int argc, char **argv) {
-    if (argc < 8) {
+    if (argc < 10) {
         std::cout << "Usage: " << argv[0] << " <currency_type> <device_id> <max_iterations> <mem_step> "
-                                             "<graph_idx_step> <min_mem_oc> <max_mem_oc> [<min_hashrate>]" << std::endl;
+                "<graph_idx_step> <min_mem_oc> <max_mem_oc> <min_graph_oc> "
+                "<max_graph_oc> [<min_hashrate>]" << std::endl;
         return 1;
     }
     currency_type ct = string_to_currency_type(argv[1]);
@@ -24,9 +25,11 @@ int main(int argc, char **argv) {
     int graph_idx_step = atoi(argv[5]);
     int min_mem_oc = atoi(argv[6]);
     int max_mem_oc = atoi(argv[7]);
+    int min_graph_oc = atoi(argv[8]);
+    int max_graph_oc = atoi(argv[9]);
     double min_hashrate = -1.0;
-    if (argc > 8)
-        min_hashrate = atof(argv[8]);
+    if (argc > 10)
+        min_hashrate = atof(argv[10]);
 
     try {
         //init apis
@@ -38,7 +41,7 @@ int main(int argc, char **argv) {
         start_power_monitoring_script(device_id);
 
         //
-        device_clock_info dci(device_id, min_mem_oc, 0, max_mem_oc, 0);
+        device_clock_info dci(device_id, min_mem_oc, min_graph_oc, max_mem_oc, max_graph_oc);
 
         //
         const measurement &m = freq_simulated_annealing(ct, dci, max_iterations, mem_step,
