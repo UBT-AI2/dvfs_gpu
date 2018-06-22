@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <functional>
 #include "currency_type.h"
 
 namespace frequency_scaling {
@@ -31,6 +32,8 @@ namespace frequency_scaling {
         int nvml_graph_clock_idx;
         int mem_oc, graph_oc;
     };
+
+    typedef std::function<measurement(currency_type, const device_clock_info &, int, int)> benchmark_func;
 
 
     void start_power_monitoring_script(int device_id, int interval_sleep_ms = 100);

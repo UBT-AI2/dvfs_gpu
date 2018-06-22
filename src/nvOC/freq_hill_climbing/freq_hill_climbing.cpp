@@ -24,7 +24,7 @@ namespace frequency_scaling {
 
 
     static std::vector<measurement>
-    explore_neighborhood(currency_type ms, const device_clock_info &dci,
+    explore_neighborhood(const benchmark_func &benchmarkFunc, currency_type ms, const device_clock_info &dci,
                          const measurement &current_node, double current_slope,
                          int mem_step, int graph_step_idx, double min_hashrate, bool use8Neighborhood) {
         std::vector<measurement> neighbor_nodes;
@@ -38,8 +38,8 @@ namespace frequency_scaling {
             //horizontal/vertical 4 neighborhood
             if (use8Neighborhood) {
                 if (mem_plus <= dci.max_mem_oc) {
-                    const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_plus,
-                                                                           current_node.nvml_graph_clock_idx);
+                    const measurement &m = benchmarkFunc(ms, dci, mem_plus,
+                                                         current_node.nvml_graph_clock_idx);
                     if (m.hashrate_ >= min_hashrate) {
                         neighbor_nodes.push_back(m);
                         deriv_info.emplace_back(
@@ -47,8 +47,8 @@ namespace frequency_scaling {
                     }
                 }
                 if (mem_minus >= dci.min_mem_oc) {
-                    const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_minus,
-                                                                           current_node.nvml_graph_clock_idx);
+                    const measurement &m = benchmarkFunc(ms, dci, mem_minus,
+                                                         current_node.nvml_graph_clock_idx);
                     if (m.hashrate_ >= min_hashrate) {
                         neighbor_nodes.push_back(m);
                         deriv_info.emplace_back(
@@ -56,8 +56,8 @@ namespace frequency_scaling {
                     }
                 }
                 if (graph_plus_idx < dci.nvml_graph_clocks.size()) {
-                    const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, current_node.mem_oc,
-                                                                           graph_plus_idx);
+                    const measurement &m = benchmarkFunc(ms, dci, current_node.mem_oc,
+                                                         graph_plus_idx);
                     if (m.hashrate_ >= min_hashrate) {
                         neighbor_nodes.push_back(m);
                         deriv_info.emplace_back(
@@ -65,8 +65,8 @@ namespace frequency_scaling {
                     }
                 }
                 if (graph_minus_idx >= 0) {
-                    const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, current_node.mem_oc,
-                                                                           graph_minus_idx);
+                    const measurement &m = benchmarkFunc(ms, dci, current_node.mem_oc,
+                                                         graph_minus_idx);
                     if (m.hashrate_ >= min_hashrate) {
                         neighbor_nodes.push_back(m);
                         deriv_info.emplace_back(
@@ -77,7 +77,7 @@ namespace frequency_scaling {
 
             //diagonal 4 neighborhood
             if (mem_plus <= dci.max_mem_oc && graph_plus_idx < dci.nvml_graph_clocks.size()) {
-                const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_plus, graph_plus_idx);
+                const measurement &m = benchmarkFunc(ms, dci, mem_plus, graph_plus_idx);
                 if (m.hashrate_ >= min_hashrate) {
                     neighbor_nodes.push_back(m);
                     deriv_info.emplace_back(
@@ -85,7 +85,7 @@ namespace frequency_scaling {
                 }
             }
             if (mem_minus >= dci.min_mem_oc && graph_minus_idx >= 0) {
-                const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_minus, graph_minus_idx);
+                const measurement &m = benchmarkFunc(ms, dci, mem_minus, graph_minus_idx);
                 if (m.hashrate_ >= min_hashrate) {
                     neighbor_nodes.push_back(m);
                     deriv_info.emplace_back(
@@ -93,7 +93,7 @@ namespace frequency_scaling {
                 }
             }
             if (mem_minus >= dci.min_mem_oc && graph_plus_idx < dci.nvml_graph_clocks.size()) {
-                const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_minus, graph_plus_idx);
+                const measurement &m = benchmarkFunc(ms, dci, mem_minus, graph_plus_idx);
                 if (m.hashrate_ >= min_hashrate) {
                     neighbor_nodes.push_back(m);
                     deriv_info.emplace_back(
@@ -101,7 +101,7 @@ namespace frequency_scaling {
                 }
             }
             if (mem_plus <= dci.max_mem_oc && graph_minus_idx >= 0) {
-                const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_plus, graph_minus_idx);
+                const measurement &m = benchmarkFunc(ms, dci, mem_plus, graph_minus_idx);
                 if (m.hashrate_ >= min_hashrate) {
                     neighbor_nodes.push_back(m);
                     deriv_info.emplace_back(
@@ -137,7 +137,7 @@ namespace frequency_scaling {
             if (max_deriv_mem_oc > dci.max_mem_oc || max_deriv_mem_oc < dci.min_mem_oc ||
                 max_deriv_graph_idx >= dci.nvml_graph_clocks.size() || max_deriv_graph_idx < 0)
                 break;
-            const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, max_deriv_mem_oc, max_deriv_graph_idx);
+            const measurement &m = benchmarkFunc(ms, dci, max_deriv_mem_oc, max_deriv_graph_idx);
             if (m.hashrate_ < min_hashrate)
                 break;
             neighbor_nodes.push_back(m);
@@ -154,17 +154,18 @@ namespace frequency_scaling {
     }
 
 
-    measurement freq_hill_climbing(currency_type ct, const device_clock_info &dci,
+    measurement freq_hill_climbing(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
                                    int max_iterations, int mem_step, int graph_idx_step, double min_hashrate) {
         //initial guess at maximum frequencies
         int initial_graph_idx = 0, initial_mem_oc = dci.max_mem_oc;
-        measurement start_node = run_benchmark_script_nvml_nvapi(ct, dci, initial_mem_oc, initial_graph_idx);
-        return freq_hill_climbing(ct, dci, start_node, true, max_iterations, mem_step, graph_idx_step, min_hashrate);
+        measurement start_node = benchmarkFunc(ct, dci, initial_mem_oc, initial_graph_idx);
+        return freq_hill_climbing(benchmarkFunc, ct, dci, start_node, true, max_iterations, mem_step, graph_idx_step,
+                                  min_hashrate);
     }
 
 
-    measurement freq_hill_climbing(currency_type ct, const device_clock_info &dci, const measurement &start_node,
-                                   bool allow_start_node_result,
+    measurement freq_hill_climbing(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
+                                   const measurement &start_node, bool allow_start_node_result,
                                    int max_iterations, int mem_step, int graph_idx_step, double min_hashrate) {
 
         if (start_node.hashrate_ < min_hashrate) {
@@ -191,7 +192,8 @@ namespace frequency_scaling {
                 cur_graph_idx_step = std::lround(std::max(graph_idx_step / distr_stepsize(eng), 1.0));
             }
 
-            const std::vector<measurement> &neighbors = explore_neighborhood(ct, dci, current_node, currentslope,
+            const std::vector<measurement> &neighbors = explore_neighborhood(benchmarkFunc, ct, dci, current_node,
+                                                                             currentslope,
                                                                              cur_mem_step,
                                                                              cur_graph_idx_step, min_hashrate, false);
             measurement last_node = current_node;

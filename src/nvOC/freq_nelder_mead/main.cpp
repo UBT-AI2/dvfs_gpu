@@ -11,8 +11,8 @@ using namespace frequency_scaling;
 int main(int argc, char **argv) {
     if (argc < 10) {
         std::cout << "Usage: " << argv[0] << " <currency_type> <device_id> <max_iterations> <mem_step> "
-                "<graph_idx_step> <min_mem_oc> <max_mem_oc> <min_graph_oc> "
-                "<max_graph_oc> [<min_hashrate>]" << std::endl;
+                                             "<graph_idx_step> <min_mem_oc> <max_mem_oc> <min_graph_oc> "
+                                             "<max_graph_oc> [<min_hashrate>]" << std::endl;
         return 1;
     }
     currency_type ct = string_to_currency_type(argv[1]);
@@ -41,7 +41,8 @@ int main(int argc, char **argv) {
         device_clock_info dci(device_id, min_mem_oc, min_graph_oc, max_mem_oc, max_graph_oc);
 
         //
-        const measurement &m = freq_nelder_mead(ct, dci, 1, max_iterations, mem_step, graph_idx_step,
+        const measurement &m = freq_nelder_mead(&run_benchmark_script_nvml_nvapi, ct, dci, 1, max_iterations, mem_step,
+                                                graph_idx_step,
                                                 min_hashrate);
         std::cout << "Best energy-hash value: " << m.energy_hash_ << std::endl;
 

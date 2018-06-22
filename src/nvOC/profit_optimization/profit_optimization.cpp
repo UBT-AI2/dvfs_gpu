@@ -36,17 +36,17 @@ namespace frequency_scaling {
                 const optimization_method_params &opt_params_ct = opt_method_params.at(ct);
                 switch (opt_params_ct.method_) {
                     case optimization_method::NELDER_MEAD:
-                        optimal_config = freq_nelder_mead(ct, dci, 1,
+                        optimal_config = freq_nelder_mead(&run_benchmark_script_nvml_nvapi, ct, dci, 1,
                                                           opt_params_ct.max_iterations_, opt_params_ct.mem_step_,
                                                           opt_params_ct.graph_idx_step_, opt_params_ct.min_hashrate_);
                         break;
                     case optimization_method::HILL_CLIMBING:
-                        optimal_config = freq_hill_climbing(ct, dci,
+                        optimal_config = freq_hill_climbing(&run_benchmark_script_nvml_nvapi, ct, dci,
                                                             opt_params_ct.max_iterations_, opt_params_ct.mem_step_,
                                                             opt_params_ct.graph_idx_step_, opt_params_ct.min_hashrate_);
                         break;
                     case optimization_method::SIMULATED_ANNEALING:
-                        optimal_config = freq_simulated_annealing(ct, dci,
+                        optimal_config = freq_simulated_annealing(&run_benchmark_script_nvml_nvapi, ct, dci,
                                                                   opt_params_ct.max_iterations_,
                                                                   opt_params_ct.mem_step_,
                                                                   opt_params_ct.graph_idx_step_,
