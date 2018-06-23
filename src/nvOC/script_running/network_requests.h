@@ -3,7 +3,7 @@
 //
 #pragma once
 
-#include "profit_calculation.h"
+#include "../profit_optimization/profit_calculation.h"
 #include <map>
 
 namespace frequency_scaling {

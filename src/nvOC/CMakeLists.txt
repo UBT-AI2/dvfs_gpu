@@ -7,7 +7,8 @@ set(SCRIPT_RUNNING_FILES
         script_running/currency_type.h script_running/currency_type.cpp
         script_running/benchmark.h script_running/benchmark.cpp
         script_running/mining.h script_running/mining.cpp
-        script_running/process_management.h script_running/process_management.cpp)
+        script_running/process_management.h script_running/process_management.cpp
+        script_running/network_requests.h script_running/network_requests.cpp)
 set(FREQ_EXHAUSTIVE_FILES
         freq_exhaustive/freq_exhaustive.h freq_exhaustive/freq_exhaustive.cpp)
 set(FREQ_HILL_CLIMBING_FILES
@@ -19,7 +20,6 @@ set(FREQ_SIMULATED_ANNEALING_FILES
 set(PROFIT_OPTIMIZATION_FILES
         profit_optimization/profit_calculation.h profit_optimization/profit_calculation.cpp
         profit_optimization/profit_optimization.h profit_optimization/profit_optimization.cpp
-        profit_optimization/network_requests.h profit_optimization/network_requests.cpp
         profit_optimization/optimization_config.h profit_optimization/optimization_config.cpp
         profit_optimization/cli_utils.h profit_optimization/cli_utils.cpp)
 
@@ -53,10 +53,21 @@ target_link_libraries(nvmlOC
 #
 add_library(script_running_lib
         ${SCRIPT_RUNNING_FILES})
-target_link_libraries(script_running_lib
-        nvapiOC_lib
-        nvmlOC_lib
-        cuda)
+if(WIN32)
+    target_link_libraries(script_running_lib
+            nvapiOC_lib
+            nvmlOC_lib
+            cuda
+            ${CURL_LIBRARIES}
+            psapi)
+else(WIN32)
+    target_link_libraries(script_running_lib
+            nvapiOC_lib
+            nvmlOC_lib
+            cuda
+            ${CURL_LIBRARIES})
+endif(WIN32)
+
 
 #
 add_library(freq_exhaustive_lib
@@ -105,8 +116,7 @@ add_library(profit_optimization_lib
         ${PROFIT_OPTIMIZATION_FILES})
 target_link_libraries(profit_optimization_lib
         freq_simulated_annealing_lib
-        freq_nelder_mead_lib
-        ${CURL_LIBRARIES})
+        freq_nelder_mead_lib)
 add_executable(profit_optimization
         profit_optimization/main.cpp)
 target_link_libraries(profit_optimization

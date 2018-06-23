@@ -20,11 +20,9 @@ namespace frequency_scaling {
 
     struct measurement {
         measurement();
-
         measurement(int mem_clock, int graph_clock, double power, double hashrate);
 
         void update_power(double power);
-
         void update_hashrate(double hashrate);
 
         int mem_clock_, graph_clock_;
@@ -54,4 +52,5 @@ namespace frequency_scaling {
 
     measurement
     run_benchmark_script_nvapi_only(currency_type ct, const device_clock_info &dci, int mem_oc, int graph_oc);
+
 }

@@ -25,13 +25,13 @@ function move_result_files {
 function optimization_test {
 	for CURRENCY in eth zec xmr;
 	do
-		save_call_command ./freq_simulated_annealing.exe $CURRENCY $DEVICE_ID 6 300 10 -1000 900
+		save_call_command ./freq_simulated_annealing.exe $CURRENCY $DEVICE_ID 6 300 10 -1000 900 -200 200
 		move_result_files sa $CURRENCY
 		sleep 60
-		save_call_command ./freq_hill_climbing.exe $CURRENCY $DEVICE_ID 6 300 10 -1000 900
+		save_call_command ./freq_hill_climbing.exe $CURRENCY $DEVICE_ID 6 300 10 -1000 900 -200 200
 		move_result_files hc $CURRENCY
 		sleep 60
-		save_call_command ./freq_nelder_mead.exe $CURRENCY $DEVICE_ID 8 300 10 -1000 900
+		save_call_command ./freq_nelder_mead.exe $CURRENCY $DEVICE_ID 8 300 10 -1000 900 -200 200
 		move_result_files nm $CURRENCY
 		sleep 60
 	done
@@ -42,13 +42,13 @@ function optimization_min_hashrate_test {
 	for CURRENCY in eth zec xmr;
 	do
 		local min_hashrate=${HASHRATE_MAP[$CURRENCY]}
-		save_call_command ./freq_simulated_annealing.exe $CURRENCY $DEVICE_ID 6 300 10 -1000 900 $min_hashrate
+		save_call_command ./freq_simulated_annealing.exe $CURRENCY $DEVICE_ID 6 300 10 -1000 900 -200 200 $min_hashrate
 		move_result_files sa_mh $CURRENCY
 		sleep 60
-		save_call_command ./freq_hill_climbing.exe $CURRENCY $DEVICE_ID 6 300 10 -1000 900 $min_hashrate
+		save_call_command ./freq_hill_climbing.exe $CURRENCY $DEVICE_ID 6 300 10 -1000 900 -200 200 $min_hashrate
 		move_result_files hc_mh $CURRENCY
 		sleep 60
-		save_call_command ./freq_nelder_mead.exe $CURRENCY $DEVICE_ID 8 300 10 -1000 900 $min_hashrate
+		save_call_command ./freq_nelder_mead.exe $CURRENCY $DEVICE_ID 8 300 10 -1000 900 -200 200 $min_hashrate
 		move_result_files nm_mh $CURRENCY
 		sleep 60
 	done

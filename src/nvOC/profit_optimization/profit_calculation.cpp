@@ -3,7 +3,7 @@
 #include <iostream>
 #include <limits>
 #include "../exceptions.h"
-#include "network_requests.h"
+#include "../script_running/network_requests.h"
 
 namespace frequency_scaling {
 

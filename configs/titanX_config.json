@@ -6,7 +6,9 @@
         {
             "index": "1",
             "min_mem_oc": "-1000",
+            "min_graph_oc": "0",
             "max_mem_oc": "900",
+            "max_graph_oc": "0",
             "worker_name": "DESKTOP-6817PNB_gpu1"
         }
     ],

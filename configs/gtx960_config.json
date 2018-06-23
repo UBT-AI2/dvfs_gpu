@@ -6,7 +6,9 @@
         {
             "index": "0",
             "min_mem_oc": "-500",
+            "min_graph_oc": "-90",
             "max_mem_oc": "500",
+            "max_graph_oc": "200",
             "worker_name": "DESKTOPALEX_gpu0"
         }
     ],
