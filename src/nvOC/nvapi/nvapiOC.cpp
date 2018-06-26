@@ -237,11 +237,11 @@ namespace frequency_scaling {
                     printf("NVAPI restored clocks for device %i\n", idxGPU);
                 }
             }
-        }catch (const nvapi_error& ex){}
+        } catch (const nvapi_error &ex) {}
         //
         try {
             safeNVAPICall(NvUnload());
-        }catch (const nvapi_error& ex){}
+        } catch (const nvapi_error &ex) {}
     }
 
     bool nvapiCheckSupport() {

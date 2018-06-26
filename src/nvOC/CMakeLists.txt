@@ -53,20 +53,20 @@ target_link_libraries(nvmlOC
 #
 add_library(script_running_lib
         ${SCRIPT_RUNNING_FILES})
-if(WIN32)
+if (WIN32)
     target_link_libraries(script_running_lib
             nvapiOC_lib
             nvmlOC_lib
             cuda
             ${CURL_LIBRARIES}
             psapi)
-else(WIN32)
+else (WIN32)
     target_link_libraries(script_running_lib
             nvapiOC_lib
             nvmlOC_lib
             cuda
             ${CURL_LIBRARIES})
-endif(WIN32)
+endif (WIN32)
 
 
 #

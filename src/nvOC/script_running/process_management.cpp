@@ -116,7 +116,7 @@ namespace frequency_scaling {
         }
 
         DWORD numProcesses = cbNeeded / sizeof(DWORD);
-        for (int i = 0; i < numProcesses; i++){
+        for (int i = 0; i < numProcesses; i++) {
             if (aProcesses[i] == pid)
                 return true;
         }
@@ -153,7 +153,7 @@ namespace frequency_scaling {
         try {
 #ifdef _WIN32
             process_management::start_process("taskkill /f /t /pid " + std::to_string(pid),
-                false, true, pid, false);
+                                              false, true, pid, false);
 #else
             process_management::start_process("kill " + std::to_string(pid), false, true, pid);
 #endif

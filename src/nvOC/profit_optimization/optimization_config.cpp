@@ -179,6 +179,9 @@ namespace frequency_scaling {
             pt_currency.put("wallet_address", it_mui->second);
             pt_opt_method_params.put("method", enum_to_string(it_omp->second.method_));
             pt_opt_method_params.put("min_hashrate", it_omp->second.min_hashrate_);
+            pt_opt_method_params.put("max_iterations", it_omp->second.max_iterations_);
+            pt_opt_method_params.put("mem_step", it_omp->second.mem_step_);
+            pt_opt_method_params.put("graph_idx_step", it_omp->second.graph_idx_step_);
             pt_currency.add_child("opt_method_params", pt_opt_method_params);
             currencies_to_use.push_back(std::make_pair(enum_to_string(ct), pt_currency));
         }
@@ -212,6 +215,9 @@ namespace frequency_scaling {
             opt_config.miner_user_infos_.wallet_addresses_.emplace(ct, pt_currency.get<std::string>("wallet_address"));
             opt_config.opt_method_params_.emplace(ct, optimization_method_params(
                     string_to_opt_method(pt_opt_method_params.get<std::string>("method")),
+                    pt_opt_method_params.get<int>("max_iterations"),
+                    pt_opt_method_params.get<int>("mem_step"),
+                    pt_opt_method_params.get<int>("graph_idx_step"),
                     pt_opt_method_params.get<int>("min_hashrate")));
         }
         return opt_config;

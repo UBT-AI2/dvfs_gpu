@@ -48,8 +48,9 @@ namespace frequency_scaling {
     }
 
 
-    measurement run_benchmark_mining_online(const miner_user_info& user_info, int period_hours,
-                                     currency_type ct, const device_clock_info &dci, int mem_oc, int nvml_graph_clock_idx) {
+    measurement run_benchmark_mining_online(const miner_user_info &user_info, int period_hours,
+                                            currency_type ct, const device_clock_info &dci, int mem_oc,
+                                            int nvml_graph_clock_idx) {
         //change graph and mem clocks and start mining
         change_clocks_nvml_nvapi(dci, mem_oc, nvml_graph_clock_idx);
         start_mining_script(ct, dci, user_info);

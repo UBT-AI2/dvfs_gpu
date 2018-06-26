@@ -17,7 +17,8 @@ namespace frequency_scaling {
 
     void stop_mining_script(int device_id);
 
-    measurement run_benchmark_mining_online(const miner_user_info& user_info, int period_hours,
-                                     currency_type ct, const device_clock_info &dci, int mem_oc, int nvml_graph_clock_idx);
+    measurement run_benchmark_mining_online(const miner_user_info &user_info, int period_hours,
+                                            currency_type ct, const device_clock_info &dci, int mem_oc,
+                                            int nvml_graph_clock_idx);
 
 }

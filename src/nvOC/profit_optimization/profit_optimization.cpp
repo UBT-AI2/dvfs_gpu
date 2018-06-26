@@ -154,7 +154,7 @@ namespace frequency_scaling {
                 profit_calc.update_power_consumption(old_best_currency, system_time_start_ms);
                 //update with pool hashrates if currency is mined > 1h
                 if (current_monitoring_time_sec > 3600) {
-					double hours_arg = (current_monitoring_time_sec > 3600 * 3) ? 3 : current_monitoring_time_sec / 3600.0;
+                    double hours_arg = current_monitoring_time_sec / 3600.0;
                     profit_calc.update_opt_config_hashrate_nanopool(old_best_currency, user_infos, hours_arg);
                 }
                 //update approximated earnings based on current hashrate and stock price

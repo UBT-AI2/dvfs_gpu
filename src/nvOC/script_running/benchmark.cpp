@@ -20,7 +20,10 @@ namespace frequency_scaling {
                                          int max_graph_oc) : device_id_nvml(device_id_nvml), min_mem_oc(min_mem_oc),
                                                              min_graph_oc(min_graph_oc), max_mem_oc(max_mem_oc),
                                                              max_graph_oc(max_graph_oc) {
-
+        if (min_mem_oc > max_mem_oc)
+            throw std::invalid_argument("max_mem_oc >= min_mem_oc violated");
+        if (min_graph_oc > max_graph_oc)
+            throw std::invalid_argument("max_graph_oc >= min_graph_oc violated");
         nvml_supported_ = nvmlCheckOCSupport(device_id_nvml);
 
         device_id_nvapi = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id_nvml));
