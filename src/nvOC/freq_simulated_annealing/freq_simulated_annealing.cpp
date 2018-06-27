@@ -44,12 +44,11 @@ namespace frequency_scaling {
         if (start_node.hashrate_ < min_hashrate) {
             throw optimization_error("Minimum hashrate cannot be reached");
         }
+		std::default_random_engine eng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
         std::uniform_real_distribution<double> prob_check(0, 1);
-        std::default_random_engine engine(std::chrono::high_resolution_clock::now().time_since_epoch().count());
         measurement current_node = start_node;
         measurement best_node = current_node;
         //
-        std::default_random_engine eng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
         std::uniform_real_distribution<double> distr_stepsize(1.0, 2.0);
         double currentslope = 0, slopediff = 0;//corresponds to first/second derivative
         int cur_mem_step = mem_step, cur_graph_idx_step = graph_idx_step;
@@ -76,7 +75,7 @@ namespace frequency_scaling {
             double ea = -current_node.energy_hash_;
             double eb = -neighbor_node.energy_hash_;
             //system can use higher energy configuration with probability dependent on temperature
-            if (eb < ea || exp(-(eb - ea) / Tk) > prob_check(engine)) {
+            if (eb < ea || exp(-(eb - ea) / Tk) > prob_check(eng)) {
                 current_node = neighbor_node;
             }
 

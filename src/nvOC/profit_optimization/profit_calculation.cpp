@@ -43,6 +43,10 @@ namespace frequency_scaling {
             const currency_info &ci = it_ci->second;
             double costs_per_hour = ehi.optimal_configuration_.power_ * (power_cost_kwh_ / 1000.0);
             double profit_per_hour = ci.approximated_earnings_eur_hour_ - costs_per_hour;
+			std::cout << "GPU " << dci_.device_id_nvml << ": " <<
+                      enum_to_string(ct) + ": hashrate=" << ehi.optimal_configuration_.hashrate_ <<
+                      ", power=" << ehi.optimal_configuration_.power_ << 
+					  ", energy_hash=" << ehi.optimal_configuration_.energy_hash_ << std::endl;
             std::cout << "GPU " << dci_.device_id_nvml << ": " <<
                       enum_to_string(ct) + ": Calculated profit [eur/hour]: approximated earnings=" <<
                       ci.approximated_earnings_eur_hour_ << ", energy_cost=" << costs_per_hour << ", profit="
