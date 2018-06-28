@@ -1,13 +1,13 @@
 //
 // Created by alex on 28.05.18.
 //
-
 #include "freq_simulated_annealing.h"
+
 #include <cmath>
 #include <random>
 #include <chrono>
 #include "../freq_hill_climbing/freq_hill_climbing.h"
-#include "../exceptions.h"
+#include "../common_header/exceptions.h"
 
 
 namespace frequency_scaling {

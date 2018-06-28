@@ -3,7 +3,6 @@
 //
 #include "process_management.h"
 
-#include <iostream>
 #include <signal.h>
 
 #ifdef _WIN32
@@ -20,7 +19,8 @@
 
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
-#include "../exceptions.h"
+#include "../common_header/fullexpr_accum.h"
+#include "../common_header/exceptions.h"
 
 namespace frequency_scaling {
 
@@ -180,7 +180,7 @@ namespace frequency_scaling {
 #endif
         */
         //
-        std::cout << "Killed process with pid " + std::to_string(pid) << std::endl;
+        full_expression_accumulator(std::cout) << "Killed process with pid " + std::to_string(pid) << std::endl;
     }
 
     int process_management::start_process(const std::string &cmd, bool background) {
@@ -209,7 +209,7 @@ namespace frequency_scaling {
                 std::lock_guard<std::mutex> lock(process_management::all_processes_mutex_);
                 process_management::all_processes_.emplace_back(dwPid, background);
             }
-            std::cout << "Started process: " << cmd << " (PID: " << dwPid << ")" << std::endl;
+            full_expression_accumulator(std::cout) << "Started process: " << cmd << " (PID: " << dwPid << ")" << std::endl;
             if (!background) {
                 WaitForSingleObject(pi.hProcess, INFINITE);
                 DWORD exit_code;
@@ -241,7 +241,7 @@ namespace frequency_scaling {
                 std::lock_guard<std::mutex> lock(process_management::all_processes_mutex_);
                 process_management::all_processes_.emplace_back(pid, background);
             }
-            std::cout << "Started process: " << cmd << " (PID: " << pid << ")" << std::endl;
+            full_expression_accumulator(std::cout) << "Started process: " << cmd << " (PID: " << pid << ")" << std::endl;
             if (!background) {
                 int status;
                 waitpid(pid, &status, 0);

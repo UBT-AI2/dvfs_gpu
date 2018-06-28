@@ -1,5 +1,5 @@
 
-#include <iostream>
+#include "../common_header/fullexpr_accum.h"
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
 #include "../script_running/process_management.h"
@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
         //parse cmd options
         const std::map<std::string, std::string> &cmd_args = parse_cmd_options(argc, argv);
         if (cmd_args.count("--help")) {
-            std::cout << "Options:\n\t"
+            full_expression_accumulator(std::cout) << "Options:\n\t"
                          "--help\t\t\t\tshows this message\n\t"
                          "--user_config=<filename>\tuser configuration json file\n\t"
                          "--opt_result=<filename>\t\toptimization result json file" << std::endl;
@@ -41,15 +41,15 @@ int main(int argc, char **argv) {
         nvapiUnload(1);
         nvmlShutdown_(true);
     } catch (const std::exception &ex) {
-        std::cerr << "Main caught exception: " << ex.what() << std::endl;
-        std::cerr << "Perform cleanup and exit..." << std::endl;
+        full_expression_accumulator(std::cerr) << "Main caught exception: " << ex.what() << std::endl;
+        full_expression_accumulator(std::cerr) << "Perform cleanup and exit..." << std::endl;
         process_management::kill_all_processes(false);
         nvapiUnload(1);
         nvmlShutdown_(true);
         return 1;
     }
     catch (...) {
-        std::cerr << "Main caught unknown exception" << std::endl;
+        full_expression_accumulator(std::cerr) << "Main caught unknown exception" << std::endl;
         process_management::kill_all_processes(false);
         nvapiUnload(1);
         nvmlShutdown_(true);

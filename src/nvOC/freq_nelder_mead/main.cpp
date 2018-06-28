@@ -1,5 +1,5 @@
 #include <cstdlib>
-#include <iostream>
+#include "../common_header/fullexpr_accum.h"
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
 #include "../script_running/benchmark.h"
@@ -10,7 +10,7 @@ using namespace frequency_scaling;
 
 int main(int argc, char **argv) {
     if (argc < 10) {
-        std::cout << "Usage: " << argv[0] << " <currency_type> <device_id> <max_iterations> <mem_step> "
+        full_expression_accumulator(std::cout) << "Usage: " << argv[0] << " <currency_type> <device_id> <max_iterations> <mem_step> "
                                              "<graph_idx_step> <min_mem_oc> <max_mem_oc> <min_graph_oc> "
                                              "<max_graph_oc> [<min_hashrate>]" << std::endl;
         return 1;
@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
         const measurement &m = freq_nelder_mead(&run_benchmark_script_nvml_nvapi, ct, dci, 1, max_iterations, mem_step,
                                                 graph_idx_step,
                                                 min_hashrate);
-        std::cout << "Best energy-hash value: " << m.energy_hash_ << std::endl;
+        full_expression_accumulator(std::cout) << "Best energy-hash value: " << m.energy_hash_ << std::endl;
 
         //stop power monitoring
         stop_power_monitoring_script(device_id);
@@ -53,8 +53,8 @@ int main(int argc, char **argv) {
         nvapiUnload(1);
         nvmlShutdown_(true);
     } catch (const std::exception &ex) {
-        std::cerr << "Main caught exception: " << ex.what() << std::endl;
-        std::cerr << "Perform cleanup and exit..." << std::endl;
+        full_expression_accumulator(std::cerr) << "Main caught exception: " << ex.what() << std::endl;
+        full_expression_accumulator(std::cerr) << "Perform cleanup and exit..." << std::endl;
         process_management::kill_all_processes(false);
         nvapiUnload(1);
         nvmlShutdown_(true);

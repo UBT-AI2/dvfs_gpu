@@ -1,10 +1,8 @@
 //
 // Created by alex on 16.05.18.
 //
-
 #include "profit_optimization.h"
 
-#include <iostream>
 #include <thread>
 #include <future>
 #include <condition_variable>
@@ -17,7 +15,8 @@
 #include "../freq_simulated_annealing/freq_simulated_annealing.h"
 #include "../nvml/nvmlOC.h"
 #include "../script_running/process_management.h"
-#include "../exceptions.h"
+#include "../common_header/fullexpr_accum.h"
+#include "../common_header/exceptions.h"
 #include "cli_utils.h"
 
 namespace frequency_scaling {
@@ -56,7 +55,7 @@ namespace frequency_scaling {
                         throw std::runtime_error("Invalid enum value");
                 }
                 //save result
-                std::cout << "GPU " << dci.device_id_nvml <<
+                full_expression_accumulator(std::cout) << "GPU " << dci.device_id_nvml <<
                           ": Computed optimal energy-hash ratio for currency " << enum_to_string(ct)
                           << ": " << optimal_config.energy_hash_ << std::endl;
                 energy_hash_infos.emplace(ct, energy_hash_info(ct, optimal_config));
@@ -66,7 +65,7 @@ namespace frequency_scaling {
                          dci.device_id_nvml, enum_to_string(ct).c_str());
                 process_management::start_process(cmd, false);
             } catch (const optimization_error &err) {
-                std::cerr << "Optimization for currency " << enum_to_string(ct) <<
+                full_expression_accumulator(std::cerr) << "Optimization for currency " << enum_to_string(ct) <<
                           " on GPU " << dci.device_id_nvml << "failed: " << err.what() << std::endl;
                 //remove already generated result files
                 char cmd[BUFFER_SIZE];
@@ -87,10 +86,10 @@ namespace frequency_scaling {
         currency_type best_currency = profit_calc.getBest_currency_();
         const energy_hash_info &ehi = profit_calc.getEnergy_hash_info_().at(best_currency);
         //
-        change_clocks_nvml_nvapi(profit_calc.getDci_(), ehi.optimal_configuration_.mem_oc,
-                                 ehi.optimal_configuration_.nvml_graph_clock_idx);
+        change_clocks_nvml_nvapi(profit_calc.getDci_(), ehi.optimal_configuration_offline_.mem_oc,
+                                 ehi.optimal_configuration_offline_.nvml_graph_clock_idx);
         start_mining_script(best_currency, profit_calc.getDci_(), user_infos);
-        std::cout << "GPU " << profit_calc.getDci_().device_id_nvml <<
+        full_expression_accumulator(std::cout) << "GPU " << profit_calc.getDci_().device_id_nvml <<
                   ": Started mining best currency " << enum_to_string(best_currency)
                   << " with approximated profit of " << profit_calc.getBest_currency_profit_() << " euro/h"
                   << std::endl;
@@ -153,7 +152,7 @@ namespace frequency_scaling {
                 //update with long time power_consumption
                 profit_calc.update_power_consumption(old_best_currency, system_time_start_ms);
                 //update with pool hashrates if currency is mined > 3h
-                if (current_monitoring_time_sec > 3*3600) {
+                if (current_monitoring_time_sec > 3 * 3600) {
                     double hours_arg = current_monitoring_time_sec / 3600.0;
                     profit_calc.update_opt_config_hashrate_nanopool(old_best_currency, user_infos, hours_arg);
                 }
@@ -166,7 +165,7 @@ namespace frequency_scaling {
                     //stop mining former best currency
                     stop_mining_script(profit_calc.getDci_().device_id_nvml);
                     stop_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
-                    std::cout << "GPU " << profit_calc.getDci_().device_id_nvml <<
+                    full_expression_accumulator(std::cout) << "GPU " << profit_calc.getDci_().device_id_nvml <<
                               ": Stopped mining currency " << enum_to_string(old_best_currency) << std::endl;
                     //start mining new best currency
                     start_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
@@ -176,7 +175,7 @@ namespace frequency_scaling {
                             std::chrono::system_clock::now().time_since_epoch()).count();
                 }
             } catch (const network_error &err) {
-                std::cerr << "Network request for currency update failed: " << err.what() << std::endl;
+                full_expression_accumulator(std::cerr) << "Network request for currency update failed: " << err.what() << std::endl;
             }
         }
         //
@@ -256,7 +255,7 @@ namespace frequency_scaling {
                                        const std::map<int, std::map<currency_type, energy_hash_info>> &opt_result) {
         //start mining and monitoring currency with highest profit
         //launch one thread per gpu
-        std::cout << "Starting mining and monitoring..." << std::endl;
+        full_expression_accumulator(std::cout) << "Starting mining and monitoring..." << std::endl;
 
         std::vector<std::thread> threads;
         std::vector<std::future<std::pair<int, std::map<currency_type, energy_hash_info>>>> futures;
@@ -285,7 +284,7 @@ namespace frequency_scaling {
                     //set return value
                     p.set_value(std::make_pair(gpu_dci.device_id_nvml, pc.getEnergy_hash_info_()));
                 } catch (const std::exception &ex) {
-                    std::cerr << "Exception in mining/monitoring thread for GPU " <<
+                    full_expression_accumulator(std::cerr) << "Exception in mining/monitoring thread for GPU " <<
                               opt_config.dcis_[i].device_id_nvml << ": " << ex.what() << std::endl;
                     p.set_exception(std::current_exception()); //future.get() triggers the exception
                 }
@@ -327,7 +326,7 @@ namespace frequency_scaling {
 
         //find best frequency configurations for each gpu and currency
         //launch one thread per gpu
-        std::cout << "Starting optimization phase..." << std::endl;
+        full_expression_accumulator(std::cout) << "Starting optimization phase..." << std::endl;
         std::map<int, std::map<currency_type, energy_hash_info>> optimization_results;
         {
             std::vector<std::thread> threads;
@@ -342,7 +341,7 @@ namespace frequency_scaling {
                         std::lock_guard<std::mutex> lock(mutex);
                         optimization_results.emplace(gpu_dci.device_id_nvml, gpu_optimal_config);
                     } catch (const std::exception &ex) {
-                        std::cerr << "Exception in optimization thread for GPU " <<
+                        full_expression_accumulator(std::cerr) << "Exception in optimization thread for GPU " <<
                                   opt_config.dcis_[i].device_id_nvml << ": " << ex.what() << std::endl;
                     }
                 });
@@ -354,7 +353,7 @@ namespace frequency_scaling {
 
         //exchange frequency configurations (equal gpus have same optimal frequency configurations)
         complete_optimization_results(optimization_results, equal_gpus);
-        std::cout << "Finished optimization phase..." << std::endl;
+        full_expression_accumulator(std::cout) << "Finished optimization phase..." << std::endl;
 
         //
         mine_most_profitable_currency(opt_config, optimization_results);
@@ -365,23 +364,47 @@ namespace frequency_scaling {
                                   const std::map<int, std::map<currency_type, energy_hash_info>> &opt_results) {
         namespace pt = boost::property_tree;
         pt::ptree root;
-        //write devices to use
+        //write devices
         for (auto &device : opt_results) {
-            //write currencies to use for device
-            pt::ptree pt_currencies;
-            for (auto &currency : device.second) {
-                pt::ptree pt_ehi;
-                pt_ehi.put("power", currency.second.optimal_configuration_.power_);
-                pt_ehi.put("hashrate", currency.second.optimal_configuration_.hashrate_);
-                pt_ehi.put("energy_hash", currency.second.optimal_configuration_.energy_hash_);
-                pt_ehi.put("nvml_graph_clock_idx", currency.second.optimal_configuration_.nvml_graph_clock_idx);
-                pt_ehi.put("mem_oc", currency.second.optimal_configuration_.mem_oc);
-                pt_ehi.put("graph_oc", currency.second.optimal_configuration_.graph_oc);
-                pt_ehi.put("graph_clock", currency.second.optimal_configuration_.graph_clock_);
-                pt_ehi.put("mem_clock", currency.second.optimal_configuration_.mem_clock_);
-                pt_currencies.add_child(enum_to_string(currency.first), pt_ehi);
+            pt::ptree pt_config_type;
+            //write offline ehi for currencies
+            {
+                pt::ptree pt_currencies;
+                for (auto &currency : device.second) {
+                    pt::ptree pt_ehi;
+                    pt_ehi.put("power", currency.second.optimal_configuration_offline_.power_);
+                    pt_ehi.put("hashrate", currency.second.optimal_configuration_offline_.hashrate_);
+                    pt_ehi.put("energy_hash", currency.second.optimal_configuration_offline_.energy_hash_);
+                    pt_ehi.put("nvml_graph_clock_idx",
+                               currency.second.optimal_configuration_offline_.nvml_graph_clock_idx);
+                    pt_ehi.put("mem_oc", currency.second.optimal_configuration_offline_.mem_oc);
+                    pt_ehi.put("graph_oc", currency.second.optimal_configuration_offline_.graph_oc);
+                    pt_ehi.put("graph_clock", currency.second.optimal_configuration_offline_.graph_clock_);
+                    pt_ehi.put("mem_clock", currency.second.optimal_configuration_offline_.mem_clock_);
+                    pt_currencies.add_child(enum_to_string(currency.first), pt_ehi);
+                }
+                pt_config_type.add_child("offline", pt_currencies);
             }
-            root.add_child(std::to_string(device.first), pt_currencies);
+            //write online ehi for currencies
+            {
+                pt::ptree pt_currencies;
+                for (auto &currency : device.second) {
+                    pt::ptree pt_ehi;
+                    pt_ehi.put("power", currency.second.optimal_configuration_online_.power_);
+                    pt_ehi.put("hashrate", currency.second.optimal_configuration_online_.hashrate_);
+                    pt_ehi.put("energy_hash", currency.second.optimal_configuration_online_.energy_hash_);
+                    pt_ehi.put("nvml_graph_clock_idx",
+                               currency.second.optimal_configuration_online_.nvml_graph_clock_idx);
+                    pt_ehi.put("mem_oc", currency.second.optimal_configuration_online_.mem_oc);
+                    pt_ehi.put("graph_oc", currency.second.optimal_configuration_online_.graph_oc);
+                    pt_ehi.put("graph_clock", currency.second.optimal_configuration_online_.graph_clock_);
+                    pt_ehi.put("mem_clock", currency.second.optimal_configuration_online_.mem_clock_);
+                    pt_currencies.add_child(enum_to_string(currency.first), pt_ehi);
+                }
+                pt_config_type.add_child("online", pt_currencies);
+            }
+            //
+            root.add_child(std::to_string(device.first), pt_config_type);
         }
         pt::write_json(filename, root);
     }
@@ -395,22 +418,37 @@ namespace frequency_scaling {
         //read device infos
         for (const pt::ptree::value_type &array_elem : root) {
             const boost::property_tree::ptree &pt_device = array_elem.second;
-            std::map<currency_type, energy_hash_info> cur_ehi;
+            //
+            std::map<currency_type, energy_hash_info> opt_res_device;
             for (const pt::ptree::value_type &array_elem2 : pt_device) {
-                const boost::property_tree::ptree &pt_ehi = array_elem2.second;
                 currency_type ct = string_to_currency_type(array_elem2.first);
-                measurement opt_config;
-                opt_config.mem_clock_ = pt_ehi.get<int>("mem_clock");
-                opt_config.graph_clock_ = pt_ehi.get<int>("graph_clock");
-                opt_config.mem_oc = pt_ehi.get<int>("mem_oc");
-                opt_config.graph_oc = pt_ehi.get<int>("graph_oc");
-                opt_config.nvml_graph_clock_idx = pt_ehi.get<int>("nvml_graph_clock_idx");
-                opt_config.power_ = pt_ehi.get<double>("power");
-                opt_config.hashrate_ = pt_ehi.get<double>("hashrate");
-                opt_config.energy_hash_ = pt_ehi.get<double>("energy_hash");
-                cur_ehi.emplace(ct, energy_hash_info(ct, opt_config));
+                //offline opt_config
+                const boost::property_tree::ptree &pt_ehi_offline = array_elem2.second.get_child("offline");
+                measurement opt_config_offline;
+                opt_config_offline.mem_clock_ = pt_ehi_offline.get<int>("mem_clock");
+                opt_config_offline.graph_clock_ = pt_ehi_offline.get<int>("graph_clock");
+                opt_config_offline.mem_oc = pt_ehi_offline.get<int>("mem_oc");
+                opt_config_offline.graph_oc = pt_ehi_offline.get<int>("graph_oc");
+                opt_config_offline.nvml_graph_clock_idx = pt_ehi_offline.get<int>("nvml_graph_clock_idx");
+                opt_config_offline.power_ = pt_ehi_offline.get<double>("power");
+                opt_config_offline.hashrate_ = pt_ehi_offline.get<double>("hashrate");
+                opt_config_offline.energy_hash_ = pt_ehi_offline.get<double>("energy_hash");
+                //online opt_config
+                const boost::property_tree::ptree &pt_ehi_online = array_elem2.second.get_child("online");
+                measurement opt_config_online;
+                opt_config_online.mem_clock_ = pt_ehi_online.get<int>("mem_clock");
+                opt_config_online.graph_clock_ = pt_ehi_online.get<int>("graph_clock");
+                opt_config_online.mem_oc = pt_ehi_online.get<int>("mem_oc");
+                opt_config_online.graph_oc = pt_ehi_online.get<int>("graph_oc");
+                opt_config_online.nvml_graph_clock_idx = pt_ehi_online.get<int>("nvml_graph_clock_idx");
+                opt_config_online.power_ = pt_ehi_online.get<double>("power");
+                opt_config_online.hashrate_ = pt_ehi_online.get<double>("hashrate");
+                opt_config_online.energy_hash_ = pt_ehi_online.get<double>("energy_hash");
+                //
+                opt_res_device.emplace(ct, energy_hash_info(ct, opt_config_offline, opt_config_online));
             }
-            opt_results.emplace(std::stoi(array_elem.first), cur_ehi);
+            //
+            opt_results.emplace(std::stoi(array_elem.first), opt_res_device);
         }
         return opt_results;
     }

@@ -1,27 +1,38 @@
+set(COMMON_HEADER
+        common_header/exceptions.h
+        common_header/fullexpr_accum.h)
 
 set(NVAPI_FILES
-        nvapi/nvapiOC.h nvapi/nvapiOC.cpp)
+        nvapi/nvapiOC.h nvapi/nvapiOC.cpp
+        ${COMMON_HEADER})
 set(NVML_FILES
-        nvml/nvmlOC.h nvml/nvmlOC.cpp)
+        nvml/nvmlOC.h nvml/nvmlOC.cpp
+        ${COMMON_HEADER})
 set(SCRIPT_RUNNING_FILES
         script_running/currency_type.h script_running/currency_type.cpp
         script_running/benchmark.h script_running/benchmark.cpp
         script_running/mining.h script_running/mining.cpp
         script_running/process_management.h script_running/process_management.cpp
-        script_running/network_requests.h script_running/network_requests.cpp)
+        script_running/network_requests.h script_running/network_requests.cpp
+        ${COMMON_HEADER})
 set(FREQ_EXHAUSTIVE_FILES
-        freq_exhaustive/freq_exhaustive.h freq_exhaustive/freq_exhaustive.cpp)
+        freq_exhaustive/freq_exhaustive.h freq_exhaustive/freq_exhaustive.cpp
+        ${COMMON_HEADER})
 set(FREQ_HILL_CLIMBING_FILES
-        freq_hill_climbing/freq_hill_climbing.h freq_hill_climbing/freq_hill_climbing.cpp)
+        freq_hill_climbing/freq_hill_climbing.h freq_hill_climbing/freq_hill_climbing.cpp
+        ${COMMON_HEADER})
 set(FREQ_NELDER_MEAD_FILES
-        freq_nelder_mead/freq_nelder_mead.h freq_nelder_mead/freq_nelder_mead.cpp)
+        freq_nelder_mead/freq_nelder_mead.h freq_nelder_mead/freq_nelder_mead.cpp
+        ${COMMON_HEADER})
 set(FREQ_SIMULATED_ANNEALING_FILES
-        freq_simulated_annealing/freq_simulated_annealing.h freq_simulated_annealing/freq_simulated_annealing.cpp)
+        freq_simulated_annealing/freq_simulated_annealing.h freq_simulated_annealing/freq_simulated_annealing.cpp
+        ${COMMON_HEADER})
 set(PROFIT_OPTIMIZATION_FILES
         profit_optimization/profit_calculation.h profit_optimization/profit_calculation.cpp
         profit_optimization/profit_optimization.h profit_optimization/profit_optimization.cpp
         profit_optimization/optimization_config.h profit_optimization/optimization_config.cpp
-        profit_optimization/cli_utils.h profit_optimization/cli_utils.cpp)
+        profit_optimization/cli_utils.h profit_optimization/cli_utils.cpp
+        ${COMMON_HEADER})
 
 
 #

@@ -2,7 +2,7 @@
 
 #include <nvml.h>
 #include <set>
-#include "../exceptions.h"
+#include "../common_header/exceptions.h"
 
 
 namespace frequency_scaling {

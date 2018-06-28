@@ -1,8 +1,8 @@
 //
 // Created by alex on 16.05.18.
 //
-
 #include "mining.h"
+
 #include <stdexcept>
 #include <regex>
 #include <thread>

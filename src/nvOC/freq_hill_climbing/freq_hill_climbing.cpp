@@ -2,8 +2,8 @@
 
 #include <random>
 #include <chrono>
-#include <iostream>
-#include "../exceptions.h"
+#include "../common_header/fullexpr_accum.h"
+#include "../common_header/exceptions.h"
 
 
 namespace frequency_scaling {
@@ -127,7 +127,7 @@ namespace frequency_scaling {
         measurement max_deriv_current_node = current_node;
         while (max_deriv_slopediff > 0) {
 #ifdef DEBUG
-            std::cout << "max_deriv_slopediff: " << max_deriv_slopediff << std::endl;
+            full_expression_accumulator(std::cout) << "max_deriv_slopediff: " << max_deriv_slopediff << std::endl;
 #endif
             int max_deriv_mem_oc_diff = max_deriv_measurement.mem_oc - max_deriv_current_node.mem_oc;
             int max_deriv_graph_idx_diff =

@@ -8,7 +8,7 @@
 #include <cuda.h>
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
-#include "../exceptions.h"
+#include "../common_header/exceptions.h"
 #include "process_management.h"
 
 namespace frequency_scaling {

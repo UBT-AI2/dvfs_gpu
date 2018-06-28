@@ -2,23 +2,25 @@
 // Created by Alex on 16.06.2018.
 //
 #include "cli_utils.h"
-#include <iostream>
+
 #include <limits>
 #include <regex>
+#include "../common_header/fullexpr_accum.h"
+
 
 namespace frequency_scaling {
 
     std::string cli_get_string(const std::string &user_msg,
                                const std::string &regex_to_match) {
-        std::cout << user_msg << std::endl;
+        full_expression_accumulator(std::cout) << user_msg << std::endl;
         while (true) {
             std::string str;
             std::cin >> str;
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             if (std::regex_match(str, std::regex(regex_to_match)))
                 return str;
-            std::cout << "Invalid input. Try again." << std::endl;
-            std::cout << user_msg << std::endl;
+            full_expression_accumulator(std::cout) << "Invalid input. Try again." << std::endl;
+            full_expression_accumulator(std::cout) << user_msg << std::endl;
         }
     }
 

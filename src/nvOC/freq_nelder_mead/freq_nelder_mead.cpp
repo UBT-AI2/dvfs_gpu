@@ -1,10 +1,10 @@
 #include "freq_nelder_mead.h"
 
-#include <iostream>
 #include <random>
 #include <chrono>
 #include <numerical-methods/optimization/nelder-mead-method.h>
-#include "../exceptions.h"
+#include "../common_header/fullexpr_accum.h"
+#include "../common_header/exceptions.h"
 
 
 namespace frequency_scaling {
@@ -49,7 +49,7 @@ namespace frequency_scaling {
             int mem_oc = dci.min_mem_oc + std::lround(x(0) * mem_step);
             int graph_idx = std::lround(x(1) * graph_idx_step);
 #ifdef DEBUG
-            std::cout << "NM function args: " << x(0) << "," << x(1) << std::endl;
+            full_expression_accumulator(std::cout) << "NM function args: " << x(0) << "," << x(1) << std::endl;
 #endif
             if (mem_oc > dci.max_mem_oc || mem_oc < dci.min_mem_oc ||
                 graph_idx >= dci.nvml_graph_clocks.size() || graph_idx < 0) {
@@ -66,7 +66,7 @@ namespace frequency_scaling {
             if (m.energy_hash_ > best_measurement.energy_hash_)
                 best_measurement = m;
 #ifdef DEBUG
-            std::cout << "NM measured energy-hash: " << m.energy_hash_ << std::endl;
+            full_expression_accumulator(std::cout) << "NM measured energy-hash: " << m.energy_hash_ << std::endl;
 #endif
             //note minimize function
             return -m.energy_hash_;
@@ -80,7 +80,7 @@ namespace frequency_scaling {
         method.options.setFuncTolerance(1e-3);
         method.options.setInitScale(std::make_pair(mem_scale, graph_scale));
         const vec_type &glob_minimum = method.minimize(function, init_guess);
-        std::cout << "Nelder-mead number of function evaluations: " << num_func_evals << std::endl;
+        full_expression_accumulator(std::cout) << "Nelder-mead number of function evaluations: " << num_func_evals << std::endl;
 
         //run script_running at proposed minimum
         int mem_oc = dci.min_mem_oc + std::lround(glob_minimum(0) * mem_step);

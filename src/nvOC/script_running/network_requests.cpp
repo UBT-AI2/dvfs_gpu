@@ -1,12 +1,12 @@
 #include "network_requests.h"
 
 #include <sstream>
-#include <iostream>
 #include <thread>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <curl/curl.h>
-#include "../exceptions.h"
+#include "../common_header/fullexpr_accum.h"
+#include "../common_header/exceptions.h"
 
 namespace frequency_scaling {
 
@@ -42,8 +42,8 @@ namespace frequency_scaling {
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
         curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &elapsed);
         curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &url);
-        std::cout << "Network request URL : " << url << std::endl;
-        std::cout << "Network request elapsed time: " << elapsed << std::endl;
+        full_expression_accumulator(std::cout) << "Network request URL : " << url << std::endl;
+        full_expression_accumulator(std::cout) << "Network request elapsed time: " << elapsed << std::endl;
 
         curl_easy_cleanup(curl);
 

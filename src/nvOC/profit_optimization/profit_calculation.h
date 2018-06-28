@@ -10,7 +10,7 @@ namespace frequency_scaling {
         currency_info(currency_type type, double approximated_earnings_eur_hour,
                       double stock_price_eur_);
 
-        currency_type type_;
+        const currency_type type_;
         double approximated_earnings_eur_hour_;
         double stock_price_eur_;
     };
@@ -18,10 +18,14 @@ namespace frequency_scaling {
 
     struct energy_hash_info {
         energy_hash_info(currency_type type,
-                         const measurement &optimal_configuration);
+                         const measurement &optimal_configuration_offline);
+        energy_hash_info(currency_type type,
+                         const measurement &optimal_configuration_offline,
+                         const measurement &optimal_configuration_online);
 
-        currency_type type_;
-        measurement optimal_configuration_;
+        const currency_type type_;
+        const measurement optimal_configuration_offline_;
+        measurement optimal_configuration_online_;
     };
 
 

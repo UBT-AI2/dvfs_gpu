@@ -2,7 +2,7 @@
 // Created by Alex on 10.06.2018.
 //
 #include "optimization_config.h"
-#include <iostream>
+
 #include <fstream>
 #include <limits>
 #include <boost/property_tree/ptree.hpp>
@@ -18,6 +18,7 @@
 
 #endif
 
+#include "../common_header/fullexpr_accum.h"
 #include "../nvml/nvmlOC.h"
 #include "cli_utils.h"
 
