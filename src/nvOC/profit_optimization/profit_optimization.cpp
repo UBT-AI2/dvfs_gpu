@@ -151,8 +151,8 @@ namespace frequency_scaling {
                 currency_type old_best_currency = profit_calc.getBest_currency_();
                 //update with long time power_consumption
                 profit_calc.update_power_consumption(old_best_currency, system_time_start_ms);
-                //update with pool hashrates if currency is mined > 3h
-                if (current_monitoring_time_sec > 3 * 3600) {
+                //update with pool hashrates if currency is mined > 1h
+                if (current_monitoring_time_sec > 3600) {
                     double hours_arg = current_monitoring_time_sec / 3600.0;
                     profit_calc.update_opt_config_hashrate_nanopool(old_best_currency, user_infos, hours_arg);
                 }
@@ -366,45 +366,42 @@ namespace frequency_scaling {
         pt::ptree root;
         //write devices
         for (auto &device : opt_results) {
-            pt::ptree pt_config_type;
-            //write offline ehi for currencies
-            {
                 pt::ptree pt_currencies;
+				//write currency
                 for (auto &currency : device.second) {
-                    pt::ptree pt_ehi;
-                    pt_ehi.put("power", currency.second.optimal_configuration_offline_.power_);
-                    pt_ehi.put("hashrate", currency.second.optimal_configuration_offline_.hashrate_);
-                    pt_ehi.put("energy_hash", currency.second.optimal_configuration_offline_.energy_hash_);
-                    pt_ehi.put("nvml_graph_clock_idx",
-                               currency.second.optimal_configuration_offline_.nvml_graph_clock_idx);
-                    pt_ehi.put("mem_oc", currency.second.optimal_configuration_offline_.mem_oc);
-                    pt_ehi.put("graph_oc", currency.second.optimal_configuration_offline_.graph_oc);
-                    pt_ehi.put("graph_clock", currency.second.optimal_configuration_offline_.graph_clock_);
-                    pt_ehi.put("mem_clock", currency.second.optimal_configuration_offline_.mem_clock_);
-                    pt_currencies.add_child(enum_to_string(currency.first), pt_ehi);
+					pt::ptree pt_config_type;
+					//write offline ehi for currency
+					{
+						pt::ptree pt_ehi;
+						pt_ehi.put("power", currency.second.optimal_configuration_offline_.power_);
+						pt_ehi.put("hashrate", currency.second.optimal_configuration_offline_.hashrate_);
+						pt_ehi.put("energy_hash", currency.second.optimal_configuration_offline_.energy_hash_);
+						pt_ehi.put("nvml_graph_clock_idx",
+							currency.second.optimal_configuration_offline_.nvml_graph_clock_idx);
+						pt_ehi.put("mem_oc", currency.second.optimal_configuration_offline_.mem_oc);
+						pt_ehi.put("graph_oc", currency.second.optimal_configuration_offline_.graph_oc);
+						pt_ehi.put("graph_clock", currency.second.optimal_configuration_offline_.graph_clock_);
+						pt_ehi.put("mem_clock", currency.second.optimal_configuration_offline_.mem_clock_);
+						pt_config_type.add_child("offline", pt_ehi);
+					}
+					//write online ehi for currency
+					{
+						pt::ptree pt_ehi;
+						pt_ehi.put("power", currency.second.optimal_configuration_online_.power_);
+						pt_ehi.put("hashrate", currency.second.optimal_configuration_online_.hashrate_);
+						pt_ehi.put("energy_hash", currency.second.optimal_configuration_online_.energy_hash_);
+						pt_ehi.put("nvml_graph_clock_idx",
+							currency.second.optimal_configuration_online_.nvml_graph_clock_idx);
+						pt_ehi.put("mem_oc", currency.second.optimal_configuration_online_.mem_oc);
+						pt_ehi.put("graph_oc", currency.second.optimal_configuration_online_.graph_oc);
+						pt_ehi.put("graph_clock", currency.second.optimal_configuration_online_.graph_clock_);
+						pt_ehi.put("mem_clock", currency.second.optimal_configuration_online_.mem_clock_);
+						pt_config_type.add_child("online", pt_ehi);
+					}
+					pt_currencies.add_child(enum_to_string(currency.first), pt_config_type);
                 }
-                pt_config_type.add_child("offline", pt_currencies);
-            }
-            //write online ehi for currencies
-            {
-                pt::ptree pt_currencies;
-                for (auto &currency : device.second) {
-                    pt::ptree pt_ehi;
-                    pt_ehi.put("power", currency.second.optimal_configuration_online_.power_);
-                    pt_ehi.put("hashrate", currency.second.optimal_configuration_online_.hashrate_);
-                    pt_ehi.put("energy_hash", currency.second.optimal_configuration_online_.energy_hash_);
-                    pt_ehi.put("nvml_graph_clock_idx",
-                               currency.second.optimal_configuration_online_.nvml_graph_clock_idx);
-                    pt_ehi.put("mem_oc", currency.second.optimal_configuration_online_.mem_oc);
-                    pt_ehi.put("graph_oc", currency.second.optimal_configuration_online_.graph_oc);
-                    pt_ehi.put("graph_clock", currency.second.optimal_configuration_online_.graph_clock_);
-                    pt_ehi.put("mem_clock", currency.second.optimal_configuration_online_.mem_clock_);
-                    pt_currencies.add_child(enum_to_string(currency.first), pt_ehi);
-                }
-                pt_config_type.add_child("online", pt_currencies);
-            }
             //
-            root.add_child(std::to_string(device.first), pt_config_type);
+            root.add_child(std::to_string(device.first), pt_currencies);
         }
         pt::write_json(filename, root);
     }
@@ -418,12 +415,12 @@ namespace frequency_scaling {
         //read device infos
         for (const pt::ptree::value_type &array_elem : root) {
             const boost::property_tree::ptree &pt_device = array_elem.second;
-            //
             std::map<currency_type, energy_hash_info> opt_res_device;
+			//read currencies
             for (const pt::ptree::value_type &array_elem2 : pt_device) {
                 currency_type ct = string_to_currency_type(array_elem2.first);
+				const boost::property_tree::ptree &pt_ehi_offline = array_elem2.second.get_child("offline");
                 //offline opt_config
-                const boost::property_tree::ptree &pt_ehi_offline = array_elem2.second.get_child("offline");
                 measurement opt_config_offline;
                 opt_config_offline.mem_clock_ = pt_ehi_offline.get<int>("mem_clock");
                 opt_config_offline.graph_clock_ = pt_ehi_offline.get<int>("graph_clock");
