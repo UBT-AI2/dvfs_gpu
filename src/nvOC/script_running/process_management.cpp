@@ -209,7 +209,8 @@ namespace frequency_scaling {
                 std::lock_guard<std::mutex> lock(process_management::all_processes_mutex_);
                 process_management::all_processes_.emplace_back(dwPid, background);
             }
-            full_expression_accumulator(std::cout) << "Started process: " << cmd << " (PID: " << dwPid << ")" << std::endl;
+            full_expression_accumulator(std::cout) << "Started process: " << cmd << " (PID: " << dwPid << ")"
+                                                   << std::endl;
             if (!background) {
                 WaitForSingleObject(pi.hProcess, INFINITE);
                 DWORD exit_code;

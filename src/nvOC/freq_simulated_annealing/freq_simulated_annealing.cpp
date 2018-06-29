@@ -44,7 +44,7 @@ namespace frequency_scaling {
         if (start_node.hashrate_ < min_hashrate) {
             throw optimization_error("Minimum hashrate cannot be reached");
         }
-		std::default_random_engine eng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+        std::default_random_engine eng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
         std::uniform_real_distribution<double> prob_check(0, 1);
         measurement current_node = start_node;
         measurement best_node = current_node;

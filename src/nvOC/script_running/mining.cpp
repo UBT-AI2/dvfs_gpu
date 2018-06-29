@@ -62,13 +62,17 @@ namespace frequency_scaling {
         const std::map<std::string, double> &avg_hashrates = get_avg_hashrate_per_worker_nanopool(
                 ct, user_info.wallet_addresses_.at(ct), period_hours);
         const std::string worker = user_info.worker_names_.at(dci.device_id_nvml);
-        double power = get_avg_power_usage(dci.device_id_nvml, system_time_start_ms);
+        long long int system_time_now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
+        double power = get_avg_power_usage(dci.device_id_nvml, system_time_start_ms, system_time_now_ms);
         double hashrate = avg_hashrates.at(worker);
         stop_mining_script(dci.device_id_nvml);
         //create measurement
         int mem_clock = dci.nvapi_default_mem_clock + mem_oc;
         int graph_clock = dci.nvml_graph_clocks[nvml_graph_clock_idx];
         measurement m(mem_clock, graph_clock, power, hashrate);
+        m.hashrate_measure_dur_ms_ = period_hours * 3600;
+        m.power_measure_dur_ms_ = system_time_now_ms - system_time_start_ms;
         m.nvml_graph_clock_idx = nvml_graph_clock_idx;
         m.mem_oc = mem_oc;
         m.graph_oc = 0;

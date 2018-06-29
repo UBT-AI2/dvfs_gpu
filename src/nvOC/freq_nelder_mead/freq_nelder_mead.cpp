@@ -80,7 +80,8 @@ namespace frequency_scaling {
         method.options.setFuncTolerance(1e-3);
         method.options.setInitScale(std::make_pair(mem_scale, graph_scale));
         const vec_type &glob_minimum = method.minimize(function, init_guess);
-        full_expression_accumulator(std::cout) << "Nelder-mead number of function evaluations: " << num_func_evals << std::endl;
+        full_expression_accumulator(std::cout) << "Nelder-mead number of function evaluations: " << num_func_evals
+                                               << std::endl;
 
         //run script_running at proposed minimum
         int mem_oc = dci.min_mem_oc + std::lround(glob_minimum(0) * mem_step);

@@ -65,13 +65,15 @@ namespace frequency_scaling {
             nvml_graph_clock_idx(-1), mem_oc(0), graph_oc(0) {}
 
 
-    void measurement::update_power(double power) {
+    void measurement::update_power(double power, int power_measure_dur_ms) {
         power_ = power;
+        power_measure_dur_ms_ = power_measure_dur_ms;
         energy_hash_ = hashrate_ / power;
     }
 
-    void measurement::update_hashrate(double hashrate) {
+    void measurement::update_hashrate(double hashrate, int hashrate_measure_dur_ms) {
         hashrate_ = hashrate;
+        hashrate_measure_dur_ms_ = hashrate_measure_dur_ms;
         energy_hash_ = hashrate / power_;
     }
 
@@ -129,7 +131,7 @@ namespace frequency_scaling {
                 pt = strtok(nullptr, ",");
             }
         }
-        measurement m((int) data[0], (int) data[1], data[2], data[3]);
+        measurement m(mem_clock, graph_clock, data[2], data[3]);
         return m;
     }
 
@@ -146,7 +148,8 @@ namespace frequency_scaling {
         process_management::gpu_kill_background_process(device_id, process_type::POWER_MONITOR);
     }
 
-    double get_avg_power_usage(int device_id, long long int system_timestamp_ms) {
+    double get_avg_power_usage(int device_id, long long int system_timestamp_start_ms,
+                               long long int system_timestamp_end_ms) {
         std::ifstream file;
         file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         file.open("power_results_" + std::to_string(device_id) + ".txt");
@@ -157,7 +160,7 @@ namespace frequency_scaling {
         int count = 0;
         while (std::getline(file, line)) {
             long long int time = std::stoll(line, &sz);
-            if (time >= system_timestamp_ms) {
+            if (time >= system_timestamp_start_ms && time <= system_timestamp_end_ms) {
                 res += std::stod(line.substr(sz + 1, std::string::npos));
                 count++;
             }

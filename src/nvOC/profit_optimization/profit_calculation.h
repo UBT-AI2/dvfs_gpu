@@ -19,6 +19,7 @@ namespace frequency_scaling {
     struct energy_hash_info {
         energy_hash_info(currency_type type,
                          const measurement &optimal_configuration_offline);
+
         energy_hash_info(currency_type type,
                          const measurement &optimal_configuration_offline,
                          const measurement &optimal_configuration_online);
@@ -32,7 +33,6 @@ namespace frequency_scaling {
     class profit_calculator {
     public:
         profit_calculator(const device_clock_info &dci,
-                          const std::map<currency_type, currency_info> &currency_info,
                           const std::map<currency_type, energy_hash_info> &energy_hash_info,
                           double power_cost_kwh);
 
@@ -60,6 +60,8 @@ namespace frequency_scaling {
         double getBest_currency_profit_() const;
 
     private:
+        std::string get_log_prefix(currency_type ct) const;
+
         device_clock_info dci_;
         std::map<currency_type, currency_info> currency_info_;
         std::map<currency_type, energy_hash_info> energy_hash_info_;
@@ -67,9 +69,5 @@ namespace frequency_scaling {
         currency_type best_currency_;
         double best_currency_profit_;
     };
-
-
-    std::map<currency_type, currency_info> get_currency_infos_nanopool(
-            const std::map<currency_type, energy_hash_info> &ehi);
 
 }

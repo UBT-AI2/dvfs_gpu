@@ -20,15 +20,18 @@ namespace frequency_scaling {
 
     struct measurement {
         measurement();
+
         measurement(int mem_clock, int graph_clock, double power, double hashrate);
 
-        void update_power(double power);
-        void update_hashrate(double hashrate);
+        void update_power(double power, int power_measure_dur_ms);
+
+        void update_hashrate(double hashrate, int hashrate_measure_dur_ms);
 
         int mem_clock_, graph_clock_;
         double power_, hashrate_, energy_hash_;
         int nvml_graph_clock_idx;
         int mem_oc, graph_oc;
+        int power_measure_dur_ms_ = 0, hashrate_measure_dur_ms_ = 0;
     };
 
     typedef std::function<measurement(currency_type, const device_clock_info &, int, int)> benchmark_func;
@@ -38,7 +41,8 @@ namespace frequency_scaling {
 
     void stop_power_monitoring_script(int device_id);
 
-    double get_avg_power_usage(int device_id, long long int system_timestamp_ms);
+    double get_avg_power_usage(int device_id, long long int system_timestamp_start_ms,
+                               long long int system_timestamp_end_ms);
 
     void change_clocks_nvml_nvapi(const device_clock_info &dci,
                                   int mem_oc, int nvml_graph_clock_idx);

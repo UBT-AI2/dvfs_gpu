@@ -1,6 +1,7 @@
 #include "profit_calculation.h"
 
 #include <limits>
+#include <chrono>
 #include "../common_header/fullexpr_accum.h"
 #include "../common_header/exceptions.h"
 #include "../script_running/network_requests.h"
@@ -25,12 +26,11 @@ namespace frequency_scaling {
 
 
     profit_calculator::profit_calculator(const device_clock_info &dci,
-                                         const std::map<currency_type, currency_info> &currency_info,
                                          const std::map<currency_type, energy_hash_info> &energy_hash_info,
                                          double power_cost_kwh) : dci_(dci),
-                                                                  currency_info_(currency_info),
                                                                   energy_hash_info_(energy_hash_info),
                                                                   power_cost_kwh_(power_cost_kwh) {
+        update_currency_info_nanopool();
         recalculate_best_currency();
     }
 
@@ -47,27 +47,43 @@ namespace frequency_scaling {
                 continue;
             const energy_hash_info &ehi = it_ehi->second;
             const currency_info &ci = it_ci->second;
-            double costs_per_hour = ehi.optimal_configuration_offline_.power_ * (power_cost_kwh_ / 1000.0);
+            double costs_per_hour = ehi.optimal_configuration_online_.power_ * (power_cost_kwh_ / 1000.0);
             double profit_per_hour = ci.approximated_earnings_eur_hour_ - costs_per_hour;
-            full_expression_accumulator(std::cout) << "GPU " << dci_.device_id_nvml << ": " <<
-                      enum_to_string(ct) + ": hashrate=" << ehi.optimal_configuration_offline_.hashrate_ <<
-                      ", power=" << ehi.optimal_configuration_offline_.power_ <<
-                      ", energy_hash=" << ehi.optimal_configuration_offline_.energy_hash_ << std::endl;
-            full_expression_accumulator(std::cout) << "GPU " << dci_.device_id_nvml << ": " <<
-                      enum_to_string(ct) + ": Calculated profit [eur/hour]: approximated earnings=" <<
-                      ci.approximated_earnings_eur_hour_ << ", energy_cost=" << costs_per_hour << ", profit="
-                      << profit_per_hour << std::endl;
             if (profit_per_hour > best_profit) {
                 best_idx = i;
                 best_profit = profit_per_hour;
             }
+            //print stats
+            full_expression_accumulator(std::cout) << get_log_prefix(ct) <<
+                                                   "Calculated profit [eur/hour]: approximated earnings=" <<
+                                                   ci.approximated_earnings_eur_hour_ << ", energy_cost="
+                                                   << costs_per_hour << ", profit="
+                                                   << profit_per_hour << std::endl;
         }
         best_currency_ = static_cast<currency_type>(best_idx);
         best_currency_profit_ = best_profit;
     }
 
     void profit_calculator::update_currency_info_nanopool() {
-        currency_info_ = get_currency_infos_nanopool(energy_hash_info_);
+        currency_info_.clear();
+        for (auto &elem : energy_hash_info_) {
+            currency_type ct = elem.first;
+            try {
+                const energy_hash_info &ehi = elem.second;
+                double alpha = std::min(1.0, ehi.optimal_configuration_online_.hashrate_measure_dur_ms_ / (6 * 3600.0));
+                double used_hashrate = alpha * ehi.optimal_configuration_online_.hashrate_ +
+                                       (1 - alpha) * ehi.optimal_configuration_offline_.hashrate_;
+                double approximated_earnings =
+                        get_approximated_earnings_per_hour_nanopool(ct, used_hashrate);
+                double stock_price = get_current_stock_price_nanopool(ct);
+                currency_info_.emplace(ct, currency_info(ct, approximated_earnings, stock_price));
+                full_expression_accumulator(std::cout) << get_log_prefix(ct) << "Update currency info using hashrate "
+                                                       << used_hashrate << std::endl;
+            } catch (const network_error &err) {
+                full_expression_accumulator(std::cerr) << get_log_prefix(ct) <<
+                                                       "Failed to get currency info: " << err.what() << std::endl;
+            }
+        }
     }
 
     void profit_calculator::update_opt_config_hashrate_nanopool(currency_type current_mined_ct,
@@ -78,23 +94,32 @@ namespace frequency_scaling {
             const std::string worker = user_info.worker_names_.at(dci_.device_id_nvml);
             auto it_hr = avg_hashrates.find(worker);
             if (it_hr == avg_hashrates.end()) {
-                full_expression_accumulator(std::cerr) << "Failed to get avg hashrate for currency " <<
-                          enum_to_string(current_mined_ct) << ": stats for worker " <<
-                          worker << " not available" << std::endl;
+                full_expression_accumulator(std::cerr) << get_log_prefix(current_mined_ct) <<
+                                                       "Failed to get avg online hashrate: Worker "
+                                                       << worker << " not available" << std::endl;
                 return;
             }
             //update hashrate
-            energy_hash_info_.at(current_mined_ct).optimal_configuration_online_.update_hashrate(it_hr->second);
+            energy_hash_info_.at(current_mined_ct).optimal_configuration_online_.update_hashrate(it_hr->second,
+                                                                                                 period_hours * 3600);
+            full_expression_accumulator(std::cout) << get_log_prefix(current_mined_ct) <<
+                                                   "Updated avg online hashrate: " << it_hr->second << std::endl;
         } catch (const network_error &err) {
-            full_expression_accumulator(std::cerr) << "Failed to get avg hashrate for currency " <<
-                      enum_to_string(current_mined_ct) << ": " << err.what() << std::endl;
+            full_expression_accumulator(std::cerr) << get_log_prefix(current_mined_ct) <<
+                                                   "Failed to get avg online hashrate: " << err.what() << std::endl;
         }
     }
 
     void profit_calculator::update_power_consumption(currency_type current_mined_ct,
                                                      long long int system_time_start_ms) {
-        energy_hash_info_.at(current_mined_ct).optimal_configuration_online_.update_power(
-                get_avg_power_usage(dci_.device_id_nvml, system_time_start_ms));
+        long long int system_time_now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
+        double updated_power = get_avg_power_usage(dci_.device_id_nvml, system_time_start_ms, system_time_now_ms);
+        energy_hash_info_.at(current_mined_ct).optimal_configuration_online_.update_power(updated_power,
+                                                                                          system_time_now_ms -
+                                                                                          system_time_start_ms);
+        full_expression_accumulator(std::cout) << get_log_prefix(current_mined_ct) <<
+                                               "Update online power " << updated_power << std::endl;
     }
 
     void profit_calculator::update_energy_cost_stromdao(int plz) {
@@ -125,24 +150,9 @@ namespace frequency_scaling {
         return best_currency_profit_;
     }
 
-
-    std::map<currency_type, currency_info> get_currency_infos_nanopool(
-            const std::map<currency_type, energy_hash_info> &currency_to_ehi) {
-        std::map<currency_type, currency_info> currency_infos;
-        for (auto &elem : currency_to_ehi) {
-            currency_type ct = elem.first;
-            try {
-                const energy_hash_info &ehi = elem.second;
-                double approximated_earnings =
-                        get_approximated_earnings_per_hour_nanopool(ct, ehi.optimal_configuration_offline_.hashrate_);
-                double stock_price = get_current_stock_price_nanopool(ct);
-                currency_infos.emplace(ct, currency_info(ct, approximated_earnings, stock_price));
-            } catch (const network_error &err) {
-                full_expression_accumulator(std::cerr) << "Failed to get infos for currency " <<
-                          enum_to_string(ct) << ": " << err.what() << std::endl;
-            }
-        }
-        return currency_infos;
+    std::string profit_calculator::get_log_prefix(currency_type ct) const {
+        return "GPU " + std::to_string(dci_.device_id_nvml) + ": " +
+               enum_to_string(ct) + ": ";
     }
 
 }
