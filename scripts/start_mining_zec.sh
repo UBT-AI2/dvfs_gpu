@@ -9,7 +9,7 @@ if [[ "$OSTYPE" == "msys" ]]
 then
 #MINGW
 MINER_BINARY=../../miner/binaries/windows/excavator_v1.1.0a_Win64/excavator.exe
-LOGFILE=excavator_log_gpu${device_id}.txt
+LOGFILE=mining_log_excavator_gpu${device_id}.txt
 else
 #Linux
 echo "exavator not available on linux"

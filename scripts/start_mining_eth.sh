@@ -13,7 +13,7 @@ else
 #Linux
 MINER_BINARY=../../miner/binaries/linux/ethminer-build/ethminer
 fi
-LOGFILE=ethminer_log_gpu${device_id}.txt
+LOGFILE=mining_log_ethminer_gpu${device_id}.txt
 #################################################################################
 
 echo -e "\n##########################\n$(date +%Y-%m-%d_%H-%M-%S)\n##########################\n" >> ${LOGFILE}

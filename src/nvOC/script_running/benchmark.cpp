@@ -82,7 +82,7 @@ namespace frequency_scaling {
                                             int graph_clock, int mem_clock) {
         {
             printf("GPU %i: %s: Running benchmark script with clocks: mem:%i,graph:%i\n",
-					dci.device_id_nvml, enum_to_string(ct).c_str(), mem_clock, graph_clock);
+                   dci.device_id_nvml, enum_to_string(ct).c_str(), mem_clock, graph_clock);
             //run benchmark script to get measurement
             char cmd2[BUFFER_SIZE];
             switch (ct) {

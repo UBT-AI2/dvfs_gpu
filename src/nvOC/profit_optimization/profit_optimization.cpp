@@ -166,6 +166,7 @@ namespace frequency_scaling {
                 currency_type new_best_currency = profit_calc.getBest_currency_();
                 if (old_best_currency != new_best_currency) {
                     //stop mining former best currency
+                    profit_calc.save_current_period(old_best_currency);
                     stop_mining_script(profit_calc.getDci_().device_id_nvml);
                     stop_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
                     full_expression_accumulator(std::cout) << "GPU " << profit_calc.getDci_().device_id_nvml <<

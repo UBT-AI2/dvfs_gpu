@@ -13,7 +13,7 @@ else
 #Linux
 MINER_BINARY=../../miner/binaries/linux/xmr-stak-build/xmr-stak
 fi
-LOGFILE=xmr-stak_log_gpu${device_id}.txt
+LOGFILE=mining_log_xmr-stak_gpu${device_id}.txt
 #################################################################################
 
 echo -e "\n##########################\n$(date +%Y-%m-%d_%H-%M-%S)\n##########################\n" >> ${LOGFILE}

@@ -14,7 +14,7 @@ function save_call_command {
 
 function move_result_files {
 	local CURRENCY=$1
-	local OUTDIR=result_dir_${CURRENCY}
+	local OUTDIR=exhaustive_result_${CURRENCY}
 	mkdir $OUTDIR
 	mkdir $OUTDIR/data
 	mv result_${DEVICE_ID}* $OUTDIR
