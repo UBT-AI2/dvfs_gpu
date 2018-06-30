@@ -81,8 +81,8 @@ namespace frequency_scaling {
     static measurement run_benchmark_script(currency_type ct, const device_clock_info &dci,
                                             int graph_clock, int mem_clock) {
         {
-            printf("Running %s benchmark script on GPU %i with clocks: mem:%i,graph:%i\n",
-                   enum_to_string(ct).c_str(), dci.device_id_nvml, mem_clock, graph_clock);
+            printf("GPU %i: %s: Running benchmark script with clocks: mem:%i,graph:%i\n",
+					dci.device_id_nvml, enum_to_string(ct).c_str(), mem_clock, graph_clock);
             //run benchmark script to get measurement
             char cmd2[BUFFER_SIZE];
             switch (ct) {

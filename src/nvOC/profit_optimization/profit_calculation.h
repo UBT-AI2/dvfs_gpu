@@ -59,15 +59,25 @@ namespace frequency_scaling {
 
         double getBest_currency_profit_() const;
 
+		double get_used_hashrate(currency_type ct) const;
+
+		double get_used_power(currency_type ct) const;
+
+		double get_used_energy_hash(currency_type ct) const;
+
+		void save_current_period(currency_type ct);
+
     private:
         std::string get_log_prefix(currency_type ct) const;
 
         device_clock_info dci_;
         std::map<currency_type, currency_info> currency_info_;
         std::map<currency_type, energy_hash_info> energy_hash_info_;
+		std::map<currency_type, measurement> last_online_measurements_;
         double power_cost_kwh_;
         currency_type best_currency_;
         double best_currency_profit_;
+		const double window_dur_h_ = 6;
     };
 
 }
