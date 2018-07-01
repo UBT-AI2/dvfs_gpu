@@ -18,7 +18,7 @@ namespace frequency_scaling {
     double get_current_stock_price_nanopool(currency_type ct, int trials = 3, int trial_timeout_ms = 1000);
 
     /**
-     * Returns the current energy cost in euro per kWh.
+     * Returns the current energy cost in euro per kWh in region with plz.
      * @param plz
      * @return
      */
