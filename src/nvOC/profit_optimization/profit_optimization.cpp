@@ -457,8 +457,8 @@ namespace frequency_scaling {
                 opt_config_online.power_ = pt_ehi_online.get<double>("power");
                 opt_config_online.hashrate_ = pt_ehi_online.get<double>("hashrate");
                 opt_config_online.energy_hash_ = pt_ehi_online.get<double>("energy_hash");
-                opt_config_online.power_measure_dur_ms_ = pt_ehi_offline.get<int>("power_measure_dur_ms");
-                opt_config_online.hashrate_measure_dur_ms_ = pt_ehi_offline.get<int>("hashrate_measure_dur_ms");
+                opt_config_online.power_measure_dur_ms_ = pt_ehi_online.get<int>("power_measure_dur_ms");
+                opt_config_online.hashrate_measure_dur_ms_ = pt_ehi_online.get<int>("hashrate_measure_dur_ms");
                 //
                 opt_res_device.emplace(ct, energy_hash_info(ct, opt_config_offline, opt_config_online));
             }
