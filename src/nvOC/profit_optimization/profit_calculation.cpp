@@ -17,7 +17,10 @@ namespace frequency_scaling {
 
     energy_hash_info::energy_hash_info(currency_type type,
                                        const measurement &optimal_configuration_offline) :
-            energy_hash_info(type, optimal_configuration_offline, optimal_configuration_offline) {}
+            energy_hash_info(type, optimal_configuration_offline, optimal_configuration_offline) {
+		optimal_configuration_online_.hashrate_measure_dur_ms_ = 0;
+		optimal_configuration_online_.power_measure_dur_ms_ = 0;
+	}
 
     energy_hash_info::energy_hash_info(currency_type type,
                                        const measurement &optimal_configuration_offline,
@@ -31,8 +34,10 @@ namespace frequency_scaling {
                                          double power_cost_kwh) : dci_(dci),
                                                                   energy_hash_info_(energy_hash_info),
                                                                   power_cost_kwh_(power_cost_kwh) {
-        for (auto &ehi : energy_hash_info)
-            last_online_measurements_.emplace(ehi.first, measurement());
+		for (auto &ehi : energy_hash_info) {
+			last_online_measurements_.emplace(ehi.first, measurement());
+			save_current_period(ehi.first);
+		}
         update_currency_info_nanopool();
         recalculate_best_currency();
     }
