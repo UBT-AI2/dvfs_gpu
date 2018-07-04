@@ -13,12 +13,18 @@ namespace frequency_scaling {
         std::map<int, std::string> worker_names_;
     };
 
-    void start_mining_script(currency_type ct, const device_clock_info &dci, const miner_user_info &user_info);
+    bool start_mining_script(currency_type ct, const device_clock_info &dci, const miner_user_info &user_info);
 
-    void stop_mining_script(int device_id);
+    bool stop_mining_script(int device_id);
 
-    measurement run_benchmark_mining_online(const miner_user_info &user_info, int period_hours,
-                                            currency_type ct, const device_clock_info &dci, int mem_oc,
-                                            int nvml_graph_clock_idx);
+    double get_avg_hashrate_online_log(currency_type ct, int device_id, long long int system_timestamp_start_ms,
+                                       long long int system_timestamp_end_ms);
+
+    measurement run_benchmark_mining_online_nanopool(const miner_user_info &user_info, int period_ms,
+                                                     currency_type ct, const device_clock_info &dci, int mem_oc,
+                                                     int nvml_graph_clock_idx);
+
+    measurement run_benchmark_mining_online_log(const miner_user_info &user_info, int period_ms, currency_type ct,
+                                                const device_clock_info &dci, int mem_oc, int nvml_graph_clock_idx);
 
 }

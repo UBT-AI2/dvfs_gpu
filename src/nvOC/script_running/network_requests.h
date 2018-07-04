@@ -12,7 +12,7 @@ namespace frequency_scaling {
                                                        int trials = 3, int trial_timeout_ms = 1000);
 
     std::map<std::string, double>
-    get_avg_hashrate_per_worker_nanopool(currency_type ct, const std::string &wallet_address, double period_hours,
+    get_avg_hashrate_per_worker_nanopool(currency_type ct, const std::string &wallet_address, int period_ms,
                                          int trials = 3, int trial_timeout_ms = 1000);
 
     double get_current_stock_price_nanopool(currency_type ct, int trials = 3, int trial_timeout_ms = 1000);

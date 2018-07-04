@@ -41,7 +41,7 @@ namespace frequency_scaling {
         void update_currency_info_nanopool();
 
         void update_opt_config_hashrate_nanopool(currency_type current_mined_ct,
-                                                 const miner_user_info &user_info, double period_hours);
+                                                 const miner_user_info &user_info, int period_ms);
 
         void update_power_consumption(currency_type current_mined_ct, long long int system_time_start_ms);
 
@@ -77,7 +77,7 @@ namespace frequency_scaling {
         double power_cost_kwh_;
         currency_type best_currency_;
         double best_currency_profit_;
-        const double window_dur_h_ = 6;
+        const int window_dur_ms_ = 6 * 3600 * 1000;
     };
 
 }

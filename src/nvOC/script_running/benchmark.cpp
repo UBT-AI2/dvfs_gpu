@@ -136,16 +136,16 @@ namespace frequency_scaling {
     }
 
 
-    void start_power_monitoring_script(int device_id, int interval_sleep_ms) {
+    bool start_power_monitoring_script(int device_id, int interval_sleep_ms) {
         //start power monitoring in background process
         char cmd[BUFFER_SIZE];
         snprintf(cmd, BUFFER_SIZE, "./gpu_power_monitor %i %i", device_id, interval_sleep_ms);
-        process_management::gpu_start_process(cmd, device_id, process_type::POWER_MONITOR, true);
+        return process_management::gpu_start_process(cmd, device_id, process_type::POWER_MONITOR, true);
     }
 
-    void stop_power_monitoring_script(int device_id) {
+    bool stop_power_monitoring_script(int device_id) {
         //stop power monitoring
-        process_management::gpu_kill_background_process(device_id, process_type::POWER_MONITOR);
+        return process_management::gpu_kill_background_process(device_id, process_type::POWER_MONITOR);
     }
 
     double get_avg_power_usage(int device_id, long long int system_timestamp_start_ms,

@@ -23,30 +23,31 @@ namespace frequency_scaling {
 
     static const int BUFFER_SIZE = 1024;
 
-    static std::map<currency_type, energy_hash_info> find_optimal_config(const device_clock_info &dci,
+    static std::map<currency_type, energy_hash_info> find_optimal_config(const std::pair<benchmark_func,bool>& bf, const device_clock_info &dci,
                                                                          const std::set<currency_type> &currencies,
                                                                          const std::map<currency_type, optimization_method_params> &opt_method_params) {
         std::map<currency_type, energy_hash_info> energy_hash_infos;
         //start power monitoring
-        start_power_monitoring_script(dci.device_id_nvml);
+        bool pm_started = start_power_monitoring_script(dci.device_id_nvml);
         for (currency_type ct : currencies) {
             try {
                 measurement optimal_config;
                 const optimization_method_params &opt_params_ct = opt_method_params.at(ct);
+                int max_iterations_ct = (bf.second) ? opt_params_ct.max_iterations_ : opt_params_ct.max_iterations_/2;
                 switch (opt_params_ct.method_) {
                     case optimization_method::NELDER_MEAD:
-                        optimal_config = freq_nelder_mead(&run_benchmark_script_nvml_nvapi, ct, dci, 1,
-                                                          opt_params_ct.max_iterations_, opt_params_ct.mem_step_,
+                        optimal_config = freq_nelder_mead(bf.first, ct, dci, 1,
+                                                          max_iterations_ct, opt_params_ct.mem_step_,
                                                           opt_params_ct.graph_idx_step_, opt_params_ct.min_hashrate_);
                         break;
                     case optimization_method::HILL_CLIMBING:
-                        optimal_config = freq_hill_climbing(&run_benchmark_script_nvml_nvapi, ct, dci,
-                                                            opt_params_ct.max_iterations_, opt_params_ct.mem_step_,
+                        optimal_config = freq_hill_climbing(bf.first, ct, dci,
+                                                            max_iterations_ct, opt_params_ct.mem_step_,
                                                             opt_params_ct.graph_idx_step_, opt_params_ct.min_hashrate_);
                         break;
                     case optimization_method::SIMULATED_ANNEALING:
-                        optimal_config = freq_simulated_annealing(&run_benchmark_script_nvml_nvapi, ct, dci,
-                                                                  opt_params_ct.max_iterations_,
+                        optimal_config = freq_simulated_annealing(bf.first, ct, dci,
+                                                                  max_iterations_ct,
                                                                   opt_params_ct.mem_step_,
                                                                   opt_params_ct.graph_idx_step_,
                                                                   opt_params_ct.min_hashrate_);
@@ -60,25 +61,30 @@ namespace frequency_scaling {
                                                        << enum_to_string(ct)
                                                        << ": " << optimal_config.energy_hash_ << std::endl;
                 energy_hash_infos.emplace(ct, energy_hash_info(ct, optimal_config));
-                //move generated result files
-                char cmd[BUFFER_SIZE];
-                snprintf(cmd, BUFFER_SIZE, "bash ../scripts/move_result_files.sh %i %s",
-                         dci.device_id_nvml, enum_to_string(ct).c_str());
-                process_management::start_process(cmd, false);
+                if(bf.second) {
+                    //move generated result files
+                    char cmd[BUFFER_SIZE];
+                    snprintf(cmd, BUFFER_SIZE, "bash ../scripts/move_result_files.sh %i %s",
+                             dci.device_id_nvml, enum_to_string(ct).c_str());
+                    process_management::start_process(cmd, false);
+                }
             } catch (const optimization_error &err) {
                 full_expression_accumulator(std::cerr) << "Optimization for currency " << enum_to_string(ct) <<
                                                        " on GPU " << dci.device_id_nvml << "failed: " << err.what()
                                                        << std::endl;
-                //remove already generated result files
-                char cmd[BUFFER_SIZE];
-                snprintf(cmd, BUFFER_SIZE, "bash ../scripts/remove_result_files.sh %i %s",
-                         dci.device_id_nvml, enum_to_string(ct).c_str());
-                process_management::start_process(cmd, false);
+                if(bf.second) {
+                    //remove already generated result files
+                    char cmd[BUFFER_SIZE];
+                    snprintf(cmd, BUFFER_SIZE, "bash ../scripts/remove_result_files.sh %i %s",
+                             dci.device_id_nvml, enum_to_string(ct).c_str());
+                    process_management::start_process(cmd, false);
+                }
             }
             //sleep 60 seconds to let gpu cool down
-            std::this_thread::sleep_for(std::chrono::seconds(60));
+            //std::this_thread::sleep_for(std::chrono::seconds(60));
         }
-        stop_power_monitoring_script(dci.device_id_nvml);
+        if(pm_started)
+            stop_power_monitoring_script(dci.device_id_nvml);
         return energy_hash_infos;
     };
 
@@ -99,7 +105,7 @@ namespace frequency_scaling {
     }
 
     static bool monitoring_sanity_check(const profit_calculator &profit_calc, const miner_user_info &user_infos,
-                                        long long int &system_time_start_ms, int &current_monitoring_time_sec) {
+                                        long long int &system_time_start_ms, int &current_monitoring_time_ms) {
         int device_id = profit_calc.getDci_().device_id_nvml;
         //check if miner still running and restart if it somehow crashed
         if (!process_management::gpu_has_background_process(device_id, process_type::MINER)) {
@@ -107,7 +113,7 @@ namespace frequency_scaling {
                 stop_power_monitoring_script(device_id);
             start_power_monitoring_script(device_id);
             start_mining_best_currency(profit_calc, user_infos);
-            current_monitoring_time_sec = 0;
+            current_monitoring_time_ms = 0;
             system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::system_clock::now().time_since_epoch()).count();
             return false;
@@ -124,18 +130,18 @@ namespace frequency_scaling {
 
     static void
     start_profit_monitoring(profit_calculator &profit_calc,
-                            const miner_user_info &user_infos, int update_interval_sec,
+                            const miner_user_info &user_infos, int update_interval_ms,
                             std::mutex &mutex, std::condition_variable &cond_var, const std::atomic_bool &terminate) {
         //start power monitoring
         start_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
-        int current_monitoring_time_sec = 0;
+        int current_monitoring_time_ms = 0;
         long long int system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
-        monitoring_sanity_check(profit_calc, user_infos, system_time_start_ms, current_monitoring_time_sec);
+        monitoring_sanity_check(profit_calc, user_infos, system_time_start_ms, current_monitoring_time_ms);
         //monitoring loop
         while (true) {
             std::cv_status stat;
-            int remaining_sleep_ms = update_interval_sec * 1000;
+            int remaining_sleep_ms = update_interval_ms;
             do {
                 std::unique_lock<std::mutex> lock(mutex);
                 auto start = std::chrono::steady_clock::now();
@@ -145,8 +151,8 @@ namespace frequency_scaling {
             } while (stat == std::cv_status::no_timeout && !terminate);//prevent spurious wakeups
             if (terminate)
                 break;
-            current_monitoring_time_sec += update_interval_sec;
-            if (!monitoring_sanity_check(profit_calc, user_infos, system_time_start_ms, current_monitoring_time_sec))
+            current_monitoring_time_ms += update_interval_ms;
+            if (!monitoring_sanity_check(profit_calc, user_infos, system_time_start_ms, current_monitoring_time_ms))
                 continue;
             //monitoring code
             try {
@@ -155,9 +161,9 @@ namespace frequency_scaling {
                 //update with long time power_consumption
                 profit_calc.update_power_consumption(old_best_currency, system_time_start_ms);
                 //update with pool hashrates if currency is mined > 1h
-                if (current_monitoring_time_sec > 3600) {
-                    double hours_arg = current_monitoring_time_sec / 3600.0;
-                    profit_calc.update_opt_config_hashrate_nanopool(old_best_currency, user_infos, hours_arg);
+                if (current_monitoring_time_ms > 3600 * 1000) {
+                    profit_calc.update_opt_config_hashrate_nanopool(old_best_currency, user_infos,
+                                                                    current_monitoring_time_ms);
                 }
                 //update approximated earnings based on current hashrate and stock price
                 profit_calc.update_currency_info_nanopool();
@@ -175,7 +181,7 @@ namespace frequency_scaling {
                     //start mining new best currency
                     start_power_monitoring_script(profit_calc.getDci_().device_id_nvml);
                     start_mining_best_currency(profit_calc, user_infos);
-                    current_monitoring_time_sec = 0;
+                    current_monitoring_time_ms = 0;
                     system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                             std::chrono::system_clock::now().time_since_epoch()).count();
                 }
@@ -282,7 +288,8 @@ namespace frequency_scaling {
                     //create profit calculator for gpu
                     profit_calculator pc(gpu_dci, gpu_opt_res, opt_config.energy_cost_kwh_);
                     start_mining_best_currency(pc, opt_config.miner_user_infos_);
-                    start_profit_monitoring(pc, opt_config.miner_user_infos_, opt_config.monitoring_interval_sec_,
+                    start_profit_monitoring(pc, opt_config.miner_user_infos_,
+                                            opt_config.monitoring_interval_sec_ * 1000,
                                             mutex, cond_var, terminate);
                     stop_mining_script(gpu_dci.device_id_nvml);
                     //set return value
@@ -341,7 +348,8 @@ namespace frequency_scaling {
                     try {
                         const device_clock_info &gpu_dci = opt_config.dcis_[i];
                         const std::map<currency_type, energy_hash_info> &gpu_optimal_config =
-                                find_optimal_config(gpu_dci, gpu_distr.at(gpu_dci.device_id_nvml),
+                                find_optimal_config(std::make_pair(&run_benchmark_script_nvml_nvapi, true),
+                                                    gpu_dci, gpu_distr.at(gpu_dci.device_id_nvml),
                                                     opt_config.opt_method_params_);
                         std::lock_guard<std::mutex> lock(mutex);
                         optimization_results.emplace(gpu_dci.device_id_nvml, gpu_optimal_config);

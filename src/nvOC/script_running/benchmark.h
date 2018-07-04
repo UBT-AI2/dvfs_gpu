@@ -37,9 +37,9 @@ namespace frequency_scaling {
     typedef std::function<measurement(currency_type, const device_clock_info &, int, int)> benchmark_func;
 
 
-    void start_power_monitoring_script(int device_id, int interval_sleep_ms = 100);
+    bool start_power_monitoring_script(int device_id, int interval_sleep_ms = 100);
 
-    void stop_power_monitoring_script(int device_id);
+    bool stop_power_monitoring_script(int device_id);
 
     double get_avg_power_usage(int device_id, long long int system_timestamp_start_ms,
                                long long int system_timestamp_end_ms);

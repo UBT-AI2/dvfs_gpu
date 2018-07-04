@@ -83,7 +83,8 @@ namespace frequency_scaling {
 
 
     static std::map<std::string, double>
-    __get_avg_hashrate_per_worker_nanopool(currency_type ct, const std::string &wallet_address, double period_hours) {
+    __get_avg_hashrate_per_worker_nanopool(currency_type ct, const std::string &wallet_address, int period_ms) {
+        double period_hours = period_ms / (1000.0 * 3600.0);
         const std::string &json_response = curl_https_get(
                 get_nanopool_url(ct) + "/avghashrateworkers/" + wallet_address + "/" +
                 std::to_string(period_hours));
@@ -155,11 +156,11 @@ namespace frequency_scaling {
 
 
     std::map<std::string, double>
-    get_avg_hashrate_per_worker_nanopool(currency_type ct, const std::string &wallet_address, double period_hours,
+    get_avg_hashrate_per_worker_nanopool(currency_type ct, const std::string &wallet_address, int period_ms,
                                          int trials, int trial_timeout_ms) {
-        return safe_network_proxycall<std::map<std::string, double>, currency_type, const std::string &, double>(
+        return safe_network_proxycall<std::map<std::string, double>, currency_type, const std::string &, int>(
                 trials, trial_timeout_ms, &__get_avg_hashrate_per_worker_nanopool,
-                std::move(ct), std::move(wallet_address), std::move(period_hours));
+                std::move(ct), std::move(wallet_address), std::move(period_ms));
     };
 
 
