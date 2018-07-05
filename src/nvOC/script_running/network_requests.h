@@ -9,6 +9,8 @@
 namespace frequency_scaling {
 
     struct currency_stats {
+        double calc_approximated_earnings_eur_hour(double user_hashrate_hs) const;
+
         double stock_price_eur_;
         double difficulty_;
         double block_time_sec_;

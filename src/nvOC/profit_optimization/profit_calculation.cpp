@@ -14,12 +14,6 @@ namespace frequency_scaling {
             : type_(type), approximated_earnings_eur_hour_(approximated_earnings_eur_hour),
               cs_(cs) {}
 
-    double currency_info::calc_approximated_earnings_eur_hour(double user_hashrate_hs) const {
-        return (user_hashrate_hs / cs_.nethash_) * (1 / cs_.block_time_sec_) *
-               cs_.block_reward_ * cs_.stock_price_eur_ * 3600;
-    }
-
-
     energy_hash_info::energy_hash_info(currency_type type,
                                        const measurement &optimal_configuration_offline) :
             energy_hash_info(type, optimal_configuration_offline, optimal_configuration_offline) {

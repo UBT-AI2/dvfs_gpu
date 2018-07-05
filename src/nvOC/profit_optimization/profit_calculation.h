@@ -12,8 +12,6 @@ namespace frequency_scaling {
         currency_info(currency_type type, double approximated_earnings_eur_hour,
                       const currency_stats &cs);
 
-        double calc_approximated_earnings_eur_hour(double user_hashrate_hs) const;
-
         const currency_type type_;
         double approximated_earnings_eur_hour_;
         currency_stats cs_;

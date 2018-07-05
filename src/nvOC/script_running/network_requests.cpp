@@ -10,6 +10,13 @@
 
 namespace frequency_scaling {
 
+    double currency_stats::calc_approximated_earnings_eur_hour(double user_hashrate_hs) const {
+        return (user_hashrate_hs / nethash_) * (1 / block_time_sec_) *
+               block_reward_ * stock_price_eur_ * 3600;
+    }
+
+    //#######################################################################################################
+
     static size_t writeFunction(void *ptr, size_t size, size_t nmemb, std::string *data) {
         data->append((char *) ptr, size * nmemb);
         return size * nmemb;

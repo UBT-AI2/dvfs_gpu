@@ -38,6 +38,105 @@ namespace frequency_scaling {
         const miner_user_info mui_;
     };
 
+
+    static std::pair<bool, measurement>
+    find_optimal_config_currency(const benchmark_info &bi, const device_clock_info &dci,
+                                 currency_type ct, const optimization_method_params &opt_params_ct) {
+        //start power monitoring
+        bool pm_started = start_power_monitoring_script(dci.device_id_nvml);
+        bool mining_started = false;
+        if (!bi.offline_) {
+            mining_started = start_mining_script(ct, dci, bi.mui_);
+            //wait to ensure reasonable hashrates from the beginning
+            std::this_thread::sleep_for(std::chrono::seconds(60));
+        }
+        //
+        try {
+            int max_iterations_ct = (bi.offline_) ? opt_params_ct.max_iterations_ :
+                                    opt_params_ct.max_iterations_ / 2;
+            //
+            measurement optimal_config;
+            switch (opt_params_ct.method_) {
+                case optimization_method::NELDER_MEAD:
+                    if (bi.offline_)
+                        optimal_config = freq_nelder_mead(bi.bf_, ct, dci,
+                                                          1, max_iterations_ct, opt_params_ct.mem_step_,
+                                                          opt_params_ct.graph_idx_step_,
+                                                          opt_params_ct.min_hashrate_);
+                    else
+                        optimal_config = freq_nelder_mead(bi.bf_, ct, dci,
+                                                          bi.start_values_.at(ct),
+                                                          1, max_iterations_ct, opt_params_ct.mem_step_,
+                                                          opt_params_ct.graph_idx_step_,
+                                                          opt_params_ct.min_hashrate_);
+                    break;
+                case optimization_method::HILL_CLIMBING:
+                    if (bi.offline_)
+                        optimal_config = freq_hill_climbing(bi.bf_, ct, dci,
+                                                            max_iterations_ct, opt_params_ct.mem_step_,
+                                                            opt_params_ct.graph_idx_step_,
+                                                            opt_params_ct.min_hashrate_);
+                    else
+                        optimal_config = freq_hill_climbing(bi.bf_, ct, dci,
+                                                            bi.start_values_.at(ct), true,
+                                                            max_iterations_ct, opt_params_ct.mem_step_,
+                                                            opt_params_ct.graph_idx_step_,
+                                                            opt_params_ct.min_hashrate_);
+                    break;
+                case optimization_method::SIMULATED_ANNEALING:
+                    if (bi.offline_)
+                        optimal_config = freq_simulated_annealing(bi.bf_, ct, dci,
+                                                                  max_iterations_ct,
+                                                                  opt_params_ct.mem_step_,
+                                                                  opt_params_ct.graph_idx_step_,
+                                                                  opt_params_ct.min_hashrate_);
+                    else
+                        optimal_config = freq_simulated_annealing(bi.bf_, ct, dci,
+                                                                  bi.start_values_.at(ct),
+                                                                  max_iterations_ct,
+                                                                  opt_params_ct.mem_step_,
+                                                                  opt_params_ct.graph_idx_step_,
+                                                                  opt_params_ct.min_hashrate_);
+                    break;
+                default:
+                    throw std::runtime_error("Invalid enum value");
+            }
+            //
+            full_expression_accumulator(std::cout) << "GPU " << dci.device_id_nvml <<
+                                                   ": Computed optimal energy-hash ratio for currency "
+                                                   << enum_to_string(ct)
+                                                   << ": " << optimal_config.energy_hash_ << std::endl;
+            if (bi.offline_) {
+                //move generated result files
+                char cmd[BUFFER_SIZE];
+                snprintf(cmd, BUFFER_SIZE, "bash ../scripts/move_result_files.sh %i %s",
+                         dci.device_id_nvml, enum_to_string(ct).c_str());
+                process_management::start_process(cmd, false);
+            }
+            if (mining_started)
+                stop_mining_script(dci.device_id_nvml);
+            if (pm_started)
+                stop_power_monitoring_script(dci.device_id_nvml);
+            return std::make_pair(true, optimal_config);
+        } catch (const optimization_error &err) {
+            full_expression_accumulator(std::cerr) << "Optimization for currency " << enum_to_string(ct) <<
+                                                   " on GPU " << dci.device_id_nvml << "failed: " << err.what()
+                                                   << std::endl;
+            if (bi.offline_) {
+                //remove already generated result files
+                char cmd[BUFFER_SIZE];
+                snprintf(cmd, BUFFER_SIZE, "bash ../scripts/remove_result_files.sh %i %s",
+                         dci.device_id_nvml, enum_to_string(ct).c_str());
+                process_management::start_process(cmd, false);
+            }
+            if (mining_started)
+                stop_mining_script(dci.device_id_nvml);
+            if (pm_started)
+                stop_power_monitoring_script(dci.device_id_nvml);
+            return std::make_pair(false, measurement());
+        }
+    }
+
     static std::map<currency_type, measurement>
     find_optimal_config(const benchmark_info &bi, const device_clock_info &dci,
                         const std::set<currency_type> &currencies,
@@ -45,107 +144,34 @@ namespace frequency_scaling {
         std::map<currency_type, measurement> energy_hash_infos;
         //start power monitoring
         bool pm_started = start_power_monitoring_script(dci.device_id_nvml);
+        //stops mining if its running!!!
+        if (!bi.offline_)
+            stop_mining_script(dci.device_id_nvml);
         //
         for (currency_type ct : currencies) {
-            bool mining_started = false;
-            try {
-                if (!bi.offline_)
-                    mining_started = start_mining_script(ct, dci, bi.mui_);
-                const optimization_method_params &opt_params_ct = opt_method_params.at(ct);
-                int max_iterations_ct = (bi.offline_) ? opt_params_ct.max_iterations_ : opt_params_ct.max_iterations_ /
-                                                                                        2;
-                //
-                measurement optimal_config;
-                switch (opt_params_ct.method_) {
-                    case optimization_method::NELDER_MEAD:
-                        if (bi.offline_)
-                            optimal_config = freq_nelder_mead(bi.bf_, ct, dci,
-                                                              1, max_iterations_ct, opt_params_ct.mem_step_,
-                                                              opt_params_ct.graph_idx_step_,
-                                                              opt_params_ct.min_hashrate_);
-                        else
-                            optimal_config = freq_nelder_mead(bi.bf_, ct, dci,
-                                                              bi.start_values_.at(ct),
-                                                              1, max_iterations_ct, opt_params_ct.mem_step_,
-                                                              opt_params_ct.graph_idx_step_,
-                                                              opt_params_ct.min_hashrate_);
-                        break;
-                    case optimization_method::HILL_CLIMBING:
-                        if (bi.offline_)
-                            optimal_config = freq_hill_climbing(bi.bf_, ct, dci,
-                                                                max_iterations_ct, opt_params_ct.mem_step_,
-                                                                opt_params_ct.graph_idx_step_,
-                                                                opt_params_ct.min_hashrate_);
-                        else
-                            optimal_config = freq_hill_climbing(bi.bf_, ct, dci,
-                                                                bi.start_values_.at(ct), true,
-                                                                max_iterations_ct, opt_params_ct.mem_step_,
-                                                                opt_params_ct.graph_idx_step_,
-                                                                opt_params_ct.min_hashrate_);
-                        break;
-                    case optimization_method::SIMULATED_ANNEALING:
-                        if (bi.offline_)
-                            optimal_config = freq_simulated_annealing(bi.bf_, ct, dci,
-                                                                      max_iterations_ct,
-                                                                      opt_params_ct.mem_step_,
-                                                                      opt_params_ct.graph_idx_step_,
-                                                                      opt_params_ct.min_hashrate_);
-                        else
-                            optimal_config = freq_simulated_annealing(bi.bf_, ct, dci,
-                                                                      bi.start_values_.at(ct),
-                                                                      max_iterations_ct,
-                                                                      opt_params_ct.mem_step_,
-                                                                      opt_params_ct.graph_idx_step_,
-                                                                      opt_params_ct.min_hashrate_);
-                        break;
-                    default:
-                        throw std::runtime_error("Invalid enum value");
-                }
-                //save result
-                full_expression_accumulator(std::cout) << "GPU " << dci.device_id_nvml <<
-                                                       ": Computed optimal energy-hash ratio for currency "
-                                                       << enum_to_string(ct)
-                                                       << ": " << optimal_config.energy_hash_ << std::endl;
-                energy_hash_infos.emplace(ct, optimal_config);
-                if (bi.offline_) {
-                    //move generated result files
-                    char cmd[BUFFER_SIZE];
-                    snprintf(cmd, BUFFER_SIZE, "bash ../scripts/move_result_files.sh %i %s",
-                             dci.device_id_nvml, enum_to_string(ct).c_str());
-                    process_management::start_process(cmd, false);
-                }
-                if (mining_started)
-                    stop_mining_script(dci.device_id_nvml);
-            } catch (const optimization_error &err) {
-                full_expression_accumulator(std::cerr) << "Optimization for currency " << enum_to_string(ct) <<
-                                                       " on GPU " << dci.device_id_nvml << "failed: " << err.what()
-                                                       << std::endl;
-                if (bi.offline_) {
-                    //remove already generated result files
-                    char cmd[BUFFER_SIZE];
-                    snprintf(cmd, BUFFER_SIZE, "bash ../scripts/remove_result_files.sh %i %s",
-                             dci.device_id_nvml, enum_to_string(ct).c_str());
-                    process_management::start_process(cmd, false);
-                }
-                if (mining_started)
-                    stop_mining_script(dci.device_id_nvml);
-            }
+            const std::pair<bool, measurement> &opt_config =
+                    find_optimal_config_currency(bi, dci, ct, opt_method_params.at(ct));
+            if (opt_config.first)
+                energy_hash_infos.emplace(ct, opt_config.second);
         }
         if (pm_started)
             stop_power_monitoring_script(dci.device_id_nvml);
         return energy_hash_infos;
-    };
+    }
 
 
     static void start_mining_best_currency(const profit_calculator &profit_calc,
                                            const miner_user_info &user_infos) {
+        int device_id = profit_calc.getDci_().device_id_nvml;
+        //stops mining if its running!!!
+        stop_mining_script(device_id);
         currency_type best_currency = profit_calc.getBest_currency_();
         const energy_hash_info &ehi = profit_calc.getEnergy_hash_info_().at(best_currency);
         //
         change_clocks_nvml_nvapi(profit_calc.getDci_(), ehi.optimal_configuration_offline_.mem_oc,
                                  ehi.optimal_configuration_offline_.nvml_graph_clock_idx);
         start_mining_script(best_currency, profit_calc.getDci_(), user_infos);
-        full_expression_accumulator(std::cout) << "GPU " << profit_calc.getDci_().device_id_nvml <<
+        full_expression_accumulator(std::cout) << "GPU " << device_id <<
                                                ": Started mining best currency " << enum_to_string(best_currency)
                                                << " with approximated profit of "
                                                << profit_calc.getBest_currency_profit_() << " euro/h"
@@ -231,22 +257,26 @@ namespace frequency_scaling {
                             std::chrono::system_clock::now().time_since_epoch()).count();
                     //reoptimize frequencies
                     if (new_best_currency != currency_type::ZEC) {
-                        const measurement &new_opt_config_offline =
-                                find_optimal_config(benchmark_info(std::bind(&run_benchmark_mining_online_log,
-                                                                             std::cref(user_infos), 2 * 60 * 1000,
-                                                                             std::placeholders::_1,
-                                                                             std::placeholders::_2,
-                                                                             std::placeholders::_3,
-                                                                             std::placeholders::_4),
-                                                                   profit_calc.get_opt_start_values(), user_infos),
-                                                    profit_calc.getDci_(), {new_best_currency}, opt_method_params).at(
-                                        new_best_currency);
-                        profit_calc.update_opt_config_offline(new_best_currency, new_opt_config_offline);
-                        //change frequencies
-                        change_clocks_nvml_nvapi(profit_calc.getDci_(), new_opt_config_offline.mem_oc,
-                                                 new_opt_config_offline.nvml_graph_clock_idx);
+                        const std::pair<bool, measurement> &new_opt_config_offline =
+                                find_optimal_config_currency(benchmark_info(std::bind(&run_benchmark_mining_online_log,
+                                                                                      std::cref(user_infos),
+                                                                                      2 * 60 * 1000,
+                                                                                      std::placeholders::_1,
+                                                                                      std::placeholders::_2,
+                                                                                      std::placeholders::_3,
+                                                                                      std::placeholders::_4),
+                                                                            profit_calc.get_opt_start_values(),
+                                                                            user_infos),
+                                                             profit_calc.getDci_(), new_best_currency,
+                                                             opt_method_params.at(new_best_currency));
                         current_monitoring_time_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
                                 std::chrono::system_clock::now().time_since_epoch()).count() - system_time_start_ms;
+                        //update config and change frequencies if optimization was successful
+                        if (new_opt_config_offline.first) {
+                            profit_calc.update_opt_config_offline(new_best_currency, new_opt_config_offline.second);
+                            change_clocks_nvml_nvapi(profit_calc.getDci_(), new_opt_config_offline.second.mem_oc,
+                                                     new_opt_config_offline.second.nvml_graph_clock_idx);
+                        }
                     }
                 }
             } catch (const network_error &err) {
