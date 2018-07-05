@@ -27,6 +27,8 @@ namespace frequency_scaling {
 
         void update_hashrate(double hashrate, int hashrate_measure_dur_ms);
 
+        void update_freq_config(const measurement &other);
+
         int mem_clock_, graph_clock_;
         double power_, hashrate_, energy_hash_;
         int nvml_graph_clock_idx;

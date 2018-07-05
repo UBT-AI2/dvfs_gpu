@@ -24,7 +24,8 @@ namespace frequency_scaling {
                                                      currency_type ct, const device_clock_info &dci, int mem_oc,
                                                      int nvml_graph_clock_idx);
 
-    measurement run_benchmark_mining_online_log(const miner_user_info &user_info, int period_ms, currency_type ct,
-                                                const device_clock_info &dci, int mem_oc, int nvml_graph_clock_idx);
+    measurement run_benchmark_mining_online_log(const miner_user_info &user_info, int period_ms,
+                                                currency_type ct, const device_clock_info &dci, int mem_oc,
+                                                int nvml_graph_clock_idx);
 
 }

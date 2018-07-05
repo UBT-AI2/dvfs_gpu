@@ -86,7 +86,7 @@ namespace frequency_scaling {
                 std::chrono::system_clock::now().time_since_epoch()).count();
         double power = get_avg_power_usage(dci.device_id_nvml, system_time_start_ms, system_time_now_ms);
         double hashrate = hashrate_func(ct, dci.device_id_nvml, system_time_start_ms, system_time_now_ms);
-        if(mining_started)
+        if (mining_started)
             stop_mining_script(dci.device_id_nvml);
         //create measurement
         int mem_clock = dci.nvapi_default_mem_clock + mem_oc;
@@ -103,7 +103,6 @@ namespace frequency_scaling {
     measurement run_benchmark_mining_online_nanopool(const miner_user_info &user_info, int period_ms,
                                                      currency_type ct, const device_clock_info &dci, int mem_oc,
                                                      int nvml_graph_clock_idx) {
-
         auto hashrate_func = [&user_info, period_ms](currency_type ct, int device_id,
                                                      long long int, long long int) -> double {
             const std::map<std::string, double> &avg_hashrates = get_avg_hashrate_per_worker_nanopool(
@@ -116,15 +115,11 @@ namespace frequency_scaling {
     }
 
 
-    measurement run_benchmark_mining_online_log(const miner_user_info &user_info, int period_ms, currency_type ct,
-                                                const device_clock_info &dci, int mem_oc, int nvml_graph_clock_idx) {
-
-        auto hashrate_func = [](currency_type ct, int device_id,
-                                long long int sys_start, long long int sys_end) -> double {
-            return get_avg_hashrate_online_log(ct, device_id, sys_start, sys_end);
-        };
-        //
-        return run_benchmark_mining_online(hashrate_func, user_info, period_ms, ct, dci, mem_oc, nvml_graph_clock_idx);
+    measurement run_benchmark_mining_online_log(const miner_user_info &user_info, int period_ms,
+                                                currency_type ct, const device_clock_info &dci, int mem_oc,
+                                                int nvml_graph_clock_idx) {
+        return run_benchmark_mining_online(&get_avg_hashrate_online_log, user_info, period_ms, ct, dci, mem_oc,
+                                           nvml_graph_clock_idx);
     }
 
 }

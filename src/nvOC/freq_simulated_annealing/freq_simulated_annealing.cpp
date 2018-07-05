@@ -24,19 +24,7 @@ namespace frequency_scaling {
         return abs(max_node.energy_hash_ - min_node.energy_hash_);
     }
 
-    measurement
-    freq_simulated_annealing(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
-                             int max_iterations,
-                             int mem_step, int graph_idx_step, double min_hashrate) {
-        double start_temperature = guess_start_temperature(benchmarkFunc, ct, dci);
-        //initial guess at maximum frequencies
-        int initial_graph_idx = 0, initial_mem_oc = dci.max_mem_oc;
-        const measurement &initial_node = benchmarkFunc(ct, dci, initial_mem_oc, initial_graph_idx);
-        return freq_simulated_annealing(benchmarkFunc, ct, dci, initial_node, start_temperature,
-                                        max_iterations, mem_step, graph_idx_step, min_hashrate);
-    }
-
-    measurement
+    static measurement
     freq_simulated_annealing(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
                              const measurement &start_node,
                              double start_temperature, int max_iterations,
@@ -93,6 +81,28 @@ namespace frequency_scaling {
             Tk = c * Tk;
         }
         return best_node;
+    }
+
+
+    measurement
+    freq_simulated_annealing(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
+                             int max_iterations, int mem_step, int graph_idx_step, double min_hashrate) {
+        double start_temperature = guess_start_temperature(benchmarkFunc, ct, dci);
+        //initial guess at maximum frequencies
+        int initial_graph_idx = 0, initial_mem_oc = dci.max_mem_oc;
+        const measurement &initial_node = benchmarkFunc(ct, dci, initial_mem_oc, initial_graph_idx);
+        return freq_simulated_annealing(benchmarkFunc, ct, dci, initial_node, start_temperature,
+                                        max_iterations, mem_step, graph_idx_step, min_hashrate);
+    }
+
+
+    measurement
+    freq_simulated_annealing(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
+                             const measurement &start_node, int max_iterations, int mem_step, int graph_idx_step,
+                             double min_hashrate) {
+        double start_temperature = guess_start_temperature(benchmarkFunc, ct, dci);
+        return freq_simulated_annealing(benchmarkFunc, ct, dci, start_node, start_temperature,
+                                        max_iterations, mem_step, graph_idx_step, min_hashrate);
     }
 
 }

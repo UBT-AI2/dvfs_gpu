@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <set>
 #include "../script_running/benchmark.h"
 #include "../script_running/mining.h"
 
@@ -25,7 +26,7 @@ namespace frequency_scaling {
                          const measurement &optimal_configuration_online);
 
         const currency_type type_;
-        const measurement optimal_configuration_offline_;
+        measurement optimal_configuration_offline_;
         measurement optimal_configuration_online_;
     };
 
@@ -47,9 +48,16 @@ namespace frequency_scaling {
 
         void update_energy_cost_stromdao(int plz);
 
+        void update_opt_config_offline(currency_type current_mined_ct,
+                                       const measurement &new_config_offline);
+
         const std::map<currency_type, currency_info> &getCurrency_info_() const;
 
         const std::map<currency_type, energy_hash_info> &getEnergy_hash_info_() const;
+
+        std::map<currency_type, measurement> get_opt_start_values() const;
+
+        std::set<currency_type> get_used_currencies() const;
 
         double getPower_cost_kwh_() const;
 

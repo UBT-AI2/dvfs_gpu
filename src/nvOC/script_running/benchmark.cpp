@@ -77,6 +77,13 @@ namespace frequency_scaling {
         energy_hash_ = hashrate / power_;
     }
 
+    void measurement::update_freq_config(const measurement &other) {
+        mem_clock_ = other.mem_clock_;
+        graph_clock_ = other.graph_clock_;
+        mem_oc = other.mem_oc;
+        graph_oc = other.graph_oc;
+        nvml_graph_clock_idx = other.nvml_graph_clock_idx;
+    }
 
     static measurement run_benchmark_script(currency_type ct, const device_clock_info &dci,
                                             int graph_clock, int mem_clock) {

@@ -140,10 +140,20 @@ namespace frequency_scaling {
         double new_power = (cur_period_ms / (double) total_period_ms) * cur_power +
                            (last_period_ms / (double) total_period_ms) * last_power;
         energy_hash_info_.at(current_mined_ct).optimal_configuration_online_.update_power(new_power, total_period_ms);
-
         full_expression_accumulator(std::cout) << get_log_prefix(current_mined_ct) <<
                                                "Update online power " << new_power << std::endl;
     }
+
+    void profit_calculator::update_opt_config_offline(currency_type current_mined_ct,
+                                                      const measurement &new_config_offline) {
+
+        energy_hash_info &ehi = energy_hash_info_.at(current_mined_ct);
+        ehi.optimal_configuration_offline_ = new_config_offline;
+        ehi.optimal_configuration_online_.update_freq_config(new_config_offline);
+        full_expression_accumulator(std::cout) << get_log_prefix(current_mined_ct) <<
+                                               "Update opt_config_offline" << std::endl;
+    }
+
 
     void profit_calculator::update_energy_cost_stromdao(int plz) {
         power_cost_kwh_ = get_energy_cost_stromdao(plz);
@@ -155,6 +165,20 @@ namespace frequency_scaling {
 
     const std::map<currency_type, energy_hash_info> &profit_calculator::getEnergy_hash_info_() const {
         return energy_hash_info_;
+    }
+
+    std::map<currency_type, measurement> profit_calculator::get_opt_start_values() const {
+        std::map<currency_type, measurement> res;
+        for (auto &ehi : energy_hash_info_)
+            res.emplace(ehi.first, ehi.second.optimal_configuration_offline_);
+        return res;
+    };
+
+    std::set<currency_type> profit_calculator::get_used_currencies() const {
+        std::set<currency_type> res;
+        for (auto &ehi : energy_hash_info_)
+            res.insert(ehi.first);
+        return res;
     }
 
     double profit_calculator::getPower_cost_kwh_() const {
