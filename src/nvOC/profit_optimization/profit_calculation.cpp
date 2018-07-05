@@ -10,9 +10,14 @@
 namespace frequency_scaling {
 
     currency_info::currency_info(currency_type type, double approximated_earnings_eur_hour,
-                                 double stock_price_eur)
+                                 const currency_stats &cs)
             : type_(type), approximated_earnings_eur_hour_(approximated_earnings_eur_hour),
-              stock_price_eur_(stock_price_eur) {}
+              cs_(cs) {}
+
+    double currency_info::calc_approximated_earnings_eur_hour(double user_hashrate_hs) const {
+        return (user_hashrate_hs / cs_.nethash_) * (1 / cs_.block_time_sec_) *
+               cs_.block_reward_ * cs_.stock_price_eur_ * 3600;
+    }
 
 
     energy_hash_info::energy_hash_info(currency_type type,
@@ -84,8 +89,8 @@ namespace frequency_scaling {
                 double used_hashrate = get_used_hashrate(ct);
                 double approximated_earnings =
                         get_approximated_earnings_per_hour_nanopool(ct, used_hashrate);
-                double stock_price = get_current_stock_price_nanopool(ct);
-                currency_info_.emplace(ct, currency_info(ct, approximated_earnings, stock_price));
+                const currency_stats &cs = get_currency_stats(ct);
+                currency_info_.emplace(ct, currency_info(ct, approximated_earnings, cs));
                 full_expression_accumulator(std::cout) << get_log_prefix(ct) << "Update currency info using hashrate "
                                                        << used_hashrate << std::endl;
             } catch (const network_error &err) {

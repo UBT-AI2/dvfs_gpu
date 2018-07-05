@@ -53,6 +53,8 @@ namespace frequency_scaling {
         return response_string;
     }
 
+    //#################################################################################################
+
     static std::string get_nanopool_url(currency_type type) {
         switch (type) {
             case currency_type::ZEC:
@@ -62,9 +64,51 @@ namespace frequency_scaling {
             case currency_type::XMR:
                 return "https://api.nanopool.org/v1/xmr";
             default:
-                return "";
+                throw std::runtime_error("Invalid enum value");
         }
     }
+
+    static std::string get_whattomine_url(currency_type type) {
+        switch (type) {
+            case currency_type::ZEC:
+                return "https://whattomine.com/coins/166.json";
+            case currency_type::ETH:
+                return "https://whattomine.com/coins/151.json";
+            case currency_type::XMR:
+                return "https://whattomine.com/coins/101.json";
+            default:
+                throw std::runtime_error("Invalid enum value");
+        }
+    }
+
+//#######################################################################################################
+
+    static double get_current_stock_price_nanopool(currency_type ct) {
+        const std::string &json_response = curl_https_get(
+                get_nanopool_url(ct) + "/prices");
+        std::istringstream is(json_response);
+        boost::property_tree::ptree root;
+        boost::property_tree::json_parser::read_json(is, root);
+        std::string status = root.get<std::string>("status", "false");
+        if (status != "true")
+            throw network_error("Nanopool REST API error: " + root.get<std::string>("data"));
+        return root.get<double>("data.price_eur");
+    }
+
+    static void get_currency_stats_whattomine(currency_type ct, currency_stats &cs) {
+        const std::string &json_response = curl_https_get(
+                get_whattomine_url(ct));
+        std::istringstream is(json_response);
+        boost::property_tree::ptree root;
+        boost::property_tree::json_parser::read_json(is, root);
+        cs.block_reward_ = root.get<double>("block_reward");
+        cs.block_time_sec_ = root.get<double>("block_time");
+        cs.difficulty_ = root.get<double>("difficulty");
+        cs.nethash_ = root.get<double>("nethash");
+        //cs.nethash_ = cs.difficulty_ / cs.block_time_sec_;
+    }
+
+    //#######################################################################################################
 
 
     static double __get_approximated_earnings_per_hour_nanopool(currency_type type, double hashrate_hs) {
@@ -106,16 +150,11 @@ namespace frequency_scaling {
     };
 
 
-    static double __get_current_stock_price_nanopool(currency_type ct) {
-        const std::string &json_response = curl_https_get(
-                get_nanopool_url(ct) + "/prices");
-        std::istringstream is(json_response);
-        boost::property_tree::ptree root;
-        boost::property_tree::json_parser::read_json(is, root);
-        std::string status = root.get<std::string>("status", "false");
-        if (status != "true")
-            throw network_error("Nanopool REST API error: " + root.get<std::string>("data"));
-        return root.get<double>("data.price_eur");
+    static currency_stats __get_currency_stats(currency_type ct) {
+        currency_stats cs;
+        cs.stock_price_eur_ = get_current_stock_price_nanopool(ct);
+        get_currency_stats_whattomine(ct, cs);
+        return cs;
     }
 
 
@@ -128,6 +167,7 @@ namespace frequency_scaling {
         return root.get<double>("tarif.centPerKWh") / 100.0;
     }
 
+    //#######################################################################################################
 
     template<typename R, typename ...Args>
     static R safe_network_proxycall(int trials, int trial_timeout_ms, R (*mf)(Args...), Args &&... args) {
@@ -164,9 +204,9 @@ namespace frequency_scaling {
     };
 
 
-    double get_current_stock_price_nanopool(currency_type ct, int trials, int trial_timeout_ms) {
-        return safe_network_proxycall<double, currency_type>(
-                trials, trial_timeout_ms, &__get_current_stock_price_nanopool, std::move(ct));
+    currency_stats get_currency_stats(currency_type ct, int trials, int trial_timeout_ms) {
+        return safe_network_proxycall<currency_stats, currency_type>(
+                trials, trial_timeout_ms, &__get_currency_stats, std::move(ct));
     }
 
 

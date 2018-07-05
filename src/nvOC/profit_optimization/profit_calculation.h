@@ -4,16 +4,19 @@
 #include <set>
 #include "../script_running/benchmark.h"
 #include "../script_running/mining.h"
+#include "../script_running/network_requests.h"
 
 namespace frequency_scaling {
 
     struct currency_info {
         currency_info(currency_type type, double approximated_earnings_eur_hour,
-                      double stock_price_eur_);
+                      const currency_stats &cs);
+
+        double calc_approximated_earnings_eur_hour(double user_hashrate_hs) const;
 
         const currency_type type_;
         double approximated_earnings_eur_hour_;
-        double stock_price_eur_;
+        currency_stats cs_;
     };
 
 

@@ -242,7 +242,8 @@ namespace frequency_scaling {
                 std::lock_guard<std::mutex> lock(process_management::all_processes_mutex_);
                 process_management::all_processes_.emplace_back(pid, background);
             }
-            full_expression_accumulator(std::cout) << "Started process: " << cmd << " (PID: " << pid << ")" << std::endl;
+            full_expression_accumulator(std::cout) << "Started process: " << cmd << " (PID: " << pid << ")"
+                                                   << std::endl;
             if (!background) {
                 int status;
                 waitpid(pid, &status, 0);
