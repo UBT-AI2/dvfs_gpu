@@ -256,27 +256,25 @@ namespace frequency_scaling {
                     system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                             std::chrono::system_clock::now().time_since_epoch()).count();
                     //reoptimize frequencies
-                    if (new_best_currency != currency_type::ZEC) {
-                        const std::pair<bool, measurement> &new_opt_config_offline =
-                                find_optimal_config_currency(benchmark_info(std::bind(&run_benchmark_mining_online_log,
-                                                                                      std::cref(user_infos),
-                                                                                      2 * 60 * 1000,
-                                                                                      std::placeholders::_1,
-                                                                                      std::placeholders::_2,
-                                                                                      std::placeholders::_3,
-                                                                                      std::placeholders::_4),
-                                                                            profit_calc.get_opt_start_values(),
-                                                                            user_infos),
-                                                             profit_calc.getDci_(), new_best_currency,
-                                                             opt_method_params.at(new_best_currency));
-                        current_monitoring_time_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
-                                std::chrono::system_clock::now().time_since_epoch()).count() - system_time_start_ms;
-                        //update config and change frequencies if optimization was successful
-                        if (new_opt_config_offline.first) {
-                            profit_calc.update_opt_config_offline(new_best_currency, new_opt_config_offline.second);
-                            change_clocks_nvml_nvapi(profit_calc.getDci_(), new_opt_config_offline.second.mem_oc,
-                                                     new_opt_config_offline.second.nvml_graph_clock_idx);
-                        }
+                    const std::pair<bool, measurement> &new_opt_config_offline =
+                            find_optimal_config_currency(benchmark_info(std::bind(&run_benchmark_mining_online_log,
+                                                                                  std::cref(user_infos),
+                                                                                  2 * 60 * 1000,
+                                                                                  std::placeholders::_1,
+                                                                                  std::placeholders::_2,
+                                                                                  std::placeholders::_3,
+                                                                                  std::placeholders::_4),
+                                                                        profit_calc.get_opt_start_values(),
+                                                                        user_infos),
+                                                         profit_calc.getDci_(), new_best_currency,
+                                                         opt_method_params.at(new_best_currency));
+                    current_monitoring_time_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::system_clock::now().time_since_epoch()).count() - system_time_start_ms;
+                    //update config and change frequencies if optimization was successful
+                    if (new_opt_config_offline.first) {
+                        profit_calc.update_opt_config_offline(new_best_currency, new_opt_config_offline.second);
+                        change_clocks_nvml_nvapi(profit_calc.getDci_(), new_opt_config_offline.second.mem_oc,
+                                                 new_opt_config_offline.second.nvml_graph_clock_idx);
                     }
                 }
             } catch (const network_error &err) {
@@ -447,7 +445,6 @@ namespace frequency_scaling {
                                 find_optimal_config(benchmark_info(&run_benchmark_script_nvml_nvapi),
                                                     gpu_dci, gpu_distr.at(gpu_dci.device_id_nvml),
                                                     opt_config.opt_method_params_);
-                        int has_zec = gpu_distr.at(gpu_dci.device_id_nvml).erase(currency_type::ZEC);
                         const std::map<currency_type, measurement> &gpu_optimal_config_online =
                                 find_optimal_config(benchmark_info(std::bind(&run_benchmark_mining_online_log,
                                                                              std::cref(opt_config.miner_user_infos_),
@@ -463,9 +460,6 @@ namespace frequency_scaling {
                         std::map<currency_type, energy_hash_info> ehi;
                         for (auto &elem : gpu_optimal_config_online)
                             ehi.emplace(elem.first, energy_hash_info(elem.first, elem.second));
-                        if (has_zec)
-                            ehi.emplace(currency_type::ZEC, energy_hash_info(
-                                    currency_type::ZEC, gpu_optimal_config_offline.at(currency_type::ZEC)));
                         std::lock_guard<std::mutex> lock(mutex);
                         optimization_results.emplace(gpu_dci.device_id_nvml, ehi);
                     } catch (const std::exception &ex) {

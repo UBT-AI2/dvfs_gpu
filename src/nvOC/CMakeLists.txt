@@ -38,10 +38,10 @@ set(PROFIT_OPTIMIZATION_FILES
 #
 add_executable(calc_inner_mean
         utils/calc_inner_mean.c)
-
-#
 add_executable(gpu_power_monitor
         utils/gpu_power_monitor.cpp)
+add_executable(hash-log-excavator
+        utils/hash-log-excavator.cpp)
 
 #
 add_library(nvapiOC_lib

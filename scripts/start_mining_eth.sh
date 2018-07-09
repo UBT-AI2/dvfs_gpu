@@ -18,6 +18,6 @@ LOGFILE=mining_log_ethminer_gpu${device_id}_$(date +%Y-%m-%d_%H-%M-%S).txt
 
 echo -e "\n##########################\n$(date +%Y-%m-%d_%H-%M-%S)\n##########################\n" >> ${LOGFILE}
 ${MINER_BINARY} --farm-recheck 2000 -U -RH \
--P stratum+tcp://${wallet_address}.${worker_name}@eth-eu1.nanopool.org:9999 -SE ${email} \
+-P stratum1+tcp://${wallet_address}@eth-eu1.nanopool.org:9999/${worker_name}/${email} \
 --cuda-devices ${device_id_cuda} --cuda-parallel-hash 8 --hash-logfile hash_log_ETH_${device_id}.txt &>> ${LOGFILE}
 
