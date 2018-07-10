@@ -174,8 +174,8 @@ namespace frequency_scaling {
                                                << std::endl;
         //change frequencies at the end (danger to trigger nvml unknown error)
         const energy_hash_info &ehi = profit_calc.getEnergy_hash_info_().at(best_currency);
-        change_clocks_nvml_nvapi(profit_calc.getDci_(), ehi.optimal_configuration_offline_.mem_oc,
-                                 ehi.optimal_configuration_offline_.nvml_graph_clock_idx);
+        change_clocks_nvml_nvapi(profit_calc.getDci_(), ehi.optimal_configuration_online_.mem_oc,
+                                 ehi.optimal_configuration_online_.nvml_graph_clock_idx);
     }
 
     static bool monitoring_sanity_check(const profit_calculator &profit_calc, const miner_user_info &user_infos,
@@ -255,7 +255,7 @@ namespace frequency_scaling {
                 system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::system_clock::now().time_since_epoch()).count();
                 //reoptimize frequencies
-                const std::pair<bool, measurement> &new_opt_config_offline =
+                const std::pair<bool, measurement> &new_opt_config_online =
                         find_optimal_config_currency(benchmark_info(std::bind(&run_benchmark_mining_online_log,
                                                                               std::cref(user_infos),
                                                                               2 * 60 * 1000,
@@ -270,10 +270,10 @@ namespace frequency_scaling {
                 current_monitoring_time_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::system_clock::now().time_since_epoch()).count() - system_time_start_ms;
                 //update config and change frequencies if optimization was successful
-                if (new_opt_config_offline.first) {
-                    profit_calc.update_opt_config_offline(new_best_currency, new_opt_config_offline.second);
-                    change_clocks_nvml_nvapi(profit_calc.getDci_(), new_opt_config_offline.second.mem_oc,
-                                             new_opt_config_offline.second.nvml_graph_clock_idx);
+                if (new_opt_config_online.first) {
+                    profit_calc.update_opt_config_online(new_best_currency, new_opt_config_online.second);
+                    change_clocks_nvml_nvapi(profit_calc.getDci_(), new_opt_config_online.second.mem_oc,
+                                             new_opt_config_online.second.nvml_graph_clock_idx);
                 }
             }
         }
@@ -438,7 +438,7 @@ namespace frequency_scaling {
         std::set<currency_type> currencies;
         for (auto &ui : opt_config.miner_user_infos_.wallet_addresses_)
             currencies.insert(ui.first);
-        std::map<int, std::set<currency_type>> &&gpu_distr =
+        const std::map<int, std::set<currency_type>> &gpu_distr =
                 find_optimization_gpu_distr(equal_gpus, currencies);
 
         //find best frequency configurations for each gpu and currency
@@ -456,6 +456,9 @@ namespace frequency_scaling {
                                 find_optimal_config(benchmark_info(&run_benchmark_script_nvml_nvapi),
                                                     gpu_dci, gpu_distr.at(gpu_dci.device_id_nvml),
                                                     opt_config.opt_method_params_);
+                        std::set<currency_type> online_opt_currencies;
+                        for (auto &elem : gpu_optimal_config_offline)
+                            online_opt_currencies.emplace(elem.first);
                         const std::map<currency_type, measurement> &gpu_optimal_config_online =
                                 find_optimal_config(benchmark_info(std::bind(&run_benchmark_mining_online_log,
                                                                              std::cref(opt_config.miner_user_infos_),
@@ -466,11 +469,15 @@ namespace frequency_scaling {
                                                                              std::placeholders::_4),
                                                                    gpu_optimal_config_offline,
                                                                    opt_config.miner_user_infos_),
-                                                    gpu_dci, gpu_distr.at(gpu_dci.device_id_nvml),
+                                                    gpu_dci, online_opt_currencies,
                                                     opt_config.opt_method_params_);
                         std::map<currency_type, energy_hash_info> ehi;
-                        for (auto &elem : gpu_optimal_config_online)
-                            ehi.emplace(elem.first, energy_hash_info(elem.first, elem.second));
+                        for (auto &elem : gpu_optimal_config_offline) {
+                            ehi.emplace(elem.first, energy_hash_info(elem.first, elem.second,
+                                                                     (gpu_optimal_config_online.count(elem.first))
+                                                                     ? gpu_optimal_config_online.at(elem.first)
+                                                                     : elem.second));
+                        }
                         std::lock_guard<std::mutex> lock(mutex);
                         optimization_results.emplace(gpu_dci.device_id_nvml, ehi);
                     } catch (const std::exception &ex) {
@@ -506,7 +513,8 @@ namespace frequency_scaling {
                 pt::ptree pt_config_type;
                 std::vector<std::pair<std::string, measurement>> config_type_vec =
                         {std::make_pair("offline", currency.second.optimal_configuration_offline_),
-                         std::make_pair("online", currency.second.optimal_configuration_online_)};
+                         std::make_pair("online", currency.second.optimal_configuration_online_),
+                         std::make_pair("profit", currency.second.optimal_configuration_profit_)};
                 //write all ehi for currency
                 for (auto &config_type : config_type_vec) {
                     pt::ptree pt_ehi;
@@ -548,7 +556,8 @@ namespace frequency_scaling {
                 currency_type ct = string_to_currency_type(array_elem2.first);
                 std::vector<std::pair<std::string, pt::ptree>> pt_config_type_vec =
                         {std::make_pair("offline", array_elem2.second.get_child("offline")),
-                         std::make_pair("online", array_elem2.second.get_child("online"))};
+                         std::make_pair("online", array_elem2.second.get_child("online")),
+                         std::make_pair("profit", array_elem2.second.get_child("profit"))};
                 std::map<std::string, measurement> opt_config_map;
                 for (auto &config_type : pt_config_type_vec) {
                     measurement opt_config;
@@ -566,7 +575,8 @@ namespace frequency_scaling {
                 }
                 //
                 opt_res_device.emplace(ct,
-                                       energy_hash_info(ct, opt_config_map.at("offline"), opt_config_map.at("online")));
+                                       energy_hash_info(ct, opt_config_map.at("offline"),
+                                                        opt_config_map.at("online"), opt_config_map.at("profit")));
             }
             //
             opt_results.emplace(std::stoi(array_elem.first), opt_res_device);

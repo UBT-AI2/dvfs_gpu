@@ -10,21 +10,21 @@
 #include <regex>
 #include <vector>
 
-int main(int argc, char** argv){
-    if(argc < 2){
+int main(int argc, char **argv) {
+    if (argc < 2) {
         std::cout << "Usage: <excavator-binary> | " << argv[0] << " <filename>" << std::endl;
         return 1;
     }
     std::ofstream logfile(argv[1]);
-    if(!logfile){
+    if (!logfile) {
         std::cout << "Failed to create logfile" << std::endl;
         return 1;
     }
 
     std::string lineInput;
-    while(std::getline(std::cin, lineInput)){
+    while (std::getline(std::cin, lineInput)) {
         std::cout << lineInput << std::endl;
-        if(!std::regex_match(lineInput, std::regex(".*[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)? H/s")))
+        if (!std::regex_match(lineInput, std::regex(".*[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)? H/s")))
             continue;
         //get system time
         long long int system_time = std::chrono::duration_cast<std::chrono::milliseconds>(

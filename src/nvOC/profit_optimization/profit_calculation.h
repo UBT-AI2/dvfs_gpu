@@ -20,15 +20,18 @@ namespace frequency_scaling {
 
     struct energy_hash_info {
         energy_hash_info(currency_type type,
-                         const measurement &optimal_configuration_offline);
-
-        energy_hash_info(currency_type type,
                          const measurement &optimal_configuration_offline,
                          const measurement &optimal_configuration_online);
 
+        energy_hash_info(currency_type type,
+                         const measurement &optimal_configuration_offline,
+                         const measurement &optimal_configuration_online,
+                         const measurement &optimal_configuration_profit);
+
         const currency_type type_;
-        measurement optimal_configuration_offline_;
+        const measurement optimal_configuration_offline_;
         measurement optimal_configuration_online_;
+        measurement optimal_configuration_profit_;
     };
 
 
@@ -49,8 +52,8 @@ namespace frequency_scaling {
 
         void update_energy_cost_stromdao(int plz);
 
-        void update_opt_config_offline(currency_type current_mined_ct,
-                                       const measurement &new_config_offline);
+        void update_opt_config_online(currency_type current_mined_ct,
+                                      const measurement &new_config_online);
 
         const std::map<currency_type, currency_info> &getCurrency_info_() const;
 
@@ -82,7 +85,7 @@ namespace frequency_scaling {
         device_clock_info dci_;
         std::map<currency_type, currency_info> currency_info_;
         std::map<currency_type, energy_hash_info> energy_hash_info_;
-        std::map<currency_type, measurement> last_online_measurements_;
+        std::map<currency_type, measurement> last_profit_measurements_;
         double power_cost_kwh_;
         currency_type best_currency_;
         double best_currency_profit_;

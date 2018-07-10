@@ -15,17 +15,21 @@ namespace frequency_scaling {
               cs_(cs) {}
 
     energy_hash_info::energy_hash_info(currency_type type,
-                                       const measurement &optimal_configuration_offline) :
-            energy_hash_info(type, optimal_configuration_offline, optimal_configuration_offline) {
-        optimal_configuration_online_.hashrate_measure_dur_ms_ = 0;
-        optimal_configuration_online_.power_measure_dur_ms_ = 0;
+                                       const measurement &optimal_configuration_offline,
+                                       const measurement &optimal_configuration_online) :
+            energy_hash_info(type, optimal_configuration_offline, optimal_configuration_online,
+                             optimal_configuration_online) {
+        optimal_configuration_profit_.hashrate_measure_dur_ms_ = 0;
+        optimal_configuration_profit_.power_measure_dur_ms_ = 0;
     }
 
     energy_hash_info::energy_hash_info(currency_type type,
                                        const measurement &optimal_configuration_offline,
-                                       const measurement &optimal_configuration_online) : type_(
+                                       const measurement &optimal_configuration_online,
+                                       const measurement &optimal_configuration_profit) : type_(
             type), optimal_configuration_offline_(optimal_configuration_offline), optimal_configuration_online_(
-            optimal_configuration_online) {}
+            optimal_configuration_online), optimal_configuration_profit_(
+            optimal_configuration_profit) {}
 
 
     profit_calculator::profit_calculator(const device_clock_info &dci,
@@ -34,7 +38,7 @@ namespace frequency_scaling {
                                                                   energy_hash_info_(energy_hash_info),
                                                                   power_cost_kwh_(power_cost_kwh) {
         for (auto &ehi : energy_hash_info) {
-            last_online_measurements_.emplace(ehi.first, measurement());
+            last_profit_measurements_.emplace(ehi.first, measurement());
             save_current_period(ehi.first);
         }
         update_currency_info_nanopool();
@@ -54,22 +58,26 @@ namespace frequency_scaling {
                 continue;
             const energy_hash_info &ehi = it_ehi->second;
             const currency_info &ci = it_ci->second;
-            double costs_per_hour = ehi.optimal_configuration_online_.power_ * (power_cost_kwh_ / 1000.0);
+            double costs_per_hour = ehi.optimal_configuration_profit_.power_ * (power_cost_kwh_ / 1000.0);
             double profit_per_hour = ci.approximated_earnings_eur_hour_ - costs_per_hour;
             if (profit_per_hour > best_profit) {
                 best_idx = i;
                 best_profit = profit_per_hour;
             }
             //print stats
-            full_expression_accumulator(std::cout) << get_log_prefix(ct) <<
-                                                   "Profit calculation using: hashrate=" <<
-                                                   get_used_hashrate(ct) << ", power=" << get_used_power(ct) <<
-                                                   ", energy_hash=" << get_used_energy_hash(ct) << std::endl;
-            full_expression_accumulator(std::cout) << get_log_prefix(ct) <<
-                                                   "Calculated profit [eur/hour]: approximated earnings=" <<
-                                                   ci.approximated_earnings_eur_hour_ << ", energy_cost="
-                                                   << costs_per_hour << ", profit="
-                                                   << profit_per_hour << std::endl;
+            full_expression_accumulator fea(std::cout);
+            fea << get_log_prefix(ct) <<
+                "Profit calculation using: hashrate=" <<
+                get_used_hashrate(ct) << ", power=" << get_used_power(ct) <<
+                ", energy_hash=" << get_used_energy_hash(ct) <<
+                ", stock_price=" << it_ci->second.cs_.stock_price_eur_
+                << std::endl;
+            fea << get_log_prefix(ct) <<
+                "Calculated profit [eur/hour]: approximated earnings=" <<
+                ci.approximated_earnings_eur_hour_ << ", energy_cost="
+                << costs_per_hour << ", profit="
+                << profit_per_hour << std::endl;
+            fea.flush();
         }
         best_currency_ = static_cast<currency_type>(best_idx);
         best_currency_profit_ = best_profit;
@@ -114,13 +122,13 @@ namespace frequency_scaling {
             }
             //update hashrate
             double cur_hashrate = it_hr->second;
-            double last_hashrate = last_online_measurements_.at(current_mined_ct).hashrate_;
+            double last_hashrate = last_profit_measurements_.at(current_mined_ct).hashrate_;
             int cur_period_ms = period_ms;
-            int last_period_ms = last_online_measurements_.at(current_mined_ct).hashrate_measure_dur_ms_;
+            int last_period_ms = last_profit_measurements_.at(current_mined_ct).hashrate_measure_dur_ms_;
             int total_period_ms = last_period_ms + cur_period_ms;
             double new_hashrate = (cur_period_ms / (double) total_period_ms) * cur_hashrate +
                                   (last_period_ms / (double) total_period_ms) * last_hashrate;
-            energy_hash_info_.at(current_mined_ct).optimal_configuration_online_.update_hashrate(new_hashrate,
+            energy_hash_info_.at(current_mined_ct).optimal_configuration_profit_.update_hashrate(new_hashrate,
                                                                                                  total_period_ms);
 
             full_expression_accumulator(std::cout) << get_log_prefix(current_mined_ct) <<
@@ -137,23 +145,23 @@ namespace frequency_scaling {
                 std::chrono::system_clock::now().time_since_epoch()).count();
         //update power
         double cur_power = get_avg_power_usage(dci_.device_id_nvml, system_time_start_ms, system_time_now_ms);
-        double last_power = last_online_measurements_.at(current_mined_ct).power_;
+        double last_power = last_profit_measurements_.at(current_mined_ct).power_;
         int cur_period_ms = system_time_now_ms - system_time_start_ms;
-        int last_period_ms = last_online_measurements_.at(current_mined_ct).power_measure_dur_ms_;
+        int last_period_ms = last_profit_measurements_.at(current_mined_ct).power_measure_dur_ms_;
         int total_period_ms = last_period_ms + cur_period_ms;
         double new_power = (cur_period_ms / (double) total_period_ms) * cur_power +
                            (last_period_ms / (double) total_period_ms) * last_power;
-        energy_hash_info_.at(current_mined_ct).optimal_configuration_online_.update_power(new_power, total_period_ms);
+        energy_hash_info_.at(current_mined_ct).optimal_configuration_profit_.update_power(new_power, total_period_ms);
         full_expression_accumulator(std::cout) << get_log_prefix(current_mined_ct) <<
                                                "Update online power " << new_power << std::endl;
     }
 
-    void profit_calculator::update_opt_config_offline(currency_type current_mined_ct,
-                                                      const measurement &new_config_offline) {
+    void profit_calculator::update_opt_config_online(currency_type current_mined_ct,
+                                                     const measurement &new_config_online) {
 
         energy_hash_info &ehi = energy_hash_info_.at(current_mined_ct);
-        ehi.optimal_configuration_offline_ = new_config_offline;
-        ehi.optimal_configuration_online_.update_freq_config(new_config_offline);
+        ehi.optimal_configuration_online_ = new_config_online;
+        ehi.optimal_configuration_profit_.update_freq_config(new_config_online);
         full_expression_accumulator(std::cout) << get_log_prefix(current_mined_ct) <<
                                                "Update opt_config_offline" << std::endl;
     }
@@ -174,7 +182,7 @@ namespace frequency_scaling {
     std::map<currency_type, measurement> profit_calculator::get_opt_start_values() const {
         std::map<currency_type, measurement> res;
         for (auto &ehi : energy_hash_info_)
-            res.emplace(ehi.first, ehi.second.optimal_configuration_offline_);
+            res.emplace(ehi.first, ehi.second.optimal_configuration_online_);
         return res;
     };
 
@@ -203,14 +211,14 @@ namespace frequency_scaling {
 
 
     double profit_calculator::get_used_hashrate(currency_type ct) const {
+        const measurement &cur_profit_measurement = energy_hash_info_.at(ct).optimal_configuration_profit_;
         const measurement &cur_online_measurement = energy_hash_info_.at(ct).optimal_configuration_online_;
-        const measurement &cur_offline_measurement = energy_hash_info_.at(ct).optimal_configuration_offline_;
-        double alpha = std::min(1.0, cur_online_measurement.hashrate_measure_dur_ms_ / (double) window_dur_ms_);
-        return alpha * cur_online_measurement.hashrate_ + (1 - alpha) * cur_offline_measurement.hashrate_;
+        double alpha = std::min(1.0, cur_profit_measurement.hashrate_measure_dur_ms_ / (double) window_dur_ms_);
+        return alpha * cur_profit_measurement.hashrate_ + (1 - alpha) * cur_online_measurement.hashrate_;
     }
 
     double profit_calculator::get_used_power(currency_type ct) const {
-        return energy_hash_info_.at(ct).optimal_configuration_online_.power_;
+        return energy_hash_info_.at(ct).optimal_configuration_profit_.power_;
     }
 
     double profit_calculator::get_used_energy_hash(currency_type ct) const {
@@ -218,7 +226,7 @@ namespace frequency_scaling {
     }
 
     void profit_calculator::save_current_period(currency_type ct) {
-        last_online_measurements_.at(ct) = energy_hash_info_.at(ct).optimal_configuration_online_;
+        last_profit_measurements_.at(ct) = energy_hash_info_.at(ct).optimal_configuration_profit_;
     }
 
     std::string profit_calculator::get_log_prefix(currency_type ct) const {
