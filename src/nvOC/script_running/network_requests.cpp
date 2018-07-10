@@ -90,16 +90,14 @@ namespace frequency_scaling {
 
 //#######################################################################################################
 
-    static double get_current_stock_price_nanopool(currency_type ct) {
+    static double get_current_stock_price_cryptocompare(currency_type ct) {
         const std::string &json_response = curl_https_get(
-                get_nanopool_url(ct) + "/prices");
+                "https://min-api.cryptocompare.com/data/price?fsym=" +
+                enum_to_string(ct) + "&tsyms=BTC,USD,EUR");
         std::istringstream is(json_response);
         boost::property_tree::ptree root;
         boost::property_tree::json_parser::read_json(is, root);
-        std::string status = root.get<std::string>("status", "false");
-        if (status != "true")
-            throw network_error("Nanopool REST API error: " + root.get<std::string>("data"));
-        return root.get<double>("data.price_eur");
+        return root.get<double>("EUR");
     }
 
     static void get_currency_stats_whattomine(currency_type ct, currency_stats &cs) {
@@ -159,7 +157,7 @@ namespace frequency_scaling {
 
     static currency_stats __get_currency_stats(currency_type ct) {
         currency_stats cs;
-        cs.stock_price_eur_ = get_current_stock_price_nanopool(ct);
+        cs.stock_price_eur_ = get_current_stock_price_cryptocompare(ct);
         get_currency_stats_whattomine(ct, cs);
         return cs;
     }

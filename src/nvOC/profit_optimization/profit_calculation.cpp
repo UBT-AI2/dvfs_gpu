@@ -81,15 +81,20 @@ namespace frequency_scaling {
             currency_type ct = elem.first;
             try {
                 double used_hashrate = get_used_hashrate(ct);
-                double approximated_earnings =
-                        get_approximated_earnings_per_hour_nanopool(ct, used_hashrate);
                 const currency_stats &cs = get_currency_stats(ct);
+                double approximated_earnings;
+                try {
+                    approximated_earnings = get_approximated_earnings_per_hour_nanopool(ct, used_hashrate);
+                } catch (const network_error &err) {
+                    //fallback
+                    approximated_earnings = cs.calc_approximated_earnings_eur_hour(used_hashrate);
+                }
                 currency_info_.emplace(ct, currency_info(ct, approximated_earnings, cs));
                 full_expression_accumulator(std::cout) << get_log_prefix(ct) << "Update currency info using hashrate "
                                                        << used_hashrate << std::endl;
             } catch (const network_error &err) {
                 full_expression_accumulator(std::cerr) << get_log_prefix(ct) <<
-                                                       "Failed to get currency info: " << err.what() << std::endl;
+                                                       "Failed to update currency info: " << err.what() << std::endl;
             }
         }
     }
