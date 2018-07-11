@@ -52,50 +52,51 @@ namespace frequency_scaling {
         }
         //
         try {
-            int max_iterations_ct = (bi.offline_) ? opt_params_ct.max_iterations_ :
-                                    opt_params_ct.max_iterations_ / 2;
+            int online_div = 2;
             //
             measurement optimal_config;
             switch (opt_params_ct.method_) {
                 case optimization_method::NELDER_MEAD:
                     if (bi.offline_)
                         optimal_config = freq_nelder_mead(bi.bf_, ct, dci,
-                                                          1, max_iterations_ct, opt_params_ct.mem_step_,
+                                                          1, opt_params_ct.max_iterations_, opt_params_ct.mem_step_,
                                                           opt_params_ct.graph_idx_step_,
                                                           opt_params_ct.min_hashrate_);
                     else
                         optimal_config = freq_nelder_mead(bi.bf_, ct, dci,
                                                           bi.start_values_.at(ct),
-                                                          1, max_iterations_ct, opt_params_ct.mem_step_,
-                                                          opt_params_ct.graph_idx_step_,
+                                                          1, opt_params_ct.max_iterations_/online_div, 
+							                              opt_params_ct.mem_step_ / online_div,
+                                                          opt_params_ct.graph_idx_step_/online_div,
                                                           opt_params_ct.min_hashrate_);
                     break;
                 case optimization_method::HILL_CLIMBING:
                     if (bi.offline_)
                         optimal_config = freq_hill_climbing(bi.bf_, ct, dci,
-                                                            max_iterations_ct, opt_params_ct.mem_step_,
+							opt_params_ct.max_iterations_, opt_params_ct.mem_step_,
                                                             opt_params_ct.graph_idx_step_,
                                                             opt_params_ct.min_hashrate_);
                     else
                         optimal_config = freq_hill_climbing(bi.bf_, ct, dci,
                                                             bi.start_values_.at(ct), true,
-                                                            max_iterations_ct, opt_params_ct.mem_step_,
-                                                            opt_params_ct.graph_idx_step_,
+							                                opt_params_ct.max_iterations_ / online_div, 
+							                                opt_params_ct.mem_step_ / online_div,
+                                                            opt_params_ct.graph_idx_step_ / online_div,
                                                             opt_params_ct.min_hashrate_);
                     break;
                 case optimization_method::SIMULATED_ANNEALING:
                     if (bi.offline_)
                         optimal_config = freq_simulated_annealing(bi.bf_, ct, dci,
-                                                                  max_iterations_ct,
+							                                      opt_params_ct.max_iterations_,
                                                                   opt_params_ct.mem_step_,
                                                                   opt_params_ct.graph_idx_step_,
                                                                   opt_params_ct.min_hashrate_);
                     else
                         optimal_config = freq_simulated_annealing(bi.bf_, ct, dci,
                                                                   bi.start_values_.at(ct),
-                                                                  max_iterations_ct,
-                                                                  opt_params_ct.mem_step_,
-                                                                  opt_params_ct.graph_idx_step_,
+																  opt_params_ct.max_iterations_ / online_div,
+                                                                  opt_params_ct.mem_step_ / online_div,
+                                                                  opt_params_ct.graph_idx_step_ / online_div,
                                                                   opt_params_ct.min_hashrate_);
                     break;
                 default:

@@ -18,9 +18,11 @@ fi
 #################################################################################
 
 bench_start=$(tail -n 1 ${POWERFILE} | awk '{print $1}')
+time_start=$(($(date +%s%N)/1000000))
 #warmuptime strongly affects performance
 ${MINER_BINARY} -U -M \
 --benchmark-trials 1 --benchmark-warmup 15 --cuda-devices $device_id_cuda &> ${BENCH_LOGFILE}
+time_dur=$(($(($(date +%s%N)/1000000)) - ${time_start}))
 
 if [[ -z $bench_start ]]
 then
@@ -33,6 +35,6 @@ max_power=$(awk 'BEGIN{a=0}{if ($2>0+a) a=$2} END{print a}' ${BENCH_POWERFILE})
 avg_hashrate=$(grep -A1 '^Trial 1...' ${BENCH_LOGFILE} | tail -n1)
 hashes_per_joule=$(awk "BEGIN { print ${avg_hashrate} / ${max_power} }")
 
-echo ${mem_clock},${graph_clock},${max_power},${avg_hashrate},${hashes_per_joule} >> result_${device_id}.dat
+echo ${mem_clock},${graph_clock},${max_power},${avg_hashrate},${hashes_per_joule},${time_dur} >> result_${device_id}.dat
 
 

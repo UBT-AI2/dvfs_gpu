@@ -112,7 +112,7 @@ namespace frequency_scaling {
         }
 
         //get last measurement from data file
-        double data[5] = {0};
+        double data[6] = {0};
         {
             std::string filename = "result_" + std::to_string(dci.device_id_nvml) + ".dat";
             std::ifstream file;
@@ -134,11 +134,13 @@ namespace frequency_scaling {
             pt = strtok(&tmp[0], ",");
             int idx = 0;
             while (pt != nullptr) {
-                data[idx++] = atof(pt);
+                data[idx++] = std::stod(pt);
                 pt = strtok(nullptr, ",");
             }
         }
         measurement m(mem_clock, graph_clock, data[2], data[3]);
+		m.hashrate_measure_dur_ms_ = data[5];
+		m.power_measure_dur_ms_ = data[5];
         return m;
     }
 
@@ -166,11 +168,15 @@ namespace frequency_scaling {
         double res = 0;
         int count = 0;
         while (std::getline(file, line)) {
-            long long int time = std::stoll(line, &sz);
-            if (time >= system_timestamp_start_ms && time <= system_timestamp_end_ms) {
-                res += std::stod(line.substr(sz + 1, std::string::npos));
-                count++;
-            }
+			try {
+				long long int time = std::stoll(line, &sz);
+				if (time >= system_timestamp_start_ms && time <= system_timestamp_end_ms) {
+					res += std::stod(line.substr(sz + 1, std::string::npos));
+					count++;
+				}
+			}
+			catch (const std::invalid_argument& ex) {
+			}
         }
         return res / count;
     }

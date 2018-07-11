@@ -60,11 +60,15 @@ namespace frequency_scaling {
         double res = 0;
         int count = 0;
         while (std::getline(file, line)) {
-            long long int time = std::stoll(line, &sz);
-            if (time >= system_timestamp_start_ms && time <= system_timestamp_end_ms) {
-                res += std::stod(line.substr(sz + 1, std::string::npos));
-                count++;
-            }
+			try {
+				long long int time = std::stoll(line, &sz);
+				if (time >= system_timestamp_start_ms && time <= system_timestamp_end_ms) {
+					res += std::stod(line.substr(sz + 1, std::string::npos));
+					count++;
+				}
+			}
+			catch (const std::invalid_argument& ex) {
+			}
         }
         return res / count;
     }
@@ -92,8 +96,8 @@ namespace frequency_scaling {
         int mem_clock = dci.nvapi_default_mem_clock + mem_oc;
         int graph_clock = dci.nvml_graph_clocks[nvml_graph_clock_idx];
         measurement m(mem_clock, graph_clock, power, hashrate);
-        m.hashrate_measure_dur_ms_ = period_ms;
-        m.power_measure_dur_ms_ = period_ms;
+        m.hashrate_measure_dur_ms_ = system_time_now_ms - system_time_start_ms;
+        m.power_measure_dur_ms_ = system_time_now_ms - system_time_start_ms;
         m.nvml_graph_clock_idx = nvml_graph_clock_idx;
         m.mem_oc = mem_oc;
         m.graph_oc = 0;
