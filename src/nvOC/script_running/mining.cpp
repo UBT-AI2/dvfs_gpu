@@ -60,15 +60,15 @@ namespace frequency_scaling {
         double res = 0;
         int count = 0;
         while (std::getline(file, line)) {
-			try {
-				long long int time = std::stoll(line, &sz);
-				if (time >= system_timestamp_start_ms && time <= system_timestamp_end_ms) {
-					res += std::stod(line.substr(sz + 1, std::string::npos));
-					count++;
-				}
-			}
-			catch (const std::invalid_argument& ex) {
-			}
+            try {
+                long long int time = std::stoll(line, &sz);
+                if (time >= system_timestamp_start_ms && time <= system_timestamp_end_ms) {
+                    res += std::stod(line.substr(sz + 1, std::string::npos));
+                    count++;
+                }
+            }
+            catch (const std::invalid_argument &ex) {
+            }
         }
         return res / count;
     }

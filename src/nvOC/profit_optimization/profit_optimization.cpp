@@ -65,36 +65,36 @@ namespace frequency_scaling {
                     else
                         optimal_config = freq_nelder_mead(bi.bf_, ct, dci,
                                                           bi.start_values_.at(ct),
-                                                          1, opt_params_ct.max_iterations_/online_div, 
-							                              opt_params_ct.mem_step_ / online_div,
-                                                          opt_params_ct.graph_idx_step_/online_div,
+                                                          1, opt_params_ct.max_iterations_ / online_div,
+                                                          opt_params_ct.mem_step_ / online_div,
+                                                          opt_params_ct.graph_idx_step_ / online_div,
                                                           opt_params_ct.min_hashrate_);
                     break;
                 case optimization_method::HILL_CLIMBING:
                     if (bi.offline_)
                         optimal_config = freq_hill_climbing(bi.bf_, ct, dci,
-							opt_params_ct.max_iterations_, opt_params_ct.mem_step_,
+                                                            opt_params_ct.max_iterations_, opt_params_ct.mem_step_,
                                                             opt_params_ct.graph_idx_step_,
                                                             opt_params_ct.min_hashrate_);
                     else
                         optimal_config = freq_hill_climbing(bi.bf_, ct, dci,
                                                             bi.start_values_.at(ct), true,
-							                                opt_params_ct.max_iterations_ / online_div, 
-							                                opt_params_ct.mem_step_ / online_div,
+                                                            opt_params_ct.max_iterations_ / online_div,
+                                                            opt_params_ct.mem_step_ / online_div,
                                                             opt_params_ct.graph_idx_step_ / online_div,
                                                             opt_params_ct.min_hashrate_);
                     break;
                 case optimization_method::SIMULATED_ANNEALING:
                     if (bi.offline_)
                         optimal_config = freq_simulated_annealing(bi.bf_, ct, dci,
-							                                      opt_params_ct.max_iterations_,
+                                                                  opt_params_ct.max_iterations_,
                                                                   opt_params_ct.mem_step_,
                                                                   opt_params_ct.graph_idx_step_,
                                                                   opt_params_ct.min_hashrate_);
                     else
                         optimal_config = freq_simulated_annealing(bi.bf_, ct, dci,
                                                                   bi.start_values_.at(ct),
-																  opt_params_ct.max_iterations_ / online_div,
+                                                                  opt_params_ct.max_iterations_ / online_div,
                                                                   opt_params_ct.mem_step_ / online_div,
                                                                   opt_params_ct.graph_idx_step_ / online_div,
                                                                   opt_params_ct.min_hashrate_);
