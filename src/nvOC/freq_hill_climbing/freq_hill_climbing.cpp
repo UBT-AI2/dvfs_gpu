@@ -207,7 +207,7 @@ namespace frequency_scaling {
                                                                              currentslope,
                                                                              cur_mem_step,
                                                                              cur_graph_idx_step, min_hashrate,
-                                                                             exploration_type::NEIGHBORHOOD_4_ALTERNATING,
+                                                                             exploration_type::NEIGHBORHOOD_4_DIAGONAL,
                                                                              i);
             measurement last_node = current_node;
             double tmp_val = std::numeric_limits<double>::lowest();
