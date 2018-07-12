@@ -8,7 +8,7 @@
             "min_mem_oc": "-1000",
 			"min_graph_oc": "-200",
             "max_mem_oc": "900",
-            "max_graph_oc": "200",
+            "max_graph_oc": "150",
             "worker_name": "DESKTOP-6817PNB_gpu1"
         },
 		{
@@ -16,7 +16,7 @@
             "min_mem_oc": "-1000",
 			"min_graph_oc": "-200",
             "max_mem_oc": "900",
-            "max_graph_oc": "200",
+            "max_graph_oc": "150",
             "worker_name": "DESKTOP-6817PNB_gpu0"
         },
 		{
@@ -24,7 +24,7 @@
             "min_mem_oc": "-1000",
 			"min_graph_oc": "-200",
             "max_mem_oc": "900",
-            "max_graph_oc": "200",
+            "max_graph_oc": "150",
             "worker_name": "DESKTOP-6817PNB_gpu2"
         }
     ],

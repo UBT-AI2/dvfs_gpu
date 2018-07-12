@@ -114,7 +114,8 @@ namespace frequency_scaling {
         //get last measurement from data file
         double data[6] = {0};
         {
-            std::string filename = "result_" + std::to_string(dci.device_id_nvml) + ".dat";
+            std::string filename = "bench_result_gpu" + std::to_string(dci.device_id_nvml) 
+				+ "_" + enum_to_string(ct) + ".dat";
             std::ifstream file;
             file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
             file.open(filename, std::ios_base::ate);//open file

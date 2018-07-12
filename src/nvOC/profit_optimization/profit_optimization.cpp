@@ -107,13 +107,13 @@ namespace frequency_scaling {
                                                    ": Computed optimal energy-hash ratio for currency "
                                                    << enum_to_string(ct)
                                                    << ": " << optimal_config.energy_hash_ << std::endl;
-            if (bi.offline_) {
+            /*if (bi.offline_) {
                 //move generated result files
                 char cmd[BUFFER_SIZE];
                 snprintf(cmd, BUFFER_SIZE, "bash ../scripts/move_result_files.sh %i %s",
                          dci.device_id_nvml, enum_to_string(ct).c_str());
                 process_management::start_process(cmd, false);
-            }
+            }*/
             if (mining_started)
                 stop_mining_script(dci.device_id_nvml);
             if (pm_started)
@@ -123,13 +123,13 @@ namespace frequency_scaling {
             full_expression_accumulator(std::cerr) << "Optimization for currency " << enum_to_string(ct) <<
                                                    " on GPU " << dci.device_id_nvml << "failed: " << err.what()
                                                    << std::endl;
-            if (bi.offline_) {
+            /*if (bi.offline_) {
                 //remove already generated result files
                 char cmd[BUFFER_SIZE];
                 snprintf(cmd, BUFFER_SIZE, "bash ../scripts/remove_result_files.sh %i %s",
                          dci.device_id_nvml, enum_to_string(ct).c_str());
                 process_management::start_process(cmd, false);
-            }
+            }*/
             if (mining_started)
                 stop_mining_script(dci.device_id_nvml);
             if (pm_started)

@@ -149,37 +149,24 @@ namespace frequency_scaling {
 
 
     void process_management::kill_process(int pid) {
-        process_management::remove_pid(pid);
         try {
 #ifdef _WIN32
-            process_management::start_process("taskkill /f /t /pid " + std::to_string(pid),
-                                              false, true, pid, false);
+			try {
+				process_management::start_process("taskkill /f /t /pid " + std::to_string(pid),
+					false, true, pid, false);
+			}
+			catch (const process_error &ex) {
+				//programm may be running in git bash
+				process_management::start_process("kill " + std::to_string(pid), false, true, pid);
+			}
 #else
             process_management::start_process("kill " + std::to_string(pid), false, true, pid);
 #endif
         }
         catch (const process_error &ex) {
         }
-
-        /*
-#ifdef _WIN32
-        HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-        if (hProcess == NULL) {
-            throw process_error("Failed to kill process with pid " + std::to_string(pid));
-        }
-        if (!TerminateProcess(hProcess, 0)) {
-            CloseHandle(hProcess);
-            throw process_error("Failed to kill process with pid " + std::to_string(pid));
-        }
-        WaitForSingleObject(hProcess, INFINITE);
-        CloseHandle(hProcess);
-#else
-        if (kill(pid, SIGKILL) != 0) {
-            throw process_error("Failed to kill process with pid " + std::to_string(pid));
-        }
-#endif
-        */
-        //
+		//
+		process_management::remove_pid(pid);
         full_expression_accumulator(std::cout) << "Killed process with pid " + std::to_string(pid) << std::endl;
     }
 
