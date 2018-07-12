@@ -37,7 +37,7 @@ namespace frequency_scaling {
         std::map<std::string, std::string> res;
         for (int i = 1; i < argc; i++) {
             std::string arg(argv[i]);
-            if (std::regex_match(arg, std::regex("--[\\w-]+(=[\\w-.]+)?"))) {
+            if (std::regex_match(arg, std::regex("--[\\w-]+(=[\\w-./]+)?"))) {
                 std::string::size_type pos = arg.find('=');
                 if (pos != std::string::npos) {
                     res.emplace(arg.substr(0, pos), arg.substr(pos + 1));
