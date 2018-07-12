@@ -7,6 +7,7 @@
 #include <regex>
 #include <thread>
 #include <fstream>
+#include "../common_header/fullexpr_accum.h"
 #include "process_management.h"
 #include "network_requests.h"
 
@@ -68,6 +69,7 @@ namespace frequency_scaling {
                 }
             }
             catch (const std::invalid_argument &ex) {
+				full_expression_accumulator(std::cerr) << "Failed to parse hashrate logfile entry: " << ex.what() << std::endl;
             }
         }
         return res / count;

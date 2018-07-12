@@ -18,5 +18,5 @@ fi
 #################################################################################
 
 echo -e "\n##########################\n$(date +%Y-%m-%d_%H-%M-%S)\n##########################\n" >> ${LOGFILE}
-stdbuf -oL ${MINER_BINARY} -a equihash -s zec-eu1.nanopool.org:6666 -u ${wallet_address}/${worker_name}/${email} \
+${MINER_BINARY} -a equihash -s zec-eu1.nanopool.org:6666 -u ${wallet_address}/${worker_name}/${email} \
 -p 0 -d 2 -cd $device_id_cuda 2>&1 | ./hash-log-excavator hash_log_ZEC_${device_id}.txt &>> ${LOGFILE}

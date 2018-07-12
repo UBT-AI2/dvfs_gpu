@@ -9,6 +9,7 @@
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
 #include "../common_header/exceptions.h"
+#include "../common_header/fullexpr_accum.h"
 #include "process_management.h"
 
 namespace frequency_scaling {
@@ -177,6 +178,7 @@ namespace frequency_scaling {
                 }
             }
             catch (const std::invalid_argument &ex) {
+				full_expression_accumulator(std::cerr) << "Failed to parse power logfile entry: " << ex.what() << std::endl;
             }
         }
         return res / count;
