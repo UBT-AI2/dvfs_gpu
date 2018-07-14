@@ -17,7 +17,7 @@ fi
 
 bench_start=$(tail -n 1 ${POWERFILE} | awk '{print $1}')
 time_start=$(($(date +%s%N)/1000000))
-BENCH_LOGCMD="$(${MINER_BINARY} --noCPU --benchmark 6 --cuda_devices ${device_id_cuda} 2>&1)"
+BENCH_LOGCMD="$(${MINER_BINARY} --noCPU --benchmark 7 --cuda-devices ${device_id_cuda} --currency monero7 2>&1)"
 time_dur=$(($(($(date +%s%N)/1000000)) - ${time_start}))
 
 if [[ -z $bench_start ]]
