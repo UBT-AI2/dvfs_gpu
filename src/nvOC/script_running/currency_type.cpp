@@ -2,7 +2,7 @@
 // Created by Alex on 06.06.2018.
 //
 #include "currency_type.h"
-#include <stdexcept>
+#include "../common_header/exceptions.h"
 
 namespace frequency_scaling {
 
@@ -15,7 +15,7 @@ namespace frequency_scaling {
             case currency_type::XMR:
                 return "XMR";
             default:
-                throw std::runtime_error("Invalid enum value");
+                THROW_RUNTIME_ERROR("Invalid enum value");
         }
     }
 
@@ -27,7 +27,12 @@ namespace frequency_scaling {
         else if (str == "xmr" || str == "XMR")
             return currency_type::XMR;
         else
-            throw std::runtime_error("Currency " + str + " not available");
+            THROW_RUNTIME_ERROR("Currency " + str + " not available");
+    }
+
+    std::string gpu_log_prefix(currency_type ct, int device_id_nvml) {
+        return "GPU " + std::to_string(device_id_nvml) + ": " +
+               enum_to_string(ct) + ": ";
     }
 
 }

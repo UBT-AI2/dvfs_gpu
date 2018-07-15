@@ -80,8 +80,6 @@ namespace frequency_scaling {
         void save_current_period(currency_type ct);
 
     private:
-        std::string get_log_prefix(currency_type ct) const;
-
         device_clock_info dci_;
         std::map<currency_type, currency_info> currency_info_;
         std::map<currency_type, energy_hash_info> energy_hash_info_;

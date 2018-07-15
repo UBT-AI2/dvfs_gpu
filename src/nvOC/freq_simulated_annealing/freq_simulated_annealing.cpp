@@ -6,6 +6,7 @@
 #include <cmath>
 #include <random>
 #include <chrono>
+#include <glog/logging.h>
 #include "../common_header/fullexpr_accum.h"
 #include "../common_header/exceptions.h"
 #include "../freq_hill_climbing/freq_hill_climbing.h"
@@ -33,7 +34,7 @@ namespace frequency_scaling {
         measurement current_node = benchmarkFunc(ct, dci, start_node.mem_oc, start_node.nvml_graph_clock_idx);
         if (current_node.hashrate_ < min_hashrate) {
             //throw optimization_error("Minimum hashrate cannot be reached");
-            full_expression_accumulator(std::cerr) << "start_node does not have minimum hashrate" << std::endl;
+            LOG(ERROR) << "start_node does not have minimum hashrate" << std::endl;
         }
         measurement best_node = current_node;
         //

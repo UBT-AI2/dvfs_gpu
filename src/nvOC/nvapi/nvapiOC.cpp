@@ -155,7 +155,7 @@ namespace frequency_scaling {
             NvAPI_GetErrorMessage(result, msg_buf);
             msg.append(msg_buf);
             msg.append("\n");
-            throw nvapi_error(msg);
+            THROW_NVAPI_ERROR(msg);
         }
     }
 
@@ -164,7 +164,7 @@ namespace frequency_scaling {
         NvQueryInterface = (NvAPI_QueryInterface_t) GetProcAddress(LoadLibrary("nvapi64.dll"),
                                                                    "nvapi_QueryInterface");
         if (NvQueryInterface == NULL) {
-            throw nvapi_error("Failed to load nvapi.dll");
+            THROW_NVAPI_ERROR("Failed to load nvapi.dll");
         }
         NvInit = (NvAPI_Initialize_t) NvQueryInterface(0x0150E828);
         NvUnload = (NvAPI_Unload_t) NvQueryInterface(0xD22BDD7E);
@@ -292,7 +292,7 @@ namespace frequency_scaling {
 
         safeNVAPICall(NvEnumPhysicalGPUs(hdlGPU, &nGPU));
         if (idxGPU >= nGPU) {
-            throw nvapi_error("Device with index " + std::to_string(idxGPU) + " doesnt exist");
+            THROW_NVAPI_ERROR("Device with index " + std::to_string(idxGPU) + " doesnt exist");
         }
 
         //int memtype = 0;
@@ -310,7 +310,7 @@ namespace frequency_scaling {
         if (error_code != 0) {
             char msg_buf[BUFFER_SIZE];
             NvAPI_GetErrorMessage(error_code, msg_buf);
-            throw nvapi_error("GPU " + std::to_string(idxGPU) +
+            THROW_NVAPI_ERROR("GPU " + std::to_string(idxGPU) +
                               " CORE OC failed: " + std::string(msg_buf));
         }
 
@@ -328,7 +328,7 @@ namespace frequency_scaling {
         if (error_code != 0) {
             char msg_buf[BUFFER_SIZE];
             NvAPI_GetErrorMessage(error_code, msg_buf);
-            throw nvapi_error("GPU " + std::to_string(idxGPU) +
+            THROW_NVAPI_ERROR("GPU " + std::to_string(idxGPU) +
                               " VRAM OC failed: " + std::string(msg_buf));
         }
     }
@@ -336,15 +336,15 @@ namespace frequency_scaling {
 #else
 
     void nvapiInit() {
-        throw nvapi_error("NVAPI not supported");
+        THROW_NVAPI_ERROR("NVAPI not supported");
     }
 
     bool nvapi_register_gpu(int device_id) {
-        throw nvapi_error("NVAPI not supported");
+        THROW_NVAPI_ERROR("NVAPI not supported");
     }
 
     void nvapiUnload(int restoreClocks) {
-        throw nvapi_error("NVAPI not supported");
+        THROW_NVAPI_ERROR("NVAPI not supported");
     }
 
     bool nvapiCheckSupport() {
@@ -352,19 +352,19 @@ namespace frequency_scaling {
     }
 
     int nvapiGetDeviceIndexByBusId(int busId) {
-        throw nvapi_error("NVAPI not supported");
+        THROW_NVAPI_ERROR("NVAPI not supported");
     }
 
     int nvapiGetCurrentMemClock(int deviceId) {
-        throw nvapi_error("NVAPI not supported");
+        THROW_NVAPI_ERROR("NVAPI not supported");
     }
 
     int nvapiGetCurrentGraphClock(int deviceId) {
-        throw nvapi_error("NVAPI not supported");
+        THROW_NVAPI_ERROR("NVAPI not supported");
     }
 
     void nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz) {
-        throw nvapi_error("NVAPI not supported");
+        THROW_NVAPI_ERROR("NVAPI not supported");
     }
 
 #endif

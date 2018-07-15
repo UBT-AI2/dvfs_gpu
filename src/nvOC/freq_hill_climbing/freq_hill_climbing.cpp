@@ -2,7 +2,7 @@
 
 #include <random>
 #include <chrono>
-#include "../common_header/fullexpr_accum.h"
+#include <glog/logging.h>
 #include "../common_header/exceptions.h"
 
 
@@ -136,9 +136,7 @@ namespace frequency_scaling {
         //iff slope of slope is positive explore in that direction as long it stays positive
         measurement max_deriv_current_node = current_node;
         while (max_deriv_slopediff > 0) {
-#ifdef DEBUG
-            full_expression_accumulator(std::cout) << "max_deriv_slopediff: " << max_deriv_slopediff << std::endl;
-#endif
+            VLOG(2) << "HC iteration" << iteration << ": max_deriv_slopediff: " << max_deriv_slopediff << std::endl;
             int max_deriv_mem_oc_diff = max_deriv_measurement.mem_oc - max_deriv_current_node.mem_oc;
             int max_deriv_graph_idx_diff =
                     max_deriv_measurement.nvml_graph_clock_idx - max_deriv_current_node.nvml_graph_clock_idx;
@@ -181,7 +179,7 @@ namespace frequency_scaling {
         measurement current_node = benchmarkFunc(ct, dci, start_node.mem_oc, start_node.nvml_graph_clock_idx);
         if (current_node.hashrate_ < min_hashrate) {
             //throw optimization_error("Minimum hashrate cannot be reached");
-            full_expression_accumulator(std::cerr) << "start_node does not have minimum hashrate" << std::endl;
+            LOG(ERROR) << "start_node does not have minimum hashrate" << std::endl;
         }
         measurement best_node;
         if (allow_start_node_result)

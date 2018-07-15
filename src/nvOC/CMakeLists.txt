@@ -70,13 +70,15 @@ if (WIN32)
             nvmlOC_lib
             cuda
             ${CURL_LIBRARIES}
+            ${GLOG_LIB_NAME}
             psapi)
 else (WIN32)
     target_link_libraries(script_running_lib
             nvapiOC_lib
             nvmlOC_lib
             cuda
-            ${CURL_LIBRARIES})
+            ${CURL_LIBRARIES}
+            ${GLOG_LIB_NAME})
 endif (WIN32)
 
 
@@ -104,8 +106,7 @@ target_link_libraries(freq_hill_climbing
 add_library(freq_nelder_mead_lib
         ${FREQ_NELDER_MEAD_FILES})
 target_link_libraries(freq_nelder_mead_lib
-        script_running_lib
-        ${GLOG_LIB_NAME})
+        script_running_lib)
 add_executable(freq_nelder_mead
         freq_nelder_mead/main.cpp)
 target_link_libraries(freq_nelder_mead

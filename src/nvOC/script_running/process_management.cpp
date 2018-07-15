@@ -4,6 +4,7 @@
 #include "process_management.h"
 
 #include <signal.h>
+#include <glog/logging.h>
 
 #ifdef _WIN32
 
@@ -19,7 +20,6 @@
 
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
-#include "../common_header/fullexpr_accum.h"
 #include "../common_header/exceptions.h"
 
 namespace frequency_scaling {
@@ -31,6 +31,7 @@ namespace frequency_scaling {
     std::mutex process_management::gpu_background_processes_mutex_;
 
     static void sig_handler(int signo) {
+        LOG(ERROR) << "Catched signal " << signo << ". Perform cleanup..." << std::endl;
         if (signo == SIGINT) {
             process_management::kill_all_processes(false);
             nvapiUnload(1);
@@ -41,10 +42,14 @@ namespace frequency_scaling {
 
 
     bool process_management::register_process_cleanup_sighandler() {
-        //setup sigint handler
-        if (signal(SIGINT, &sig_handler) == SIG_ERR) {
+        //setup signal handler
+        if (signal(SIGINT, &sig_handler) == SIG_ERR |
+            signal(SIGABRT, &sig_handler) == SIG_ERR |
+            signal(SIGTERM, &sig_handler) == SIG_ERR) {
+            LOG(ERROR) << "Failed to register signal handler" << std::endl;
             return false;
         }
+        VLOG(0) << "Registered cleanup signal handlers." << std::endl;
         return true;
     }
 
@@ -151,23 +156,23 @@ namespace frequency_scaling {
     void process_management::kill_process(int pid) {
         try {
 #ifdef _WIN32
-			try {
-				process_management::start_process("taskkill /f /t /pid " + std::to_string(pid),
-					false, true, pid, false);
-			}
-			catch (const process_error &ex) {
-				//programm may be running in git bash
-				process_management::start_process("kill " + std::to_string(pid), false, true, pid);
-			}
+            try {
+                process_management::start_process("taskkill /f /t /pid " + std::to_string(pid),
+                                                  false, true, pid, false);
+            }
+            catch (const process_error &ex) {
+                //programm may be running in git bash
+                process_management::start_process("kill " + std::to_string(pid), false, true, pid);
+            }
 #else
             process_management::start_process("kill " + std::to_string(pid), false, true, pid);
 #endif
         }
         catch (const process_error &ex) {
         }
-		//
-		process_management::remove_pid(pid);
-        full_expression_accumulator(std::cout) << "Killed process with pid " + std::to_string(pid) << std::endl;
+        //
+        process_management::remove_pid(pid);
+        VLOG(0) << "Killed process with pid " + std::to_string(pid) << std::endl;
     }
 
     int process_management::start_process(const std::string &cmd, bool background) {
@@ -196,8 +201,8 @@ namespace frequency_scaling {
                 std::lock_guard<std::mutex> lock(process_management::all_processes_mutex_);
                 process_management::all_processes_.emplace_back(dwPid, background);
             }
-            full_expression_accumulator(std::cout) << "Started process: " << cmd << " (PID: " << dwPid << ")"
-                                                   << std::endl;
+            VLOG(0) << "Started process: " << cmd << " (PID: " << dwPid << ")"
+                    << std::endl;
             if (!background) {
                 WaitForSingleObject(pi.hProcess, INFINITE);
                 DWORD exit_code;
@@ -205,19 +210,19 @@ namespace frequency_scaling {
                 if (exit_code != 0) {
                     CloseHandle(pi.hThread);
                     CloseHandle(pi.hProcess);
-                    throw process_error("Process " + cmd + " returned invalid exit code: " + std::to_string(exit_code));
+                    THROW_PROCESS_ERROR("Process " + cmd + " returned invalid exit code: " + std::to_string(exit_code));
                 }
             }
             //CloseHandle(pi.hThread);
             //CloseHandle(pi.hProcess);
             return dwPid;
         } else {
-            throw process_error("CreateProcess() failed: " + cmd);
+            THROW_PROCESS_ERROR("CreateProcess() failed: " + cmd);
         }
 #else
         int pid = vfork();
         if (pid < 0) {
-            throw process_error("fork() failed");
+            THROW_PROCESS_ERROR("fork() failed");
         } else if (pid == 0) {
             //child
             execl("/bin/bash", "bash", "-c", cmd.c_str(), NULL);
@@ -229,16 +234,16 @@ namespace frequency_scaling {
                 std::lock_guard<std::mutex> lock(process_management::all_processes_mutex_);
                 process_management::all_processes_.emplace_back(pid, background);
             }
-            full_expression_accumulator(std::cout) << "Started process: " << cmd << " (PID: " << pid << ")"
+            VLOG(0) << "Started process: " << cmd << " (PID: " << pid << ")"
                                                    << std::endl;
             if (!background) {
                 int status;
                 waitpid(pid, &status, 0);
                 if (!WIFEXITED(status))
-                    throw process_error("Process " + cmd + " terminated unnormally");
+                    THROW_PROCESS_ERROR("Process " + cmd + " terminated unnormally");
                 int exit_code = WEXITSTATUS(status);
                 if (exit_code != 0)
-                    throw process_error("Process " + cmd + " returned invalid exit code: " + std::to_string(exit_code));
+                    THROW_PROCESS_ERROR("Process " + cmd + " returned invalid exit code: " + std::to_string(exit_code));
             }
         }
         return pid;

@@ -3,11 +3,11 @@
 //
 #include "mining.h"
 
-#include <stdexcept>
 #include <regex>
 #include <thread>
 #include <fstream>
-#include "../common_header/fullexpr_accum.h"
+#include <glog/logging.h>
+#include "../common_header/exceptions.h"
 #include "process_management.h"
 #include "network_requests.h"
 
@@ -38,7 +38,7 @@ namespace frequency_scaling {
                          worker_name.c_str(), user_info.email_adress_.c_str());
                 break;
             default:
-                throw std::runtime_error("Invalid enum value");
+                THROW_RUNTIME_ERROR("Invalid enum value");
         }
         //
         return process_management::gpu_start_process(cmd1, dci.device_id_nvml, process_type::MINER, true);
@@ -69,7 +69,7 @@ namespace frequency_scaling {
                 }
             }
             catch (const std::invalid_argument &ex) {
-				full_expression_accumulator(std::cerr) << "Failed to parse hashrate logfile entry: " << ex.what() << std::endl;
+                LOG(ERROR) << "Failed to parse hashrate logfile entry: " << ex.what() << std::endl;
             }
         }
         return res / count;
@@ -80,6 +80,11 @@ namespace frequency_scaling {
             const miner_user_info &user_info, int period_ms,
             currency_type ct, const device_clock_info &dci, int mem_oc,
             int nvml_graph_clock_idx) {
+        int mem_clock = dci.nvapi_default_mem_clock + mem_oc;
+        int graph_clock = dci.nvml_graph_clocks[nvml_graph_clock_idx];
+        VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml) <<
+                "Running online benchmark with clocks: mem:" << mem_clock << ",graph:" << graph_clock
+                << std::endl;
         //change graph and mem clocks and start mining
         change_clocks_nvml_nvapi(dci, mem_oc, nvml_graph_clock_idx);
         bool mining_started = start_mining_script(ct, dci, user_info);
@@ -95,8 +100,6 @@ namespace frequency_scaling {
         if (mining_started)
             stop_mining_script(dci.device_id_nvml);
         //create measurement
-        int mem_clock = dci.nvapi_default_mem_clock + mem_oc;
-        int graph_clock = dci.nvml_graph_clocks[nvml_graph_clock_idx];
         measurement m(mem_clock, graph_clock, power, hashrate);
         m.hashrate_measure_dur_ms_ = system_time_now_ms - system_time_start_ms;
         m.power_measure_dur_ms_ = system_time_now_ms - system_time_start_ms;

@@ -1,4 +1,4 @@
-
+#include <glog/logging.h>
 #include "../common_header/fullexpr_accum.h"
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
@@ -10,6 +10,9 @@
 using namespace frequency_scaling;
 
 int main(int argc, char **argv) {
+    FLAGS_v = 0;
+    google::InitGoogleLogging(argv[0]);
+    google::SetStderrLogging(0);
     try {
         //parse cmd options
         const std::map<std::string, std::string> &cmd_args = parse_cmd_options(argc, argv);
@@ -42,15 +45,15 @@ int main(int argc, char **argv) {
         nvapiUnload(1);
         nvmlShutdown_(true);
     } catch (const std::exception &ex) {
-        full_expression_accumulator(std::cerr) << "Main caught exception: " << ex.what() << std::endl;
-        full_expression_accumulator(std::cerr) << "Perform cleanup and exit..." << std::endl;
+        LOG(ERROR) << "Main caught exception: " << ex.what() << std::endl;
+        LOG(ERROR) << "Perform cleanup and exit..." << std::endl;
         process_management::kill_all_processes(false);
         nvapiUnload(1);
         nvmlShutdown_(true);
         return 1;
     }
     catch (...) {
-        full_expression_accumulator(std::cerr) << "Main caught unknown exception" << std::endl;
+        LOG(ERROR) << "Main caught unknown exception" << std::endl;
         process_management::kill_all_processes(false);
         nvapiUnload(1);
         nvmlShutdown_(true);

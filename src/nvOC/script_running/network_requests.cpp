@@ -2,10 +2,10 @@
 
 #include <sstream>
 #include <thread>
+#include <glog/logging.h>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <curl/curl.h>
-#include "../common_header/fullexpr_accum.h"
 #include "../common_header/exceptions.h"
 
 namespace frequency_scaling {
@@ -25,7 +25,7 @@ namespace frequency_scaling {
     static std::string curl_https_get(const std::string &request_url) {
         CURL *curl = curl_easy_init();
         if (!curl)
-            throw network_error("CURL initialization failed");
+            THROW_NETWORK_ERROR("CURL initialization failed");
         curl_easy_setopt(curl, CURLOPT_URL, request_url.c_str());
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
@@ -39,7 +39,7 @@ namespace frequency_scaling {
         CURLcode res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
             curl_easy_cleanup(curl);
-            throw network_error("CURL perform failed: " +
+            THROW_NETWORK_ERROR("CURL perform failed: " +
                                 std::string(curl_easy_strerror(res)) + " (" + request_url + ")");
         }
 
@@ -49,13 +49,13 @@ namespace frequency_scaling {
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
         curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &elapsed);
         curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &url);
-        //full_expression_accumulator(std::cout) << "Network request URL : " << url << std::endl;
-        //full_expression_accumulator(std::cout) << "Network request elapsed time: " << elapsed << std::endl;
+        VLOG(1) << "Network request URL : " << url << std::endl;
+        VLOG(1) << "Network request elapsed time: " << elapsed << std::endl;
 
         curl_easy_cleanup(curl);
 
         if (response_code != 200)
-            throw network_error("CURL invalid response code: " +
+            THROW_NETWORK_ERROR("CURL invalid response code: " +
                                 std::to_string(response_code) + " (" + url + ")");
         return response_string;
     }
@@ -71,7 +71,7 @@ namespace frequency_scaling {
             case currency_type::XMR:
                 return "https://api.nanopool.org/v1/xmr";
             default:
-                throw std::runtime_error("Invalid enum value");
+                THROW_RUNTIME_ERROR("Invalid enum value");
         }
     }
 
@@ -84,7 +84,7 @@ namespace frequency_scaling {
             case currency_type::XMR:
                 return "https://whattomine.com/coins/101.json";
             default:
-                throw std::runtime_error("Invalid enum value");
+                THROW_RUNTIME_ERROR("Invalid enum value");
         }
     }
 
@@ -126,7 +126,7 @@ namespace frequency_scaling {
         boost::property_tree::json_parser::read_json(is, root);
         std::string status = root.get<std::string>("status", "false");
         if (status != "true")
-            throw network_error("Nanopool REST API error: " + root.get<std::string>("data"));
+            THROW_NETWORK_ERROR("Nanopool REST API error: " + root.get<std::string>("data"));
         return root.get<double>("data.hour.euros");
     }
 
@@ -143,7 +143,7 @@ namespace frequency_scaling {
         boost::property_tree::json_parser::read_json(is, root);
         std::string status = root.get<std::string>("status", "false");
         if (status != "true")
-            throw network_error("Nanopool REST API error: " + root.get<std::string>("data"));
+            THROW_NETWORK_ERROR("Nanopool REST API error: " + root.get<std::string>("data"));
         std::map<std::string, double> res;
         for (const boost::property_tree::ptree::value_type &array_elem : root.get_child("data")) {
             const boost::property_tree::ptree &subtree = array_elem.second;
@@ -185,7 +185,7 @@ namespace frequency_scaling {
                     throw;
             } catch (const boost::property_tree::ptree_error &ex) {
                 if (trials <= 0)
-                    throw network_error("Boost error while processing json: " + std::string(ex.what()));
+                    THROW_NETWORK_ERROR("Boost error while processing json: " + std::string(ex.what()));
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(trial_timeout_ms));
         }

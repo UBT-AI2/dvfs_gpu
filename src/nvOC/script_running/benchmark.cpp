@@ -6,10 +6,10 @@
 #include <string.h>
 #include <fstream>
 #include <cuda.h>
+#include <glog/logging.h>
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
 #include "../common_header/exceptions.h"
-#include "../common_header/fullexpr_accum.h"
 #include "process_management.h"
 
 namespace frequency_scaling {
@@ -33,7 +33,8 @@ namespace frequency_scaling {
             cuInit(0);
             cuDeviceGetByPCIBusId(&device_id_cuda, nvmlGetBusIdString(device_id_nvml).c_str());
         }
-
+        VLOG(0) << "Matching device by PCIBusId: NVML-Id=" << device_id_nvml << ", NVAPI-Id=" <<
+                device_id_nvapi << ", CUDA-Id=" << device_id_cuda << std::endl;
         if (nvml_supported_)
             nvml_register_gpu(device_id_nvml);
         nvapi_register_gpu(device_id_nvapi);
@@ -89,8 +90,9 @@ namespace frequency_scaling {
     static measurement run_benchmark_script(currency_type ct, const device_clock_info &dci,
                                             int graph_clock, int mem_clock) {
         {
-            printf("GPU %i: %s: Running benchmark script with clocks: mem:%i,graph:%i\n",
-                   dci.device_id_nvml, enum_to_string(ct).c_str(), mem_clock, graph_clock);
+            VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml) <<
+                    "Running offline benchmark with clocks: mem:" << mem_clock << ",graph:" << graph_clock
+                    << std::endl;
             //run benchmark script to get measurement
             char cmd2[BUFFER_SIZE];
             switch (ct) {
@@ -107,7 +109,7 @@ namespace frequency_scaling {
                              dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock);
                     break;
                 default:
-                    throw std::runtime_error("Invalid enum value");
+                    THROW_RUNTIME_ERROR("Invalid enum value");
             }
             process_management::gpu_start_process(cmd2, dci.device_id_nvml, process_type::MINER, false);
         }
@@ -115,8 +117,8 @@ namespace frequency_scaling {
         //get last measurement from data file
         double data[6] = {0};
         {
-            std::string filename = "bench_result_gpu" + std::to_string(dci.device_id_nvml) 
-				+ "_" + enum_to_string(ct) + ".dat";
+            std::string filename = "bench_result_gpu" + std::to_string(dci.device_id_nvml)
+                                   + "_" + enum_to_string(ct) + ".dat";
             std::ifstream file;
             file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
             file.open(filename, std::ios_base::ate);//open file
@@ -178,7 +180,7 @@ namespace frequency_scaling {
                 }
             }
             catch (const std::invalid_argument &ex) {
-				full_expression_accumulator(std::cerr) << "Failed to parse power logfile entry: " << ex.what() << std::endl;
+                LOG(ERROR) << "Failed to parse power logfile entry: " << ex.what() << std::endl;
             }
         }
         return res / count;

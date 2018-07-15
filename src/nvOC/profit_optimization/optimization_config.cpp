@@ -5,6 +5,7 @@
 
 #include <fstream>
 #include <limits>
+#include <glog/logging.h>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
@@ -18,8 +19,8 @@
 
 #endif
 
-#include "../common_header/fullexpr_accum.h"
 #include "../nvml/nvmlOC.h"
+#include "../common_header/exceptions.h"
 #include "cli_utils.h"
 
 
@@ -40,7 +41,7 @@ namespace frequency_scaling {
                 graph_idx_step_ = 10;
                 break;
             default:
-                throw std::runtime_error("Invalid enum value");
+                THROW_RUNTIME_ERROR("Invalid enum value");
         }
     }
 
@@ -107,7 +108,7 @@ namespace frequency_scaling {
             opt_config.miner_user_infos_.worker_names_.emplace(device_id, getworker_name(device_id));
         }
         if (opt_config.dcis_.empty())
-            throw std::runtime_error("No device selected");
+            THROW_RUNTIME_ERROR("No device selected");
 
         opt_config.miner_user_infos_.wallet_addresses_.emplace(currency_type::ETH,
                                                                "0x8291ca623a1f1a877fa189b594f6098c74aad0b3");
@@ -135,7 +136,7 @@ namespace frequency_scaling {
             opt_config.opt_method_params_.emplace(ct, optimization_method_params(opt_method, min_hashrate));
         }
         if (opt_config.miner_user_infos_.wallet_addresses_.empty())
-            throw std::runtime_error("No currency selected");
+            THROW_RUNTIME_ERROR("No currency selected");
         //save config dialog
         user_in = cli_get_string("Save configuration? [y/n]", "[yn]");
         if (user_in == "y") {
@@ -234,7 +235,7 @@ namespace frequency_scaling {
             case optimization_method::SIMULATED_ANNEALING:
                 return "SA";
             default:
-                throw std::runtime_error("Invalid enum value");
+                THROW_RUNTIME_ERROR("Invalid enum value");
         }
     }
 
@@ -247,7 +248,7 @@ namespace frequency_scaling {
         else if (str == "sa" || str == "SA")
             return optimization_method::SIMULATED_ANNEALING;
         else
-            throw std::runtime_error("Optimization method " + str + " not available");
+            THROW_RUNTIME_ERROR("Optimization method " + str + " not available");
     }
 
 }

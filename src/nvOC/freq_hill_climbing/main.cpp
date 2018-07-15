@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <glog/logging.h>
 #include "../common_header/fullexpr_accum.h"
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
@@ -44,7 +45,7 @@ int main(int argc, char **argv) {
         //
         const measurement &m = freq_hill_climbing(&run_benchmark_script_nvml_nvapi, ct, dci, max_iterations, mem_step,
                                                   graph_idx_step, min_hashrate);
-        full_expression_accumulator(std::cout) << "Best energy-hash value: " << m.energy_hash_ << std::endl;
+        VLOG(0) << "Best energy-hash value: " << m.energy_hash_ << std::endl;
 
         //stop power monitoring
         stop_power_monitoring_script(device_id);
@@ -53,8 +54,8 @@ int main(int argc, char **argv) {
         nvapiUnload(1);
         nvmlShutdown_(true);
     } catch (const std::exception &ex) {
-        full_expression_accumulator(std::cerr) << "Main caught exception: " << ex.what() << std::endl;
-        full_expression_accumulator(std::cerr) << "Perform cleanup and exit..." << std::endl;
+        LOG(ERROR) << "Main caught exception: " << ex.what() << std::endl;
+        LOG(ERROR) << "Perform cleanup and exit..." << std::endl;
         process_management::kill_all_processes(false);
         nvapiUnload(1);
         nvmlShutdown_(true);

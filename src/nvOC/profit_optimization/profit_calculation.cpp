@@ -3,7 +3,7 @@
 #include <limits>
 #include <chrono>
 #include <algorithm>
-#include "../common_header/fullexpr_accum.h"
+#include <glog/logging.h>
 #include "../common_header/exceptions.h"
 #include "../script_running/network_requests.h"
 
@@ -65,19 +65,17 @@ namespace frequency_scaling {
                 best_profit = profit_per_hour;
             }
             //print stats
-            full_expression_accumulator fea(std::cout);
-            fea << get_log_prefix(ct) <<
-                "Profit calculation using: hashrate=" <<
-                get_used_hashrate(ct) << ", power=" << get_used_power(ct) <<
-                ", energy_hash=" << get_used_energy_hash(ct) <<
-                ", stock_price=" << it_ci->second.cs_.stock_price_eur_
-                << std::endl;
-            fea << get_log_prefix(ct) <<
-                "Calculated profit [eur/hour]: approximated earnings=" <<
-                ci.approximated_earnings_eur_hour_ << ", energy_cost="
-                << costs_per_hour << ", profit="
-                << profit_per_hour << std::endl;
-            fea.flush();
+            VLOG(0) << gpu_log_prefix(ct, dci_.device_id_nvml) <<
+                    "Profit calculation using: hashrate=" <<
+                    get_used_hashrate(ct) << ", power=" << get_used_power(ct) <<
+                    ", energy_hash=" << get_used_energy_hash(ct) <<
+                    ", stock_price=" << it_ci->second.cs_.stock_price_eur_
+                    << std::endl;
+            VLOG(0) << gpu_log_prefix(ct, dci_.device_id_nvml) <<
+                    "Calculated profit [eur/hour]: approximated earnings=" <<
+                    ci.approximated_earnings_eur_hour_ << ", energy_cost="
+                    << costs_per_hour << ", profit="
+                    << profit_per_hour << std::endl;
         }
         best_currency_ = static_cast<currency_type>(best_idx);
         best_currency_profit_ = best_profit;
@@ -95,14 +93,16 @@ namespace frequency_scaling {
                     approximated_earnings = get_approximated_earnings_per_hour_nanopool(ct, used_hashrate);
                 } catch (const network_error &err) {
                     //fallback
+                    VLOG(1) << "Nanopool approximated earnings API call failed: " << err.what() <<
+                            ". Using fallback..." << std::endl;
                     approximated_earnings = cs.calc_approximated_earnings_eur_hour(used_hashrate);
                 }
                 currency_info_.emplace(ct, currency_info(ct, approximated_earnings, cs));
-                full_expression_accumulator(std::cout) << get_log_prefix(ct) << "Update currency info using hashrate "
-                                                       << used_hashrate << std::endl;
+                VLOG(0) << gpu_log_prefix(ct, dci_.device_id_nvml) << "Update currency info using hashrate "
+                        << used_hashrate << std::endl;
             } catch (const network_error &err) {
-                full_expression_accumulator(std::cerr) << get_log_prefix(ct) <<
-                                                       "Failed to update currency info: " << err.what() << std::endl;
+                LOG(ERROR) << gpu_log_prefix(ct, dci_.device_id_nvml) <<
+                           "Failed to update currency info: " << err.what() << std::endl;
             }
         }
     }
@@ -115,9 +115,9 @@ namespace frequency_scaling {
             const std::string worker = user_info.worker_names_.at(dci_.device_id_nvml);
             auto it_hr = avg_hashrates.find(worker);
             if (it_hr == avg_hashrates.end()) {
-                full_expression_accumulator(std::cerr) << get_log_prefix(current_mined_ct) <<
-                                                       "Failed to get avg online hashrate: Worker "
-                                                       << worker << " not available" << std::endl;
+                LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml) <<
+                           "Failed to get avg online hashrate: Worker "
+                           << worker << " not available" << std::endl;
                 return;
             }
             //update hashrate
@@ -131,11 +131,11 @@ namespace frequency_scaling {
             energy_hash_info_.at(current_mined_ct).optimal_configuration_profit_.update_hashrate(new_hashrate,
                                                                                                  total_period_ms);
 
-            full_expression_accumulator(std::cout) << get_log_prefix(current_mined_ct) <<
-                                                   "Updated avg online hashrate: " << new_hashrate << std::endl;
+            VLOG(0) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml) <<
+                    "Updated avg online hashrate: " << new_hashrate << std::endl;
         } catch (const network_error &err) {
-            full_expression_accumulator(std::cerr) << get_log_prefix(current_mined_ct) <<
-                                                   "Failed to get avg online hashrate: " << err.what() << std::endl;
+            LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml) <<
+                       "Failed to get avg online hashrate: " << err.what() << std::endl;
         }
     }
 
@@ -152,8 +152,8 @@ namespace frequency_scaling {
         double new_power = (cur_period_ms / (double) total_period_ms) * cur_power +
                            (last_period_ms / (double) total_period_ms) * last_power;
         energy_hash_info_.at(current_mined_ct).optimal_configuration_profit_.update_power(new_power, total_period_ms);
-        full_expression_accumulator(std::cout) << get_log_prefix(current_mined_ct) <<
-                                               "Update online power " << new_power << std::endl;
+        VLOG(0) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml) <<
+                "Update online power " << new_power << std::endl;
     }
 
     void profit_calculator::update_opt_config_online(currency_type current_mined_ct,
@@ -162,8 +162,8 @@ namespace frequency_scaling {
         energy_hash_info &ehi = energy_hash_info_.at(current_mined_ct);
         ehi.optimal_configuration_online_ = new_config_online;
         ehi.optimal_configuration_profit_.update_freq_config(new_config_online);
-        full_expression_accumulator(std::cout) << get_log_prefix(current_mined_ct) <<
-                                               "Update opt_config_offline" << std::endl;
+        VLOG(0) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml) <<
+                "Update opt_config_offline" << std::endl;
     }
 
 
@@ -227,11 +227,6 @@ namespace frequency_scaling {
 
     void profit_calculator::save_current_period(currency_type ct) {
         last_profit_measurements_.at(ct) = energy_hash_info_.at(ct).optimal_configuration_profit_;
-    }
-
-    std::string profit_calculator::get_log_prefix(currency_type ct) const {
-        return "GPU " + std::to_string(dci_.device_id_nvml) + ": " +
-               enum_to_string(ct) + ": ";
     }
 
 }
