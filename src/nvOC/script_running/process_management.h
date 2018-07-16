@@ -8,6 +8,7 @@
 #include <map>
 #include <vector>
 #include <mutex>
+#include <atomic>
 
 namespace frequency_scaling {
 
@@ -19,6 +20,11 @@ namespace frequency_scaling {
     class process_management {
     public:
         static bool register_process_cleanup_sighandler();
+
+		static bool init_logging(const std::string& logdir_to_create, const std::string& glog_file_prefix,
+			int glog_verbosity, const char* argv0);
+
+		static std::string get_logdir_name();
 
         static FILE *popen_file(const std::string &cmd);
 
@@ -49,6 +55,9 @@ namespace frequency_scaling {
         static std::mutex all_processes_mutex_;
         static std::map<std::pair<int, process_type>, int> gpu_background_processes_;
         static std::mutex gpu_background_processes_mutex_;
+
+		static std::string logdir_name_;
+		static std::atomic_bool logging_initialized_;
     };
 
 }

@@ -10,10 +10,9 @@
 using namespace frequency_scaling;
 
 int main(int argc, char **argv) {
-    FLAGS_v = 0;
-    google::InitGoogleLogging(argv[0]);
-    google::SetStderrLogging(0);
     try {
+		//init logging stuff
+		process_management::init_logging("profit-optimization-logs", "glog-profit-optimization-", 0, argv[0]);
         //parse cmd options
         const std::map<std::string, std::string> &cmd_args = parse_cmd_options(argc, argv);
         if (cmd_args.count("--help")) {

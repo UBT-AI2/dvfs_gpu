@@ -97,16 +97,19 @@ namespace frequency_scaling {
             char cmd2[BUFFER_SIZE];
             switch (ct) {
                 case currency_type::ETH:
-                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_eth.sh %i %i %i %i",
-                             dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock);
+                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_eth.sh %i %i %i %i %s",
+                             dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock, 
+						process_management::get_logdir_name().c_str());
                     break;
                 case currency_type::ZEC:
-                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_zec.sh %i %i %i %i",
-                             dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock);
+                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_zec.sh %i %i %i %i %s",
+                             dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock, 
+						process_management::get_logdir_name().c_str());
                     break;
                 case currency_type::XMR:
-                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_xmr.sh %i %i %i %i",
-                             dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock);
+                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_xmr.sh %i %i %i %i %s",
+                             dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock, 
+						process_management::get_logdir_name().c_str());
                     break;
                 default:
                     THROW_RUNTIME_ERROR("Invalid enum value");
@@ -117,8 +120,8 @@ namespace frequency_scaling {
         //get last measurement from data file
         double data[6] = {0};
         {
-            std::string filename = "bench_result_gpu" + std::to_string(dci.device_id_nvml)
-                                   + "_" + enum_to_string(ct) + ".dat";
+            std::string filename = process_management::get_logdir_name() + "/offline_bench_result_gpu" 
+				+ std::to_string(dci.device_id_nvml) + "_" + enum_to_string(ct) + ".dat";
             std::ifstream file;
             file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
             file.open(filename, std::ios_base::ate);//open file
@@ -152,7 +155,8 @@ namespace frequency_scaling {
     bool start_power_monitoring_script(int device_id, int interval_sleep_ms) {
         //start power monitoring in background process
         char cmd[BUFFER_SIZE];
-        snprintf(cmd, BUFFER_SIZE, "./gpu_power_monitor %i %i", device_id, interval_sleep_ms);
+        snprintf(cmd, BUFFER_SIZE, "./gpu_power_monitor %i %i %s", device_id, interval_sleep_ms, 
+			process_management::get_logdir_name().c_str());
         return process_management::gpu_start_process(cmd, device_id, process_type::POWER_MONITOR, true);
     }
 
@@ -165,7 +169,8 @@ namespace frequency_scaling {
                                long long int system_timestamp_end_ms) {
         std::ifstream file;
         file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        file.open("power_results_" + std::to_string(device_id) + ".txt");
+        file.open(process_management::get_logdir_name() + 
+			"/power_results_" + std::to_string(device_id) + ".txt");
         file.exceptions(std::ifstream::badbit);
         std::string line;
         std::string::size_type sz = 0;
@@ -213,7 +218,7 @@ namespace frequency_scaling {
         measurement &&m = run_benchmark_script(ct, dci, graph_clock, mem_clock);
         m.nvml_graph_clock_idx = nvml_graph_clock_idx;
         m.mem_oc = mem_oc;
-        m.graph_oc = 0;
+        m.graph_oc = graph_clock - dci.nvapi_default_graph_clock;
         return m;
     }
 

@@ -7,11 +7,14 @@ static const int BUFFER_SIZE = 1024;
 
 int main(int argc, char **argv) {
     if (argc < 3) {
-        printf("Usage: %s <device_id> <interval_sleep_ms>\n", argv[0]);
+        printf("Usage: %s <device_id> <interval_sleep_ms> [<log_dir>]\n", argv[0]);
         return 1;
     }
     int device_id = atoi(argv[1]);
     int sleep_time_ms = atoi(argv[2]);
+	std::string log_dir = ".";
+	if (argc > 3)
+		log_dir = argv[3];
 
     char cmd[BUFFER_SIZE];
     snprintf(cmd, BUFFER_SIZE,
@@ -19,7 +22,7 @@ int main(int argc, char **argv) {
              device_id);
 
     char data_filename[BUFFER_SIZE];
-    snprintf(data_filename, BUFFER_SIZE, "power_results_%i.txt", device_id);
+    snprintf(data_filename, BUFFER_SIZE, (log_dir + "/power_results_%i.txt").c_str(), device_id);
     FILE *data = fopen(data_filename, "w");
     if (data == NULL) {
         puts("Could not create result file");
