@@ -29,6 +29,8 @@ namespace frequency_scaling {
 
         void update_freq_config(const measurement &other);
 
+		bool self_check() const;
+
         int mem_clock_, graph_clock_;
         double power_, hashrate_, energy_hash_;
         int nvml_graph_clock_idx;
@@ -37,7 +39,6 @@ namespace frequency_scaling {
     };
 
     typedef std::function<measurement(currency_type, const device_clock_info &, int, int)> benchmark_func;
-
 
     bool start_power_monitoring_script(int device_id, int interval_sleep_ms = 100);
 

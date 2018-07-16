@@ -86,8 +86,12 @@ namespace frequency_scaling {
         int graph_idx = std::lround(glob_minimum(1) * graph_idx_step);
         const measurement &glob_min_measurement =
                 benchmarkFunc(ct, dci, mem_oc, graph_idx);
-        return (best_measurement.energy_hash_ > glob_min_measurement.energy_hash_) ?
-               best_measurement : glob_min_measurement;
+        const measurement& res = (best_measurement.energy_hash_ > glob_min_measurement.energy_hash_) ?
+			best_measurement : glob_min_measurement;
+		//
+		if (!res.self_check())
+			throw optimization_error("nelder mead resulted in invalid measurement");
+		return res;
     }
 
 }

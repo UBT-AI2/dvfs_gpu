@@ -229,7 +229,9 @@ namespace frequency_scaling {
                 best_node = current_node;
             }
         }
-
+		//
+		if (!best_node.self_check())
+			throw optimization_error("hill climbing resulted in invalid measurement");
         return best_node;
     }
 

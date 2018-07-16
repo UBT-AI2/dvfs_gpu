@@ -83,6 +83,9 @@ namespace frequency_scaling {
             //decrease temperature
             Tk = c * Tk;
         }
+		//
+		if (!best_node.self_check())
+			throw optimization_error("simulated annealing resulted in invalid measurement");
         return best_node;
     }
 

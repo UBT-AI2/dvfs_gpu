@@ -5,6 +5,7 @@
 
 #include <string.h>
 #include <fstream>
+#include <cmath>
 #include <cuda.h>
 #include <glog/logging.h>
 #include "../nvapi/nvapiOC.h"
@@ -86,6 +87,15 @@ namespace frequency_scaling {
         graph_oc = other.graph_oc;
         nvml_graph_clock_idx = other.nvml_graph_clock_idx;
     }
+
+	bool measurement::self_check() const {
+		if (hashrate_ <= 0 || !std::isfinite(hashrate_))
+			return false;
+		if (power_ <= 0 || !std::isfinite(power_))
+			return false;
+		return true;
+	}
+
 
     static measurement run_benchmark_script(currency_type ct, const device_clock_info &dci,
                                             int graph_clock, int mem_clock) {
