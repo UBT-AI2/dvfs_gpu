@@ -47,7 +47,8 @@ namespace frequency_scaling {
         if (!bi.offline_) {
             mining_started = start_mining_script(ct, dci, bi.mui_);
             //wait to ensure reasonable hashrates from the beginning
-            std::this_thread::sleep_for(std::chrono::seconds(60));
+			//TODO: check if file exists
+            std::this_thread::sleep_for(std::chrono::seconds(120));
         }
         //
         try {
