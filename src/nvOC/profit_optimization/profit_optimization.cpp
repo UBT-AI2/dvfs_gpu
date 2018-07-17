@@ -16,12 +16,11 @@
 #include "../freq_simulated_annealing/freq_simulated_annealing.h"
 #include "../nvml/nvmlOC.h"
 #include "../script_running/process_management.h"
+#include "../common_header/constants.h"
 #include "../common_header/exceptions.h"
 #include "cli_utils.h"
 
 namespace frequency_scaling {
-
-    static const int BUFFER_SIZE = 1024;
 
     struct benchmark_info {
         explicit benchmark_info(const benchmark_func &bf) :

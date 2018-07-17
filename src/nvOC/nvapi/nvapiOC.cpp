@@ -27,6 +27,7 @@
 
 #endif
 
+#include "../common_header/constants.h"
 #include "../common_header/exceptions.h"
 
 namespace frequency_scaling {
@@ -145,7 +146,6 @@ namespace frequency_scaling {
     static NvAPI_GPU_SetPstates20_t NvSetPstates = 0;
     static NvAPI_GetErrorMessage_t NvAPI_GetErrorMessage = 0;
 
-    static const int BUFFER_SIZE = 1024;
     static std::set<int> registered_gpus;
 
     static void safeNVAPICall(int result) {

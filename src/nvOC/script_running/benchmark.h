@@ -29,7 +29,7 @@ namespace frequency_scaling {
 
         void update_freq_config(const measurement &other);
 
-		bool self_check() const;
+        bool self_check() const;
 
         int mem_clock_, graph_clock_;
         double power_, hashrate_, energy_hash_;

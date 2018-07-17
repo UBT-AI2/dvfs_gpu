@@ -3,6 +3,7 @@
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
 #include "../script_running/process_management.h"
+#include "../script_running/log_utils.h"
 #include "profit_optimization.h"
 #include "optimization_config.h"
 #include "cli_utils.h"
@@ -11,8 +12,8 @@ using namespace frequency_scaling;
 
 int main(int argc, char **argv) {
     try {
-		//init logging stuff
-		process_management::init_logging("profit-optimization-logs", "glog-profit-optimization-", 0, argv[0]);
+        //init logging stuff
+        log_utils::init_logging("profit-optimization-logs", "glog-profit-optimization-", 0, argv[0]);
         //parse cmd options
         const std::map<std::string, std::string> &cmd_args = parse_cmd_options(argc, argv);
         if (cmd_args.count("--help")) {

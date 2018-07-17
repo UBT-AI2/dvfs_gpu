@@ -8,12 +8,12 @@
 #include <fstream>
 #include <glog/logging.h>
 #include "../common_header/exceptions.h"
+#include "../common_header/constants.h"
 #include "process_management.h"
+#include "log_utils.h"
 #include "network_requests.h"
 
 namespace frequency_scaling {
-
-    static const int BUFFER_SIZE = 1024;
 
 
     bool start_mining_script(currency_type ct, const device_clock_info &dci, const miner_user_info &user_info) {
@@ -25,17 +25,17 @@ namespace frequency_scaling {
             case currency_type::ETH:
                 snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_eth.sh %i %i %s %s %s %s",
                          dci.device_id_nvml, dci.device_id_cuda, wallet_addr.c_str(),
-                         worker_name.c_str(), user_info.email_adress_.c_str(), process_management::get_logdir_name().c_str());
+                         worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str());
                 break;
             case currency_type::ZEC:
                 snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_zec.sh %i %i %s %s %s %s",
                          dci.device_id_nvml, dci.device_id_cuda, wallet_addr.c_str(),
-                         worker_name.c_str(), user_info.email_adress_.c_str(), process_management::get_logdir_name().c_str());
+                         worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str());
                 break;
             case currency_type::XMR:
                 snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_xmr.sh %i %i %s %s %s %s",
                          dci.device_id_nvml, dci.device_id_cuda, wallet_addr.c_str(),
-                         worker_name.c_str(), user_info.email_adress_.c_str(), process_management::get_logdir_name().c_str());
+                         worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str());
                 break;
             default:
                 THROW_RUNTIME_ERROR("Invalid enum value");
@@ -52,10 +52,12 @@ namespace frequency_scaling {
 
     double get_avg_hashrate_online_log(currency_type ct, int device_id, long long int system_timestamp_start_ms,
                                        long long int system_timestamp_end_ms) {
-        std::ifstream file;
-        file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        file.open(process_management::get_logdir_name() + 
-			"/hash_log_" + enum_to_string(ct) + "_" + std::to_string(device_id) + ".txt");
+
+        std::string filename = log_utils::get_logdir_name() + "/" +
+                               log_utils::get_hash_log_filename(ct, device_id);
+        std::ifstream file(filename);
+        if(!file)
+            THROW_IO_ERROR("Cannot open " + filename);
         file.exceptions(std::ifstream::badbit);
         std::string line;
         std::string::size_type sz = 0;
@@ -106,16 +108,16 @@ namespace frequency_scaling {
         m.power_measure_dur_ms_ = system_time_now_ms - system_time_start_ms;
         m.nvml_graph_clock_idx = nvml_graph_clock_idx;
         m.mem_oc = mem_oc;
-		m.graph_oc = graph_clock - dci.nvapi_default_graph_clock;
-		//
-		std::ofstream logfile;
-		logfile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-		std::string filename = process_management::get_logdir_name() + "/online_bench_result_gpu"
-			+ std::to_string(dci.device_id_nvml) + "_" + enum_to_string(ct) + ".dat";
-		logfile.open(filename, std::ofstream::app);
-		logfile.exceptions(std::ifstream::badbit);
-		logfile << m.mem_clock_ << "," << m.graph_clock_ << "," << m.power_ << "," << m.hashrate_ 
-			<< "," << m.energy_hash_ << "," << m.hashrate_measure_dur_ms_ << std::endl;
+        m.graph_oc = graph_clock - dci.nvapi_default_graph_clock;
+        //
+        std::string filename = log_utils::get_logdir_name() + "/" +
+                               log_utils::get_online_bench_filename(ct, dci.device_id_nvml);
+        std::ofstream logfile(filename, std::ofstream::app);
+        if(!logfile)
+            THROW_IO_ERROR("Cannot open " + filename);
+        logfile.exceptions(std::ifstream::badbit);
+        logfile << m.mem_clock_ << "," << m.graph_clock_ << "," << m.power_ << "," << m.hashrate_
+                << "," << m.energy_hash_ << "," << m.hashrate_measure_dur_ms_ << std::endl;
         return m;
     }
 

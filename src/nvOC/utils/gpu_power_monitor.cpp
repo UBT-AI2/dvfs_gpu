@@ -12,9 +12,9 @@ int main(int argc, char **argv) {
     }
     int device_id = atoi(argv[1]);
     int sleep_time_ms = atoi(argv[2]);
-	std::string log_dir = ".";
-	if (argc > 3)
-		log_dir = argv[3];
+    std::string log_dir = ".";
+    if (argc > 3)
+        log_dir = argv[3];
 
     char cmd[BUFFER_SIZE];
     snprintf(cmd, BUFFER_SIZE,

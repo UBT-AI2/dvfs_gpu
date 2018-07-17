@@ -15,24 +15,20 @@
 
 #include <unistd.h>
 #include <sys/wait.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 
 #endif
 
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
 #include "../common_header/exceptions.h"
+#include "../common_header/constants.h"
 
 namespace frequency_scaling {
 
-    static const int BUFFER_SIZE = 4096;
     std::vector<std::pair<int, bool>> process_management::all_processes_;
     std::mutex process_management::all_processes_mutex_;
     std::map<std::pair<int, process_type>, int> process_management::gpu_background_processes_;
     std::mutex process_management::gpu_background_processes_mutex_;
-	std::string process_management::logdir_name_;
-	std::atomic_bool process_management::logging_initialized_ = ATOMIC_VAR_INIT(false);
 
     static void sig_handler(int signo) {
         LOG(ERROR) << "Catched signal " << signo << ". Perform cleanup..." << std::endl;
@@ -56,38 +52,6 @@ namespace frequency_scaling {
         VLOG(0) << "Registered cleanup signal handlers." << std::endl;
         return true;
     }
-
-
-	bool process_management::init_logging(const std::string& logdir_to_create, const std::string& glog_file_prefix,
-		int glog_verbosity, const char* argv0) {
-		if (process_management::logging_initialized_)
-			return false;
-		//create logging directory
-		char date_str[BUFFER_SIZE];
-		time_t rawtime;
-		struct tm * timeinfo;
-		time(&rawtime);
-		timeinfo = localtime(&rawtime);
-		strftime(date_str, BUFFER_SIZE, "%Y-%m-%d_%H-%M-%S", timeinfo);
-		process_management::logdir_name_ = logdir_to_create + "_" + date_str;	
-#ifdef _WIN32
-		CreateDirectory(&process_management::logdir_name_[0], NULL);
-#else
-		mkdir(process_management::logdir_name_.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-#endif
-		//init google logging
-		FLAGS_v = glog_verbosity;
-		google::SetLogDestination(google::GLOG_INFO, 
-			(process_management::logdir_name_ + "/" + glog_file_prefix).c_str());
-		google::SetStderrLogging(0);
-		google::InitGoogleLogging(argv0);
-		process_management::logging_initialized_ = true;
-		return true;
-	}
-
-	std::string process_management::get_logdir_name() {
-		return process_management::logdir_name_;
-	}
 
 
     FILE *process_management::popen_file(const std::string &cmd) {

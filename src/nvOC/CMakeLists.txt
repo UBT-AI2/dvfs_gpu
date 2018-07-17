@@ -1,4 +1,5 @@
 set(COMMON_HEADER
+        common_header/constants.h
         common_header/exceptions.h
         common_header/fullexpr_accum.h)
 
@@ -13,6 +14,7 @@ set(SCRIPT_RUNNING_FILES
         script_running/benchmark.h script_running/benchmark.cpp
         script_running/mining.h script_running/mining.cpp
         script_running/process_management.h script_running/process_management.cpp
+        script_running/log_utils.h script_running/log_utils.cpp
         script_running/network_requests.h script_running/network_requests.cpp
         ${COMMON_HEADER})
 set(FREQ_EXHAUSTIVE_FILES
@@ -36,8 +38,6 @@ set(PROFIT_OPTIMIZATION_FILES
 
 
 #
-add_executable(calc_inner_mean
-        utils/calc_inner_mean.c)
 add_executable(gpu_power_monitor
         utils/gpu_power_monitor.cpp)
 add_executable(hash-log-excavator

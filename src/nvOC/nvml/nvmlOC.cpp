@@ -2,12 +2,11 @@
 
 #include <nvml.h>
 #include <set>
+#include "../common_header/constants.h"
 #include "../common_header/exceptions.h"
-
 
 namespace frequency_scaling {
 
-    static const int BUFFER_SIZE = 1024;
     static std::set<int> registered_gpus;
 
     static void safeNVMLCall(nvmlReturn_t result) {
