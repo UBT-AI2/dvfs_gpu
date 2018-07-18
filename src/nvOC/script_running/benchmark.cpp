@@ -128,7 +128,7 @@ namespace frequency_scaling {
         }
 
         //get last measurement from data file
-        double data[6] = {0};
+        std::vector<double> data;
         {
             std::string filename = log_utils::get_logdir_name() + "/" +
                                    log_utils::get_offline_bench_filename(ct, dci.device_id_nvml);
@@ -151,13 +151,13 @@ namespace frequency_scaling {
             pt = strtok(&tmp[0], ",");
             int idx = 0;
             while (pt != nullptr) {
-                data[idx++] = std::stod(pt);
+                data.push_back(std::stod(pt));
                 pt = strtok(nullptr, ",");
             }
         }
-        measurement m(mem_clock, graph_clock, data[2], data[3]);
-        m.hashrate_measure_dur_ms_ = data[5];
-        m.power_measure_dur_ms_ = data[5];
+        measurement m(mem_clock, graph_clock, data.at(2), data.at(3));
+        m.hashrate_measure_dur_ms_ = data.at(5);
+        m.power_measure_dur_ms_ = data.at(5);
         return m;
     }
 
