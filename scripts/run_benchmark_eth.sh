@@ -34,6 +34,6 @@ max_power=$(echo "${BENCH_POWERCMD}" | awk 'BEGIN{a=0}{if ($2>0+a) a=$2} END{pri
 avg_hashrate=$(echo "${BENCH_LOGCMD}" | grep -A1 '^Trial 1...' | tail -n1)
 hashes_per_joule=$(awk "BEGIN { print ${avg_hashrate} / ${max_power} }")
 
-echo ${mem_clock},${graph_clock},${max_power},${avg_hashrate},${hashes_per_joule},${time_dur} >> ${log_dir}/offline_bench_result_gpu${device_id}_ETH.dat
+echo ${mem_clock},${graph_clock},${max_power},${avg_hashrate},${hashes_per_joule},${time_dur},${time_start} >> ${log_dir}/offline_bench_result_gpu${device_id}_ETH.dat
 
 

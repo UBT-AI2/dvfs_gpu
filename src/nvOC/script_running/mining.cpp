@@ -117,7 +117,7 @@ namespace frequency_scaling {
             THROW_IO_ERROR("Cannot open " + filename);
         logfile.exceptions(std::ifstream::badbit);
         logfile << m.mem_clock_ << "," << m.graph_clock_ << "," << m.power_ << "," << m.hashrate_
-                << "," << m.energy_hash_ << "," << m.hashrate_measure_dur_ms_ << std::endl;
+                << "," << m.energy_hash_ << "," << m.hashrate_measure_dur_ms_ << "," << system_time_start_ms << std::endl;
         return m;
     }
 

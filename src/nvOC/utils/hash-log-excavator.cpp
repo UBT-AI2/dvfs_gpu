@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
         std::cout << "Usage: <excavator-binary> | " << argv[0] << " <filename>" << std::endl;
         return 1;
     }
-    std::ofstream logfile(argv[1]);
+    std::ofstream logfile(argv[1], std::ofstream::app);
     if (!logfile) {
         std::cout << "Failed to create logfile" << std::endl;
         return 1;

@@ -23,13 +23,8 @@ int main(int argc, char **argv) {
 
     char data_filename[BUFFER_SIZE];
     snprintf(data_filename, BUFFER_SIZE, (log_dir + "/power_results_%i.txt").c_str(), device_id);
-    FILE *data = fopen(data_filename, "w");
-    if (data == NULL) {
-        puts("Could not create result file");
-        return 1;
-    }
-    fclose(data);
-    data = fopen(data_filename, "a");
+
+    FILE *data = fopen(data_filename, "a");
     if (data == NULL) {
         puts("Could not open result file");
         return 1;
