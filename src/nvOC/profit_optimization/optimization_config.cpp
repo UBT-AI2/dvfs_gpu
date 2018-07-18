@@ -31,8 +31,8 @@ namespace frequency_scaling {
         switch (method) {
             case optimization_method::NELDER_MEAD:
                 max_iterations_ = 8;
-                mem_step_ = 300;
-                graph_idx_step_ = 10;
+                mem_step_ = 400;
+                graph_idx_step_ = 15;
                 break;
             case optimization_method::HILL_CLIMBING:
             case optimization_method::SIMULATED_ANNEALING:

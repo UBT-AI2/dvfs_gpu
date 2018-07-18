@@ -213,15 +213,15 @@ namespace frequency_scaling {
             current_monitoring_time_ms += update_interval_ms;
             if (!monitoring_sanity_check(profit_calc, user_infos, system_time_start_ms, current_monitoring_time_ms))
                 continue;
-            //monitoring code
             //currently mined currency
             currency_type old_best_currency = profit_calc.getBest_currency_();
-            //update with long time power_consumption
-            profit_calc.update_power_consumption(old_best_currency, system_time_start_ms);
-            //update with pool hashrates if currency is mined > 1h
+            //update with pool hashrates and long time power consumption if currency is mined > 1h
             if (current_monitoring_time_ms > 3600 * 1000) {
-                profit_calc.update_opt_config_hashrate_nanopool(old_best_currency, user_infos,
-                                                                current_monitoring_time_ms);
+				//update power only if hashrate update was successful -> pool could be down!!!
+                if(profit_calc.update_opt_config_hashrate_nanopool(old_best_currency, user_infos,
+                                                                current_monitoring_time_ms))
+					profit_calc.update_power_consumption(old_best_currency, system_time_start_ms);
+
             }
             //update approximated earnings based on current hashrate and stock price
             profit_calc.update_currency_info_nanopool();

@@ -45,10 +45,10 @@ namespace frequency_scaling {
 
         void update_currency_info_nanopool();
 
-        void update_opt_config_hashrate_nanopool(currency_type current_mined_ct,
+        bool update_opt_config_hashrate_nanopool(currency_type current_mined_ct,
                                                  const miner_user_info &user_info, int period_ms);
 
-        void update_power_consumption(currency_type current_mined_ct, long long int system_time_start_ms);
+        bool update_power_consumption(currency_type current_mined_ct, long long int system_time_start_ms);
 
         void update_energy_cost_stromdao(int plz);
 
