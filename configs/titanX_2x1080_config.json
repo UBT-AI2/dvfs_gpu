@@ -1,30 +1,30 @@
 {
-    "energy_cost": "0.27000000000000002",
+    "energy_cost": "0.0",
     "monitoring_interval": "3601",
     "email": "alexander.fiebig@uni-bayreuth.de",
     "devices_to_use": [
         {
             "index": "1",
-            "min_mem_oc": "-1000",
-			"min_graph_oc": "-200",
-            "max_mem_oc": "900",
-            "max_graph_oc": "150",
+            "min_mem_oc": "1",
+			"min_graph_oc": "1",
+            "max_mem_oc": "-1",
+            "max_graph_oc": "-1",
             "worker_name": "DESKTOP-6817PNB_gpu1"
         },
 		{
             "index": "0",
-            "min_mem_oc": "-1000",
-			"min_graph_oc": "-200",
-            "max_mem_oc": "900",
-            "max_graph_oc": "150",
+            "min_mem_oc": "1",
+			"min_graph_oc": "1",
+            "max_mem_oc": "-1",
+            "max_graph_oc": "-1",
             "worker_name": "DESKTOP-6817PNB_gpu0"
         },
 		{
             "index": "2",
-            "min_mem_oc": "-1000",
-			"min_graph_oc": "-200",
-            "max_mem_oc": "900",
-            "max_graph_oc": "150",
+            "min_mem_oc": "1",
+			"min_graph_oc": "1",
+            "max_mem_oc": "-1",
+            "max_graph_oc": "-1",
             "worker_name": "DESKTOP-6817PNB_gpu2"
         }
     ],

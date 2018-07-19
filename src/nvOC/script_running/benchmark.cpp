@@ -4,8 +4,9 @@
 #include "benchmark.h"
 
 #include <string.h>
-#include <fstream>
 #include <cmath>
+#include <fstream>
+#include <algorithm>
 #include <cuda.h>
 #include <glog/logging.h>
 #include "../nvapi/nvapiOC.h"
@@ -42,19 +43,19 @@ namespace frequency_scaling {
             nvml_register_gpu(device_id_nvml);
         nvapi_register_gpu(device_id_nvapi_);
 
-        const clock_info& nvapi_ci_mem = nvapiGetMemClockInfo(device_id_nvapi_);
+        const nvapi_clock_info& nvapi_ci_mem = nvapiGetMemClockInfo(device_id_nvapi_);
         nvapi_default_mem_clock_ = nvapi_ci_mem.current_freq_;
         if(min_mem_oc_ > 0)
             min_mem_oc_ = nvapi_ci_mem.min_oc_;
         if(max_mem_oc_ < 0)
-            max_mem_oc_ = nvapi_ci_mem.max_oc_;
+            max_mem_oc_ = std::max(0, nvapi_ci_mem.max_oc_-100);
 
-        const clock_info& nvapi_ci_graph = nvapiGetGraphClockInfo(device_id_nvapi_);
+        const nvapi_clock_info& nvapi_ci_graph = nvapiGetGraphClockInfo(device_id_nvapi_);
         nvapi_default_graph_clock_ = nvapi_ci_graph.current_freq_;
         if(min_graph_oc_ > 0)
             min_graph_oc_ = nvapi_ci_graph.min_oc_;
         if(max_graph_oc_ < 0)
-            max_graph_oc_ = nvapi_ci_graph.max_oc_;
+            max_graph_oc_ = std::min(150, nvapi_ci_graph.max_oc_);
 
         if (nvml_supported_) {
             nvml_mem_clocks_ = nvmlGetAvailableMemClocks(device_id_nvml);

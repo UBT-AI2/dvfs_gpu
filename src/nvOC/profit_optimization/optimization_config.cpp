@@ -93,19 +93,7 @@ namespace frequency_scaling {
             user_in = cli_get_string(user_msg, "[yn]");
             if (user_in != "y")
                 continue;
-            int min_graph_oc = 0, max_graph_oc = 0;
-            if (!nvmlCheckOCSupport(device_id)) {
-                user_msg = "Enter min_graph_oc:";
-                min_graph_oc = cli_get_int(user_msg);
-                user_msg = "Enter max_graph_oc:";
-                max_graph_oc = cli_get_int(user_msg);
-            }
-            user_msg = "Enter min_mem_oc:";
-            int min_mem_oc = cli_get_int(user_msg);
-            user_msg = "Enter max_mem_oc:";
-            int max_mem_oc = cli_get_int(user_msg);
-            opt_config.dcis_.emplace_back(device_id, min_mem_oc, min_graph_oc,
-                                          max_mem_oc, max_graph_oc);
+            opt_config.dcis_.emplace_back(device_id);
             opt_config.miner_user_infos_.worker_names_.emplace(device_id, getworker_name(device_id));
         }
         if (opt_config.dcis_.empty())

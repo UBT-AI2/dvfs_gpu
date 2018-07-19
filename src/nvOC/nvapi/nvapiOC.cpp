@@ -261,14 +261,14 @@ namespace frequency_scaling {
         return -1;
     }
 
-    clock_info nvapiGetMemClockInfo(int deviceIdNvapi) {
+    nvapi_clock_info nvapiGetMemClockInfo(int deviceIdNvapi) {
         int *hdlGPU[64] = {0};
         int nGPU;
         safeNVAPICall(NvEnumPhysicalGPUs(hdlGPU, &nGPU));
         NV_GPU_PERF_PSTATES20_INFO_V1 pstates_info;
         pstates_info.version = 0x11c94;
         safeNVAPICall(NvGetPstates(hdlGPU[deviceIdNvapi], &pstates_info));
-        clock_info ci;
+        nvapi_clock_info ci;
         ci.current_freq_ = (int) ((pstates_info.pstates[0].clocks[1]).data.single.freq_kHz) / 1000;
         ci.current_oc_ = (int) ((pstates_info.pstates[0].clocks[1]).freqDelta_kHz.value) / 1000;
         ci.min_oc_ = (int) ((pstates_info.pstates[0].clocks[1]).freqDelta_kHz.valueRange.mindelta) / 1000;
@@ -276,14 +276,14 @@ namespace frequency_scaling {
         return ci;
     }
 
-    clock_info nvapiGetGraphClockInfo(int deviceIdNvapi) {
+    nvapi_clock_info nvapiGetGraphClockInfo(int deviceIdNvapi) {
         int *hdlGPU[64] = {0};
         int nGPU;
         safeNVAPICall(NvEnumPhysicalGPUs(hdlGPU, &nGPU));
         NV_GPU_PERF_PSTATES20_INFO_V1 pstates_info;
         pstates_info.version = 0x11c94;
         safeNVAPICall(NvGetPstates(hdlGPU[deviceIdNvapi], &pstates_info));
-        clock_info ci;
+        nvapi_clock_info ci;
         ci.current_freq_ = (int) ((pstates_info.pstates[0].clocks[0]).data.range.maxFreq_kHz) / 1000;
         ci.current_oc_ = (int) ((pstates_info.pstates[0].clocks[0]).freqDelta_kHz.value) / 1000;
         ci.min_oc_ = (int) ((pstates_info.pstates[0].clocks[0]).freqDelta_kHz.valueRange.mindelta) / 1000;
@@ -301,7 +301,7 @@ namespace frequency_scaling {
             THROW_NVAPI_ERROR("Device with index " + std::to_string(idxGPU) + " doesnt exist");
         }
 
-        //int memtype = 0;
+		//int memtype = 0;
         //safeNVAPICall(NvGetMemType(hdlGPU[idxGPU], &memtype));
 
         //GPU OC
@@ -361,11 +361,11 @@ namespace frequency_scaling {
         THROW_NVAPI_ERROR("NVAPI not available on this platform");
     }
 
-    clock_info nvapiGetMemClockInfo(int deviceIdNvapi){
+    nvapi_clock_info nvapiGetMemClockInfo(int deviceIdNvapi){
         THROW_NVAPI_ERROR("NVAPI not available on this platform");
     }
 
-    clock_info nvapiGetGraphClockInfo(int deviceIdNvapi){
+    nvapi_clock_info nvapiGetGraphClockInfo(int deviceIdNvapi){
         THROW_NVAPI_ERROR("NVAPI not available on this platform");
     }
 

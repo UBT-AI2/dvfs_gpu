@@ -2,7 +2,7 @@
 
 namespace frequency_scaling {
 
-    struct clock_info{
+    struct nvapi_clock_info{
         int current_freq_, current_oc_;
         int min_oc_, max_oc_;
     };
@@ -17,9 +17,9 @@ namespace frequency_scaling {
 
     int nvapiGetDeviceIndexByBusId(int busId);
 
-    clock_info nvapiGetMemClockInfo(int deviceIdNvapi);
+    nvapi_clock_info nvapiGetMemClockInfo(int deviceIdNvapi);
 
-    clock_info nvapiGetGraphClockInfo(int deviceIdNvapi);
+    nvapi_clock_info nvapiGetGraphClockInfo(int deviceIdNvapi);
 
     void nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz);
 

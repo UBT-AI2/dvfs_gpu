@@ -19,7 +19,12 @@ LOGFILE=${log_dir}/mining_log_ethminer_gpu${device_id}.txt
 
 echo -e "\n##########################\nSTARTED ETHMINER $(date +%Y-%m-%d_%H-%M-%S)\n##########################\n" >> ${LOGFILE}
 ${MINER_BINARY} --farm-recheck 2000 -U -RH \
--P stratum1+tcp://${wallet_address}@eth-eu2.nanopool.org:9999/${worker_name}/${email} \
 -P stratum1+tcp://${wallet_address}@eth-eu1.nanopool.org:9999/${worker_name}/${email} \
+-P stratum1+tcp://${wallet_address}@eth-eu2.nanopool.org:9999/${worker_name}/${email} \
+-P stratum1+tcp://${wallet_address}@eth-au1.nanopool.org:9999/${worker_name}/${email} \
+-P stratum1+tcp://${wallet_address}@eth-jp1.nanopool.org:9999/${worker_name}/${email} \
+-P stratum1+tcp://${wallet_address}@eth-us-west1.nanopool.org:9999/${worker_name}/${email} \
+-P stratum1+tcp://${wallet_address}@eth-us-east1.nanopool.org:9999/${worker_name}/${email} \
+-P stratum1+tcp://${wallet_address}@eth-asia1.nanopool.org:9999/${worker_name}/${email} \
 --cuda-devices ${device_id_cuda} --cuda-parallel-hash 8 --hash-logfile ${log_dir}/hash_log_ETH_${device_id}.txt &>> ${LOGFILE}
 
