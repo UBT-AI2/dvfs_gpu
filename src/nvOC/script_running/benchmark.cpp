@@ -25,12 +25,7 @@ namespace frequency_scaling {
                                          int max_graph_oc) : device_id_nvml_(device_id_nvml), min_mem_oc_(min_mem_oc),
                                                              min_graph_oc_(min_graph_oc), max_mem_oc_(max_mem_oc),
                                                              max_graph_oc_(max_graph_oc) {
-        /*if (min_mem_oc > max_mem_oc)
-            throw std::invalid_argument("max_mem_oc >= min_mem_oc violated");
-        if (min_graph_oc > max_graph_oc)
-            throw std::invalid_argument("max_graph_oc >= min_graph_oc violated");*/
         nvml_supported_ = nvmlCheckOCSupport(device_id_nvml);
-
         device_id_nvapi_ = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id_nvml));
         CUresult res = cuDeviceGetByPCIBusId(&device_id_cuda_, nvmlGetBusIdString(device_id_nvml).c_str());
         if (res == CUDA_ERROR_NOT_INITIALIZED) {
@@ -45,27 +40,32 @@ namespace frequency_scaling {
 
         const nvapi_clock_info& nvapi_ci_mem = nvapiGetMemClockInfo(device_id_nvapi_);
         nvapi_default_mem_clock_ = nvapi_ci_mem.current_freq_;
-        if(min_mem_oc_ > 0)
+        if(min_mem_oc > 0)
             min_mem_oc_ = nvapi_ci_mem.min_oc_;
-        if(max_mem_oc_ < 0)
+        if(max_mem_oc < 0)
             max_mem_oc_ = std::max(0, nvapi_ci_mem.max_oc_-100);
 
         const nvapi_clock_info& nvapi_ci_graph = nvapiGetGraphClockInfo(device_id_nvapi_);
         nvapi_default_graph_clock_ = nvapi_ci_graph.current_freq_;
-        if(min_graph_oc_ > 0)
+        if(min_graph_oc > 0)
             min_graph_oc_ = nvapi_ci_graph.min_oc_;
-        if(max_graph_oc_ < 0)
+        if(max_graph_oc < 0)
             max_graph_oc_ = std::min(150, nvapi_ci_graph.max_oc_);
+
+		if (min_mem_oc_ > max_mem_oc_)
+			throw std::invalid_argument("max_mem_oc >= min_mem_oc violated");
+		if (min_graph_oc_ > max_graph_oc_)
+			throw std::invalid_argument("max_graph_oc >= min_graph_oc violated");
 
         if (nvml_supported_) {
             nvml_mem_clocks_ = nvmlGetAvailableMemClocks(device_id_nvml);
             nvml_graph_clocks_ = nvmlGetAvailableGraphClocks(device_id_nvml, nvml_mem_clocks_[1]);
         } else {
             //fake nvml vectors
-            for (int graph_oc = max_graph_oc; graph_oc >= min_graph_oc; graph_oc -= 10) {
+            for (int graph_oc = max_graph_oc_; graph_oc >= min_graph_oc_; graph_oc -= 10) {
                 nvml_graph_clocks_.push_back(nvapi_default_graph_clock_ + graph_oc);
             }
-            for (int mem_oc = max_mem_oc; mem_oc >= min_mem_oc; mem_oc -= 10) {
+            for (int mem_oc = max_mem_oc_; mem_oc >= min_mem_oc_; mem_oc -= 10) {
                 nvml_mem_clocks_.push_back(nvapi_default_mem_clock_ + mem_oc);
             }
         }
