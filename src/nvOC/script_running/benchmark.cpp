@@ -57,15 +57,22 @@ namespace frequency_scaling {
 		if (min_graph_oc_ > max_graph_oc_)
 			throw std::invalid_argument("max_graph_oc >= min_graph_oc violated");
 
+		int oc_interval = 10;
         if (nvml_supported_) {
             nvml_mem_clocks_ = nvmlGetAvailableMemClocks(device_id_nvml);
-            nvml_graph_clocks_ = nvmlGetAvailableGraphClocks(device_id_nvml, nvml_mem_clocks_[1]);
+			for (int graph_oc = max_graph_oc_; graph_oc >= oc_interval; graph_oc -= oc_interval) {
+				nvml_graph_clocks_.push_back(nvapi_default_graph_clock_ + graph_oc);
+			}
+			for (int graph_clock : nvmlGetAvailableGraphClocks(device_id_nvml, nvml_mem_clocks_[0])) {
+				if(graph_clock <= nvapi_default_graph_clock_)
+					nvml_graph_clocks_.push_back(graph_clock);
+			}
         } else {
             //fake nvml vectors
-            for (int graph_oc = max_graph_oc_; graph_oc >= min_graph_oc_; graph_oc -= 10) {
+            for (int graph_oc = max_graph_oc_; graph_oc >= min_graph_oc_; graph_oc -= oc_interval) {
                 nvml_graph_clocks_.push_back(nvapi_default_graph_clock_ + graph_oc);
             }
-            for (int mem_oc = max_mem_oc_; mem_oc >= min_mem_oc_; mem_oc -= 10) {
+            for (int mem_oc = max_mem_oc_; mem_oc >= min_mem_oc_; mem_oc -= oc_interval) {
                 nvml_mem_clocks_.push_back(nvapi_default_mem_clock_ + mem_oc);
             }
         }
@@ -219,13 +226,14 @@ namespace frequency_scaling {
     void change_clocks_nvml_nvapi(const device_clock_info &dci,
                                   int mem_oc, int nvml_graph_clock_idx) {
         int graph_clock = dci.nvml_graph_clocks_[nvml_graph_clock_idx];
-        if (dci.nvml_supported_) {
-            nvapiOC(dci.device_id_nvapi_, 0, mem_oc);
-            nvmlOC(dci.device_id_nvml_, graph_clock, dci.nvml_mem_clocks_[1]);
-        } else {
-            int graph_oc = graph_clock - dci.nvapi_default_graph_clock_;
-            nvapiOC(dci.device_id_nvapi_, graph_oc, mem_oc);
-        }
+		if (!dci.nvml_supported_ || graph_clock > dci.nvapi_default_graph_clock_) {
+			int graph_oc = graph_clock - dci.nvapi_default_graph_clock_;
+			nvapiOC(dci.device_id_nvapi_, graph_oc, mem_oc);
+		}
+		else {
+			nvapiOC(dci.device_id_nvapi_, 0, mem_oc);
+			nvmlOC(dci.device_id_nvml_, graph_clock, dci.nvml_mem_clocks_[0]);
+		}
     }
 
     void change_clocks_nvapi_only(const device_clock_info &dci,
