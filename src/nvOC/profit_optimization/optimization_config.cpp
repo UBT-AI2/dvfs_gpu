@@ -22,6 +22,7 @@
 #include "../nvml/nvmlOC.h"
 #include "../common_header/exceptions.h"
 #include "cli_utils.h"
+#include "../common_header/constants.h"
 
 
 namespace frequency_scaling {
@@ -57,7 +58,7 @@ namespace frequency_scaling {
 
 
     static std::string getworker_name(int device_id) {
-        char buf[1024];
+        char buf[BUFFER_SIZE];
 #ifdef _WIN32
         DWORD size = sizeof(buf);
         GetComputerName(buf, &size);
@@ -157,12 +158,12 @@ namespace frequency_scaling {
         pt::ptree devices_to_use;
         for (auto &dci : opt_config.dcis_) {
             pt::ptree pt_device;
-            pt_device.put("index", dci.device_id_nvml);
-            pt_device.put("min_mem_oc", dci.min_mem_oc);
-            pt_device.put("min_graph_oc", dci.min_graph_oc);
-            pt_device.put("max_mem_oc", dci.max_mem_oc);
-            pt_device.put("max_graph_oc", dci.max_graph_oc);
-            pt_device.put("worker_name", opt_config.miner_user_infos_.worker_names_.at(dci.device_id_nvml));
+            pt_device.put("index", dci.device_id_nvml_);
+            pt_device.put("min_mem_oc", dci.min_mem_oc_);
+            pt_device.put("min_graph_oc", dci.min_graph_oc_);
+            pt_device.put("max_mem_oc", dci.max_mem_oc_);
+            pt_device.put("max_graph_oc", dci.max_graph_oc_);
+            pt_device.put("worker_name", opt_config.miner_user_infos_.worker_names_.at(dci.device_id_nvml_));
             devices_to_use.push_back(std::make_pair("", pt_device));
         }
         root.add_child("devices_to_use", devices_to_use);

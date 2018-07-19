@@ -19,7 +19,7 @@ namespace frequency_scaling {
                                  double mem_scale, double graph_scale) {
         //initial guess at maximum frequencies
         measurement start_node;
-        start_node.mem_oc = dci.max_mem_oc;
+        start_node.mem_oc = dci.max_mem_oc_;
         start_node.nvml_graph_clock_idx = 0;
         return freq_nelder_mead(benchmarkFunc, ct, dci, start_node, min_iterations, max_iterations, mem_step,
                                 graph_idx_step,
@@ -35,7 +35,7 @@ namespace frequency_scaling {
 
         int dimension_ = 2;
         vec_type init_guess(dimension_);
-        init_guess(0) = (start_node.mem_oc - dci.min_mem_oc) / (double) mem_step;
+        init_guess(0) = (start_node.mem_oc - dci.min_mem_oc_) / (double) mem_step;
         init_guess(1) = start_node.nvml_graph_clock_idx / graph_idx_step;
 
         // function to optimize
@@ -47,11 +47,11 @@ namespace frequency_scaling {
                 min_hashrate, &num_func_evals](
                 const vec_type &x) -> double {
             num_func_evals++;
-            int mem_oc = dci.min_mem_oc + std::lround(x(0) * mem_step);
+            int mem_oc = dci.min_mem_oc_ + std::lround(x(0) * mem_step);
             int graph_idx = std::lround(x(1) * graph_idx_step);
             VLOG(2) << "NM function args: " << x(0) << "," << x(1) << std::endl;
-            if (mem_oc > dci.max_mem_oc || mem_oc < dci.min_mem_oc ||
-                graph_idx >= dci.nvml_graph_clocks.size() || graph_idx < 0) {
+            if (mem_oc > dci.max_mem_oc_ || mem_oc < dci.min_mem_oc_ ||
+                graph_idx >= dci.nvml_graph_clocks_.size() || graph_idx < 0) {
                 return std::numeric_limits<double>::max();
             }
             //
@@ -82,7 +82,7 @@ namespace frequency_scaling {
         VLOG(2) << "Nelder-mead number of function evaluations: " << num_func_evals << std::endl;
 
         //run script_running at proposed minimum
-        int mem_oc = dci.min_mem_oc + std::lround(glob_minimum(0) * mem_step);
+        int mem_oc = dci.min_mem_oc_ + std::lround(glob_minimum(0) * mem_step);
         int graph_idx = std::lround(glob_minimum(1) * graph_idx_step);
         const measurement &glob_min_measurement =
                 benchmarkFunc(ct, dci, mem_oc, graph_idx);

@@ -17,42 +17,55 @@
 
 namespace frequency_scaling {
 
+    device_clock_info::device_clock_info(int device_id_nvml) : device_clock_info(device_id_nvml, 1, 1,-1,-1){}
+
     device_clock_info::device_clock_info(int device_id_nvml, int min_mem_oc,
                                          int min_graph_oc, int max_mem_oc,
-                                         int max_graph_oc) : device_id_nvml(device_id_nvml), min_mem_oc(min_mem_oc),
-                                                             min_graph_oc(min_graph_oc), max_mem_oc(max_mem_oc),
-                                                             max_graph_oc(max_graph_oc) {
-        if (min_mem_oc > max_mem_oc)
+                                         int max_graph_oc) : device_id_nvml_(device_id_nvml), min_mem_oc_(min_mem_oc),
+                                                             min_graph_oc_(min_graph_oc), max_mem_oc_(max_mem_oc),
+                                                             max_graph_oc_(max_graph_oc) {
+        /*if (min_mem_oc > max_mem_oc)
             throw std::invalid_argument("max_mem_oc >= min_mem_oc violated");
         if (min_graph_oc > max_graph_oc)
-            throw std::invalid_argument("max_graph_oc >= min_graph_oc violated");
+            throw std::invalid_argument("max_graph_oc >= min_graph_oc violated");*/
         nvml_supported_ = nvmlCheckOCSupport(device_id_nvml);
 
-        device_id_nvapi = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id_nvml));
-        CUresult res = cuDeviceGetByPCIBusId(&device_id_cuda, nvmlGetBusIdString(device_id_nvml).c_str());
+        device_id_nvapi_ = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id_nvml));
+        CUresult res = cuDeviceGetByPCIBusId(&device_id_cuda_, nvmlGetBusIdString(device_id_nvml).c_str());
         if (res == CUDA_ERROR_NOT_INITIALIZED) {
             cuInit(0);
-            cuDeviceGetByPCIBusId(&device_id_cuda, nvmlGetBusIdString(device_id_nvml).c_str());
+            cuDeviceGetByPCIBusId(&device_id_cuda_, nvmlGetBusIdString(device_id_nvml).c_str());
         }
         VLOG(0) << "Matching device by PCIBusId: NVML-Id=" << device_id_nvml << ", NVAPI-Id=" <<
-                device_id_nvapi << ", CUDA-Id=" << device_id_cuda << std::endl;
+                device_id_nvapi_ << ", CUDA-Id=" << device_id_cuda_ << std::endl;
         if (nvml_supported_)
             nvml_register_gpu(device_id_nvml);
-        nvapi_register_gpu(device_id_nvapi);
+        nvapi_register_gpu(device_id_nvapi_);
 
-        nvapi_default_mem_clock = nvapiGetCurrentMemClock(device_id_nvapi);
-        nvapi_default_graph_clock = nvapiGetCurrentGraphClock(device_id_nvapi);
+        const clock_info& nvapi_ci_mem = nvapiGetMemClockInfo(device_id_nvapi_);
+        nvapi_default_mem_clock_ = nvapi_ci_mem.current_freq_;
+        if(min_mem_oc_ > 0)
+            min_mem_oc_ = nvapi_ci_mem.min_oc_;
+        if(max_mem_oc_ < 0)
+            max_mem_oc_ = nvapi_ci_mem.max_oc_;
+
+        const clock_info& nvapi_ci_graph = nvapiGetGraphClockInfo(device_id_nvapi_);
+        nvapi_default_graph_clock_ = nvapi_ci_graph.current_freq_;
+        if(min_graph_oc_ > 0)
+            min_graph_oc_ = nvapi_ci_graph.min_oc_;
+        if(max_graph_oc_ < 0)
+            max_graph_oc_ = nvapi_ci_graph.max_oc_;
 
         if (nvml_supported_) {
-            nvml_mem_clocks = nvmlGetAvailableMemClocks(device_id_nvml);
-            nvml_graph_clocks = nvmlGetAvailableGraphClocks(device_id_nvml, nvml_mem_clocks[1]);
+            nvml_mem_clocks_ = nvmlGetAvailableMemClocks(device_id_nvml);
+            nvml_graph_clocks_ = nvmlGetAvailableGraphClocks(device_id_nvml, nvml_mem_clocks_[1]);
         } else {
             //fake nvml vectors
             for (int graph_oc = max_graph_oc; graph_oc >= min_graph_oc; graph_oc -= 10) {
-                nvml_graph_clocks.push_back(nvapi_default_graph_clock + graph_oc);
+                nvml_graph_clocks_.push_back(nvapi_default_graph_clock_ + graph_oc);
             }
             for (int mem_oc = max_mem_oc; mem_oc >= min_mem_oc; mem_oc -= 10) {
-                nvml_mem_clocks.push_back(nvapi_default_mem_clock + mem_oc);
+                nvml_mem_clocks_.push_back(nvapi_default_mem_clock_ + mem_oc);
             }
         }
     }
@@ -100,7 +113,7 @@ namespace frequency_scaling {
     static measurement run_benchmark_script(currency_type ct, const device_clock_info &dci,
                                             int graph_clock, int mem_clock) {
         {
-            VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml) <<
+            VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml_) <<
                     "Running offline benchmark with clocks: mem:" << mem_clock << ",graph:" << graph_clock
                     << std::endl;
             //run benchmark script to get measurement
@@ -108,30 +121,30 @@ namespace frequency_scaling {
             switch (ct) {
                 case currency_type::ETH:
                     snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_eth.sh %i %i %i %i %s",
-                             dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock,
+                             dci.device_id_nvml_, dci.device_id_cuda_, mem_clock, graph_clock,
                              log_utils::get_logdir_name().c_str());
                     break;
                 case currency_type::ZEC:
                     snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_zec.sh %i %i %i %i %s",
-                             dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock,
+                             dci.device_id_nvml_, dci.device_id_cuda_, mem_clock, graph_clock,
                              log_utils::get_logdir_name().c_str());
                     break;
                 case currency_type::XMR:
                     snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_xmr.sh %i %i %i %i %s",
-                             dci.device_id_nvml, dci.device_id_cuda, mem_clock, graph_clock,
+                             dci.device_id_nvml_, dci.device_id_cuda_, mem_clock, graph_clock,
                              log_utils::get_logdir_name().c_str());
                     break;
                 default:
                     THROW_RUNTIME_ERROR("Invalid enum value");
             }
-            process_management::gpu_start_process(cmd2, dci.device_id_nvml, process_type::MINER, false);
+            process_management::gpu_start_process(cmd2, dci.device_id_nvml_, process_type::MINER, false);
         }
 
         //get last measurement from data file
         std::vector<double> data;
         {
             std::string filename = log_utils::get_logdir_name() + "/" +
-                                   log_utils::get_offline_bench_filename(ct, dci.device_id_nvml);
+                                   log_utils::get_offline_bench_filename(ct, dci.device_id_nvml_);
             std::ifstream file(filename, std::ios_base::ate);
             if(!file)
                 THROW_IO_ERROR("Cannot open " + filename);
@@ -149,7 +162,6 @@ namespace frequency_scaling {
             std::getline(file, tmp);//read last line
             char *pt;
             pt = strtok(&tmp[0], ",");
-            int idx = 0;
             while (pt != nullptr) {
                 data.push_back(std::stod(pt));
                 pt = strtok(nullptr, ",");
@@ -205,32 +217,32 @@ namespace frequency_scaling {
 
     void change_clocks_nvml_nvapi(const device_clock_info &dci,
                                   int mem_oc, int nvml_graph_clock_idx) {
-        int graph_clock = dci.nvml_graph_clocks[nvml_graph_clock_idx];
+        int graph_clock = dci.nvml_graph_clocks_[nvml_graph_clock_idx];
         if (dci.nvml_supported_) {
-            nvapiOC(dci.device_id_nvapi, 0, mem_oc);
-            nvmlOC(dci.device_id_nvml, graph_clock, dci.nvml_mem_clocks[1]);
+            nvapiOC(dci.device_id_nvapi_, 0, mem_oc);
+            nvmlOC(dci.device_id_nvml_, graph_clock, dci.nvml_mem_clocks_[1]);
         } else {
-            int graph_oc = graph_clock - dci.nvapi_default_graph_clock;
-            nvapiOC(dci.device_id_nvapi, graph_oc, mem_oc);
+            int graph_oc = graph_clock - dci.nvapi_default_graph_clock_;
+            nvapiOC(dci.device_id_nvapi_, graph_oc, mem_oc);
         }
     }
 
     void change_clocks_nvapi_only(const device_clock_info &dci,
                                   int mem_oc, int graph_oc) {
-        nvapiOC(dci.device_id_nvapi, graph_oc, mem_oc);
+        nvapiOC(dci.device_id_nvapi_, graph_oc, mem_oc);
     }
 
     measurement run_benchmark_script_nvml_nvapi(currency_type ct, const device_clock_info &dci,
                                                 int mem_oc, int nvml_graph_clock_idx) {
         //change graph and mem clocks
         change_clocks_nvml_nvapi(dci, mem_oc, nvml_graph_clock_idx);
-        int mem_clock = dci.nvapi_default_mem_clock + mem_oc;
-        int graph_clock = dci.nvml_graph_clocks[nvml_graph_clock_idx];
+        int mem_clock = dci.nvapi_default_mem_clock_ + mem_oc;
+        int graph_clock = dci.nvml_graph_clocks_[nvml_graph_clock_idx];
         //run script_running
         measurement &&m = run_benchmark_script(ct, dci, graph_clock, mem_clock);
         m.nvml_graph_clock_idx = nvml_graph_clock_idx;
         m.mem_oc = mem_oc;
-        m.graph_oc = graph_clock - dci.nvapi_default_graph_clock;
+        m.graph_oc = graph_clock - dci.nvapi_default_graph_clock_;
         return m;
     }
 
@@ -238,8 +250,8 @@ namespace frequency_scaling {
                                                 int mem_oc, int graph_oc) {
         //change graph and mem clocks
         change_clocks_nvapi_only(dci, mem_oc, graph_oc);
-        int mem_clock = dci.nvapi_default_mem_clock + mem_oc;
-        int graph_clock = dci.nvapi_default_graph_clock + graph_oc;
+        int mem_clock = dci.nvapi_default_mem_clock_ + mem_oc;
+        int graph_clock = dci.nvapi_default_graph_clock_ + graph_oc;
         //run script_running
         measurement &&m = run_benchmark_script(ct, dci, graph_clock, mem_clock);
         m.nvml_graph_clock_idx = -1;

@@ -42,12 +42,12 @@ namespace frequency_scaling {
     find_optimal_config_currency(const benchmark_info &bi, const device_clock_info &dci,
                                  currency_type ct, const optimization_method_params &opt_params_ct) {
         //start power monitoring
-        bool pm_started = start_power_monitoring_script(dci.device_id_nvml);
+        bool pm_started = start_power_monitoring_script(dci.device_id_nvml_);
         bool mining_started = false;
         if (!bi.offline_) {
             mining_started = start_mining_script(ct, dci, bi.mui_);
             //wait to ensure reasonable hashrates from the beginning
-			//TODO: check if file exists
+            //TODO: check if file exists
             std::this_thread::sleep_for(std::chrono::seconds(120));
         }
         //
@@ -103,23 +103,23 @@ namespace frequency_scaling {
                     THROW_RUNTIME_ERROR("Invalid enum value");
             }
             //
-            VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml) <<
+            VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml_) <<
                     "Computed optimal energy-hash ratio: "
                     << optimal_config.energy_hash_ << " (mem=" << optimal_config.mem_clock_ << ",graph="
                     << optimal_config.graph_clock_ << ")"
                     << std::endl;
             if (mining_started)
-                stop_mining_script(dci.device_id_nvml);
+                stop_mining_script(dci.device_id_nvml_);
             if (pm_started)
-                stop_power_monitoring_script(dci.device_id_nvml);
+                stop_power_monitoring_script(dci.device_id_nvml_);
             return std::make_pair(true, optimal_config);
         } catch (const optimization_error &err) {
-            LOG(ERROR) << gpu_log_prefix(ct, dci.device_id_nvml) << "Optimization failed: " << err.what()
+            LOG(ERROR) << gpu_log_prefix(ct, dci.device_id_nvml_) << "Optimization failed: " << err.what()
                        << std::endl;
             if (mining_started)
-                stop_mining_script(dci.device_id_nvml);
+                stop_mining_script(dci.device_id_nvml_);
             if (pm_started)
-                stop_power_monitoring_script(dci.device_id_nvml);
+                stop_power_monitoring_script(dci.device_id_nvml_);
             return std::make_pair(false, measurement());
         }
     }
@@ -130,10 +130,10 @@ namespace frequency_scaling {
                         const std::map<currency_type, optimization_method_params> &opt_method_params) {
         std::map<currency_type, measurement> energy_hash_infos;
         //start power monitoring
-        bool pm_started = start_power_monitoring_script(dci.device_id_nvml);
+        bool pm_started = start_power_monitoring_script(dci.device_id_nvml_);
         //stops mining if its running!!!
         if (!bi.offline_)
-            stop_mining_script(dci.device_id_nvml);
+            stop_mining_script(dci.device_id_nvml_);
         //
         for (currency_type ct : currencies) {
             const std::pair<bool, measurement> &opt_config =
@@ -142,14 +142,14 @@ namespace frequency_scaling {
                 energy_hash_infos.emplace(ct, opt_config.second);
         }
         if (pm_started)
-            stop_power_monitoring_script(dci.device_id_nvml);
+            stop_power_monitoring_script(dci.device_id_nvml_);
         return energy_hash_infos;
     }
 
 
     static void start_mining_best_currency(const profit_calculator &profit_calc,
                                            const miner_user_info &user_infos) {
-        int device_id = profit_calc.getDci_().device_id_nvml;
+        int device_id = profit_calc.getDci_().device_id_nvml_;
         //stops mining if its running!!!
         stop_mining_script(device_id);
         currency_type best_currency = profit_calc.getBest_currency_();
@@ -167,15 +167,19 @@ namespace frequency_scaling {
 
     static bool monitoring_sanity_check(const profit_calculator &profit_calc, const miner_user_info &user_infos,
                                         long long int &system_time_start_ms, int &current_monitoring_time_ms) {
-        int device_id = profit_calc.getDci_().device_id_nvml;
+        int device_id = profit_calc.getDci_().device_id_nvml_;
         bool res = true;
         //check if miner and power_monitor still running and restart if one somehow crashed
         if (!process_management::gpu_has_background_process(device_id, process_type::MINER)) {
+            LOG(ERROR) << gpu_log_prefix(profit_calc.getBest_currency_(), device_id)
+                       << "Monitoring sanity check failed: Miner down" << std::endl;
             start_mining_best_currency(profit_calc, user_infos);
             current_monitoring_time_ms = 0;
             res = false;
         }
         if (!process_management::gpu_has_background_process(device_id, process_type::POWER_MONITOR)) {
+            LOG(ERROR) << gpu_log_prefix(profit_calc.getBest_currency_(), device_id)
+                       << "Monitoring sanity check failed: Power monitor down" << std::endl;
             start_power_monitoring_script(device_id);
             system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::system_clock::now().time_since_epoch()).count();
@@ -191,7 +195,7 @@ namespace frequency_scaling {
                             int update_interval_ms,
                             std::mutex &mutex, std::condition_variable &cond_var, const std::atomic_bool &terminate) {
         //start power monitoring
-        int device_id = profit_calc.getDci_().device_id_nvml;
+        int device_id = profit_calc.getDci_().device_id_nvml_;
         bool pm_started = start_power_monitoring_script(device_id);
         int current_monitoring_time_ms = 0;
         long long int system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -217,13 +221,13 @@ namespace frequency_scaling {
             currency_type old_best_currency = profit_calc.getBest_currency_();
             //update with pool hashrates and long time power consumption if currency is mined > 1h
             if (current_monitoring_time_ms > 3600 * 1000) {
-				//update power only if hashrate update was successful -> pool could be down!!!
-                if(profit_calc.update_opt_config_hashrate_nanopool(old_best_currency, user_infos,
-                                                                current_monitoring_time_ms))
-					profit_calc.update_power_consumption(old_best_currency, system_time_start_ms);
+                //update power only if hashrate update was successful -> pool could be down!!!
+                if (profit_calc.update_opt_config_hashrate_nanopool(old_best_currency, user_infos,
+                                                                    current_monitoring_time_ms))
+                    profit_calc.update_power_consumption(old_best_currency, system_time_start_ms);
 
             }
-            //update approximated earnings based on current hashrate and stock price
+            //update approximated earnings based on current power,hashrate and stock price
             profit_calc.update_currency_info_nanopool();
             // recalc and check for new best currency
             profit_calc.recalculate_best_currency();
@@ -274,7 +278,7 @@ namespace frequency_scaling {
         std::vector<std::vector<int>> res;
         std::set<int> remaining_devices;
         for (auto &dci : dcis)
-            remaining_devices.insert(dci.device_id_nvml);
+            remaining_devices.insert(dci.device_id_nvml_);
         while (!remaining_devices.empty()) {
             int i = *remaining_devices.begin();
             std::vector<int> equal_devs({i});
@@ -359,7 +363,7 @@ namespace frequency_scaling {
                 try {
                     const device_clock_info &gpu_dci = opt_config.dcis_[i];
                     const std::map<currency_type, energy_hash_info> &gpu_opt_res =
-                            opt_result.at(gpu_dci.device_id_nvml);
+                            opt_result.at(gpu_dci.device_id_nvml_);
                     //create profit calculator for gpu
                     profit_calculator pc(gpu_dci, gpu_opt_res, opt_config.energy_cost_kwh_);
                     start_mining_best_currency(pc, opt_config.miner_user_infos_);
@@ -367,13 +371,13 @@ namespace frequency_scaling {
                                             opt_config.opt_method_params_,
                                             opt_config.monitoring_interval_sec_ * 1000,
                                             mutex, cond_var, terminate);
-                    stop_mining_script(gpu_dci.device_id_nvml);
+                    stop_mining_script(gpu_dci.device_id_nvml_);
                     //set return value
-                    p.set_value(std::make_pair(gpu_dci.device_id_nvml, pc.getEnergy_hash_info_()));
+                    p.set_value(std::make_pair(gpu_dci.device_id_nvml_, pc.getEnergy_hash_info_()));
                 } catch (const std::exception &ex) {
                     //Unhandled exception. Dont stop mining!!!
                     LOG(ERROR) << "Exception in mining/monitoring thread for GPU " <<
-                               opt_config.dcis_[i].device_id_nvml << ": " << ex.what()
+                               opt_config.dcis_[i].device_id_nvml_ << ": " << ex.what()
                                << std::endl;
                     p.set_exception(std::current_exception()); //future.get() triggers the exception
                 }
@@ -399,13 +403,13 @@ namespace frequency_scaling {
                 updated_opt_result.insert(item);
             } catch (const std::exception &ex) {
                 const device_clock_info &gpu_dci = opt_config.dcis_[i];
-                LOG(ERROR) << "GPU " << gpu_dci.device_id_nvml <<
+                LOG(ERROR) << "GPU " << gpu_dci.device_id_nvml_ <<
                            ": Failed to get updated optimization result. "
                            "GPU-Thread terminated with unhandled exception: " << ex.what()
                            << std::endl;
                 //cleanup
-                stop_mining_script(gpu_dci.device_id_nvml);
-                stop_power_monitoring_script(gpu_dci.device_id_nvml);
+                stop_mining_script(gpu_dci.device_id_nvml_);
+                stop_power_monitoring_script(gpu_dci.device_id_nvml_);
             }
         }
 
@@ -441,7 +445,7 @@ namespace frequency_scaling {
                         const device_clock_info &gpu_dci = opt_config.dcis_[i];
                         const std::map<currency_type, measurement> &gpu_optimal_config_offline =
                                 find_optimal_config(benchmark_info(&run_benchmark_script_nvml_nvapi),
-                                                    gpu_dci, gpu_distr.at(gpu_dci.device_id_nvml),
+                                                    gpu_dci, gpu_distr.at(gpu_dci.device_id_nvml_),
                                                     opt_config.opt_method_params_);
                         std::set<currency_type> online_opt_currencies;
                         for (auto &elem : gpu_optimal_config_offline)
@@ -466,10 +470,10 @@ namespace frequency_scaling {
                                                                      : elem.second));
                         }
                         std::lock_guard<std::mutex> lock(mutex);
-                        optimization_results.emplace(gpu_dci.device_id_nvml, ehi);
+                        optimization_results.emplace(gpu_dci.device_id_nvml_, ehi);
                     } catch (const std::exception &ex) {
                         LOG(ERROR) << "Exception in optimization thread for GPU " <<
-                                   opt_config.dcis_[i].device_id_nvml << ": " << ex.what()
+                                   opt_config.dcis_[i].device_id_nvml_ << ": " << ex.what()
                                    << std::endl;
                     }
                 });

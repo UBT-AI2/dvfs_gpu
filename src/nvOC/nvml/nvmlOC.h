@@ -27,7 +27,7 @@ namespace frequency_scaling {
 
     int nvmlGetTemperature(int device_id);
 
-    int nvmlGetPowerUsage(int device_id);
+    double nvmlGetPowerUsage(int device_id);
 
     void nvmlOC(int device_id, int graphClock, int memClock);
 

@@ -17,8 +17,8 @@ int main(int argc, char **argv) {
     try {
         nvapiInit();
         nvapiOC(device_id, graphOC, memOC);
-        int graphClock = nvapiGetCurrentGraphClock(device_id);
-        int memClock = nvapiGetCurrentMemClock(device_id);
+        int graphClock = nvapiGetGraphClockInfo(device_id).current_freq_;
+        int memClock = nvapiGetMemClockInfo(device_id).current_freq_;
         printf("Overclocked GPU %i: mem:%iMHz graph:%iMHz mem_oc:%iMHz graph_oc:%iMHz\n",
                device_id, memClock, graphClock, memOC, graphOC);
         nvapiUnload(0);

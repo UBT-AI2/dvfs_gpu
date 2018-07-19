@@ -261,28 +261,34 @@ namespace frequency_scaling {
         return -1;
     }
 
-    int nvapiGetCurrentMemClock(int deviceIdNvapi) {
+    clock_info nvapiGetMemClockInfo(int deviceIdNvapi) {
         int *hdlGPU[64] = {0};
         int nGPU;
         safeNVAPICall(NvEnumPhysicalGPUs(hdlGPU, &nGPU));
         NV_GPU_PERF_PSTATES20_INFO_V1 pstates_info;
         pstates_info.version = 0x11c94;
         safeNVAPICall(NvGetPstates(hdlGPU[deviceIdNvapi], &pstates_info));
-        int curRam = (int) ((pstates_info.pstates[0].clocks[1]).data.single.freq_kHz) / 1000;
-        //int curRamOC = (int) ((pstates_info.pstates[0].clocks[1]).freqDelta_kHz.value) / 1000;
-        return curRam;
+        clock_info ci;
+        ci.current_freq_ = (int) ((pstates_info.pstates[0].clocks[1]).data.single.freq_kHz) / 1000;
+        ci.current_oc_ = (int) ((pstates_info.pstates[0].clocks[1]).freqDelta_kHz.value) / 1000;
+        ci.min_oc_ = (int) ((pstates_info.pstates[0].clocks[1]).freqDelta_kHz.valueRange.mindelta) / 1000;
+        ci.max_oc_ = (int) ((pstates_info.pstates[0].clocks[1]).freqDelta_kHz.valueRange.maxdelta) / 1000;
+        return ci;
     }
 
-    int nvapiGetCurrentGraphClock(int deviceIdNvapi) {
+    clock_info nvapiGetGraphClockInfo(int deviceIdNvapi) {
         int *hdlGPU[64] = {0};
         int nGPU;
         safeNVAPICall(NvEnumPhysicalGPUs(hdlGPU, &nGPU));
         NV_GPU_PERF_PSTATES20_INFO_V1 pstates_info;
         pstates_info.version = 0x11c94;
         safeNVAPICall(NvGetPstates(hdlGPU[deviceIdNvapi], &pstates_info));
-        int curGraph = (int) ((pstates_info.pstates[0].clocks[0]).data.range.maxFreq_kHz) / 1000;
-        //int curGraphOC = (int) ((pstates_info.pstates[0].clocks[0]).freqDelta_kHz.value) / 1000;
-        return curGraph;
+        clock_info ci;
+        ci.current_freq_ = (int) ((pstates_info.pstates[0].clocks[0]).data.range.maxFreq_kHz) / 1000;
+        ci.current_oc_ = (int) ((pstates_info.pstates[0].clocks[0]).freqDelta_kHz.value) / 1000;
+        ci.min_oc_ = (int) ((pstates_info.pstates[0].clocks[0]).freqDelta_kHz.valueRange.mindelta) / 1000;
+        ci.max_oc_ = (int) ((pstates_info.pstates[0].clocks[0]).freqDelta_kHz.valueRange.maxdelta) / 1000;
+        return ci;
     }
 
     void nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz) {
@@ -336,15 +342,15 @@ namespace frequency_scaling {
 #else
 
     void nvapiInit() {
-        THROW_NVAPI_ERROR("NVAPI not supported");
+        THROW_NVAPI_ERROR("NVAPI not available on this platform");
     }
 
     bool nvapi_register_gpu(int device_id) {
-        THROW_NVAPI_ERROR("NVAPI not supported");
+        THROW_NVAPI_ERROR("NVAPI not available on this platform");
     }
 
     void nvapiUnload(int restoreClocks) {
-        THROW_NVAPI_ERROR("NVAPI not supported");
+        THROW_NVAPI_ERROR("NVAPI not available on this platform");
     }
 
     bool nvapiCheckSupport() {
@@ -352,19 +358,19 @@ namespace frequency_scaling {
     }
 
     int nvapiGetDeviceIndexByBusId(int busId) {
-        THROW_NVAPI_ERROR("NVAPI not supported");
+        THROW_NVAPI_ERROR("NVAPI not available on this platform");
     }
 
-    int nvapiGetCurrentMemClock(int deviceId) {
-        THROW_NVAPI_ERROR("NVAPI not supported");
+    clock_info nvapiGetMemClockInfo(int deviceIdNvapi){
+        THROW_NVAPI_ERROR("NVAPI not available on this platform");
     }
 
-    int nvapiGetCurrentGraphClock(int deviceId) {
-        THROW_NVAPI_ERROR("NVAPI not supported");
+    clock_info nvapiGetGraphClockInfo(int deviceIdNvapi){
+        THROW_NVAPI_ERROR("NVAPI not available on this platform");
     }
 
     void nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz) {
-        THROW_NVAPI_ERROR("NVAPI not supported");
+        THROW_NVAPI_ERROR("NVAPI not available on this platform");
     }
 
 #endif

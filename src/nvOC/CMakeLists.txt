@@ -36,13 +36,6 @@ set(PROFIT_OPTIMIZATION_FILES
         profit_optimization/cli_utils.h profit_optimization/cli_utils.cpp
         ${COMMON_HEADER})
 
-
-#
-add_executable(gpu_power_monitor
-        utils/gpu_power_monitor.cpp)
-add_executable(hash-log-excavator
-        utils/hash-log-excavator.cpp)
-
 #
 add_library(nvapiOC_lib
         ${NVAPI_FILES})
@@ -133,6 +126,15 @@ add_executable(profit_optimization
         profit_optimization/main.cpp)
 target_link_libraries(profit_optimization
         profit_optimization_lib)
+
+
+#
+add_executable(gpu_power_monitor
+        utils/gpu_power_monitor.cpp)
+target_link_libraries(gpu_power_monitor
+        nvmlOC_lib)
+add_executable(hash-log-excavator
+        utils/hash-log-excavator.cpp)
 
 
 #Specify install target for executable

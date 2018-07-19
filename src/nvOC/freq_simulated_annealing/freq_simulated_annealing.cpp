@@ -16,11 +16,11 @@ namespace frequency_scaling {
 
     static double
     guess_start_temperature(const benchmark_func &benchmarkFunc, currency_type ms, const device_clock_info &dci) {
-        int min_graph_idx = dci.nvml_graph_clocks.size() - 1;
-        int min_mem_oc = dci.max_mem_oc;
+        int min_graph_idx = dci.nvml_graph_clocks_.size() - 1;
+        int min_mem_oc = dci.max_mem_oc_;
         const measurement &min_node = benchmarkFunc(ms, dci, min_mem_oc, min_graph_idx);
-        int max_graph_idx = 0.5 * dci.nvml_graph_clocks.size();
-        int max_mem_oc = dci.min_mem_oc + 0.5 * (dci.max_mem_oc - dci.min_mem_oc);
+        int max_graph_idx = 0.5 * dci.nvml_graph_clocks_.size();
+        int max_mem_oc = dci.min_mem_oc_ + 0.5 * (dci.max_mem_oc_ - dci.min_mem_oc_);
         const measurement &max_node = benchmarkFunc(ms, dci, max_mem_oc, max_graph_idx);
         //start temperature should be higher than the maximum energy difference between all configurations
         return abs(max_node.energy_hash_ - min_node.energy_hash_);
@@ -72,8 +72,8 @@ namespace frequency_scaling {
 
             //compute slope
             int memDiff = current_node.mem_oc - last_node.mem_oc;
-            int graphDiff = dci.nvml_graph_clocks[current_node.nvml_graph_clock_idx] -
-                            dci.nvml_graph_clocks[last_node.nvml_graph_clock_idx];
+            int graphDiff = dci.nvml_graph_clocks_[current_node.nvml_graph_clock_idx] -
+                            dci.nvml_graph_clocks_[last_node.nvml_graph_clock_idx];
             double deltaX = std::sqrt(memDiff * memDiff + graphDiff * graphDiff);
             double deltaY = current_node.energy_hash_ - last_node.energy_hash_;
             double tmp_slope = (deltaX == 0) ? 0 : deltaY / deltaX;
@@ -96,7 +96,7 @@ namespace frequency_scaling {
         double start_temperature = guess_start_temperature(benchmarkFunc, ct, dci);
         //initial guess at maximum frequencies
         measurement start_node;
-        start_node.mem_oc = dci.max_mem_oc;
+        start_node.mem_oc = dci.max_mem_oc_;
         start_node.nvml_graph_clock_idx = 0;
         return freq_simulated_annealing(benchmarkFunc, ct, dci, start_node, start_temperature,
                                         max_iterations, mem_step, graph_idx_step, min_hashrate);

@@ -18,30 +18,30 @@ namespace frequency_scaling {
 
     bool start_mining_script(currency_type ct, const device_clock_info &dci, const miner_user_info &user_info) {
         const std::string &wallet_addr = user_info.wallet_addresses_.at(ct);
-        const std::string &worker_name = user_info.worker_names_.at(dci.device_id_nvml);
+        const std::string &worker_name = user_info.worker_names_.at(dci.device_id_nvml_);
         //start mining in background process
         char cmd1[BUFFER_SIZE];
         switch (ct) {
             case currency_type::ETH:
                 snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_eth.sh %i %i %s %s %s %s",
-                         dci.device_id_nvml, dci.device_id_cuda, wallet_addr.c_str(),
+                         dci.device_id_nvml_, dci.device_id_cuda_, wallet_addr.c_str(),
                          worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str());
                 break;
             case currency_type::ZEC:
                 snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_zec.sh %i %i %s %s %s %s",
-                         dci.device_id_nvml, dci.device_id_cuda, wallet_addr.c_str(),
+                         dci.device_id_nvml_, dci.device_id_cuda_, wallet_addr.c_str(),
                          worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str());
                 break;
             case currency_type::XMR:
                 snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_xmr.sh %i %i %s %s %s %s",
-                         dci.device_id_nvml, dci.device_id_cuda, wallet_addr.c_str(),
+                         dci.device_id_nvml_, dci.device_id_cuda_, wallet_addr.c_str(),
                          worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str());
                 break;
             default:
                 THROW_RUNTIME_ERROR("Invalid enum value");
         }
         //
-        return process_management::gpu_start_process(cmd1, dci.device_id_nvml, process_type::MINER, true);
+        return process_management::gpu_start_process(cmd1, dci.device_id_nvml_, process_type::MINER, true);
     }
 
 
@@ -83,9 +83,9 @@ namespace frequency_scaling {
             const miner_user_info &user_info, int period_ms,
             currency_type ct, const device_clock_info &dci, int mem_oc,
             int nvml_graph_clock_idx) {
-        int mem_clock = dci.nvapi_default_mem_clock + mem_oc;
-        int graph_clock = dci.nvml_graph_clocks[nvml_graph_clock_idx];
-        VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml) <<
+        int mem_clock = dci.nvapi_default_mem_clock_ + mem_oc;
+        int graph_clock = dci.nvml_graph_clocks_[nvml_graph_clock_idx];
+        VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml_) <<
                 "Running online benchmark with clocks: mem:" << mem_clock << ",graph:" << graph_clock
                 << std::endl;
         //change graph and mem clocks and start mining
@@ -98,20 +98,20 @@ namespace frequency_scaling {
         //get power and hashrate and stop mining
         long long int system_time_now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
-        double power = get_avg_power_usage(dci.device_id_nvml, system_time_start_ms, system_time_now_ms);
-        double hashrate = hashrate_func(ct, dci.device_id_nvml, system_time_start_ms, system_time_now_ms);
+        double power = get_avg_power_usage(dci.device_id_nvml_, system_time_start_ms, system_time_now_ms);
+        double hashrate = hashrate_func(ct, dci.device_id_nvml_, system_time_start_ms, system_time_now_ms);
         if (mining_started)
-            stop_mining_script(dci.device_id_nvml);
+            stop_mining_script(dci.device_id_nvml_);
         //create measurement
         measurement m(mem_clock, graph_clock, power, hashrate);
         m.hashrate_measure_dur_ms_ = system_time_now_ms - system_time_start_ms;
         m.power_measure_dur_ms_ = system_time_now_ms - system_time_start_ms;
         m.nvml_graph_clock_idx = nvml_graph_clock_idx;
         m.mem_oc = mem_oc;
-        m.graph_oc = graph_clock - dci.nvapi_default_graph_clock;
+        m.graph_oc = graph_clock - dci.nvapi_default_graph_clock_;
         //
         std::string filename = log_utils::get_logdir_name() + "/" +
-                               log_utils::get_online_bench_filename(ct, dci.device_id_nvml);
+                               log_utils::get_online_bench_filename(ct, dci.device_id_nvml_);
         std::ofstream logfile(filename, std::ofstream::app);
         if(!logfile)
             THROW_IO_ERROR("Cannot open " + filename);
