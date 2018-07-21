@@ -1,5 +1,6 @@
 #include "profit_calculation.h"
 
+#include <cmath>
 #include <limits>
 #include <chrono>
 #include <algorithm>

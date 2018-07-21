@@ -84,8 +84,13 @@ namespace frequency_scaling {
         //run script_running at proposed minimum
         int mem_oc = dci.min_mem_oc_ + std::lround(glob_minimum(0) * mem_step);
         int graph_idx = std::lround(glob_minimum(1) * graph_idx_step);
-        const measurement &glob_min_measurement =
-                benchmarkFunc(ct, dci, mem_oc, graph_idx);
+		measurement glob_min_measurement;
+		glob_min_measurement.energy_hash_ = std::numeric_limits<double>::lowest();
+		if (mem_oc <= dci.max_mem_oc_ && mem_oc >= dci.min_mem_oc_ &&
+			graph_idx < dci.nvml_graph_clocks_.size() && graph_idx >= 0) {
+			glob_min_measurement =
+				benchmarkFunc(ct, dci, mem_oc, graph_idx);
+		}
         const measurement &res = (best_measurement.energy_hash_ > glob_min_measurement.energy_hash_) ?
                                  best_measurement : glob_min_measurement;
         //

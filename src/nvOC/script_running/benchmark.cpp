@@ -43,7 +43,7 @@ namespace frequency_scaling {
         if(min_mem_oc > 0)
             min_mem_oc_ = nvapi_ci_mem.min_oc_;
         if(max_mem_oc < 0)
-            max_mem_oc_ = std::max(0, nvapi_ci_mem.max_oc_-100);
+            max_mem_oc_ = std::min(900, nvapi_ci_mem.max_oc_);
 
         const nvapi_clock_info& nvapi_ci_graph = nvapiGetGraphClockInfo(device_id_nvapi_);
         nvapi_default_graph_clock_ = nvapi_ci_graph.current_freq_;
@@ -57,7 +57,7 @@ namespace frequency_scaling {
 		if (min_graph_oc_ > max_graph_oc_)
 			throw std::invalid_argument("max_graph_oc >= min_graph_oc violated");
 
-		int oc_interval = 10;
+		int oc_interval = 15;
         if (nvml_supported_) {
             nvml_mem_clocks_ = nvmlGetAvailableMemClocks(device_id_nvml);
 			for (int graph_oc = max_graph_oc_; graph_oc >= oc_interval; graph_oc -= oc_interval) {
