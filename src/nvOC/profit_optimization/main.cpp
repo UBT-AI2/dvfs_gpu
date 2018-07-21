@@ -17,11 +17,11 @@ int main(int argc, char **argv) {
         //parse cmd options
         const std::map<std::string, std::string> &cmd_args = parse_cmd_options(argc, argv);
         if (cmd_args.count("--help")) {
-            full_expression_accumulator(std::cout) << "Options:\n\t"
-                                                      "--help\t\t\t\tshows this message\n\t"
-                                                      "--user_config=<filename>\tuser configuration json file\n\t"
-                                                      "--opt_result=<filename>\t\toptimization result json file"
-                                                   << std::endl;
+            full_expression_accumulator<>(std::cout) << "Options:\n\t"
+                                                        "--help\t\t\t\tshows this message\n\t"
+                                                        "--user_config=<filename>\tuser configuration json file\n\t"
+                                                        "--opt_result=<filename>\t\toptimization result json file"
+                                                     << std::endl;
             return 1;
         }
 

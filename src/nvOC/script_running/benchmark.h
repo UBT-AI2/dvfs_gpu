@@ -8,6 +8,7 @@ namespace frequency_scaling {
 
     struct device_clock_info {
         device_clock_info(int device_id_nvml);
+
         device_clock_info(int device_id_nvml, int min_mem_oc, int min_graph_oc,
                           int max_mem_oc, int max_graph_oc);
 

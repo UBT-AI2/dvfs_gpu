@@ -16,6 +16,7 @@ int main(int argc, char **argv) {
     //
     try {
         nvapiInit();
+        nvapi_register_gpu(device_id);
         nvapiOC(device_id, graphOC, memOC);
         int graphClock = nvapiGetGraphClockInfo(device_id).current_freq_;
         int memClock = nvapiGetMemClockInfo(device_id).current_freq_;

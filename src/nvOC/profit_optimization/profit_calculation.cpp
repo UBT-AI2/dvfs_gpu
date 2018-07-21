@@ -66,17 +66,19 @@ namespace frequency_scaling {
                 best_profit = profit_per_hour;
             }
             //print stats
-            VLOG(0) << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
-                    "Profit calculation using: hashrate=" <<
-                    get_used_hashrate(ct) << ", power=" << get_used_power(ct) <<
-                    ", energy_hash=" << get_used_energy_hash(ct) <<
-                    ", stock_price=" << it_ci->second.cs_.stock_price_eur_
-                    << std::endl;
-            VLOG(0) << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
-                    "Calculated profit [eur/hour]: approximated earnings=" <<
-                    ci.approximated_earnings_eur_hour_ << ", energy_cost="
-                    << costs_per_hour << ", profit="
-                    << profit_per_hour << std::endl;
+            std::ostringstream ss;
+            ss << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
+               "Profit calculation using: hashrate=" <<
+               get_used_hashrate(ct) << ", power=" << get_used_power(ct) <<
+               ", energy_hash=" << get_used_energy_hash(ct) <<
+               ", stock_price=" << it_ci->second.cs_.stock_price_eur_
+               << std::endl;
+            ss << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
+               "Calculated profit [eur/hour]: approximated earnings=" <<
+               ci.approximated_earnings_eur_hour_ << ", energy_cost="
+               << costs_per_hour << ", profit="
+               << profit_per_hour << std::endl;
+            VLOG(0) << ss.str() << std::flush;
         }
         best_currency_ = static_cast<currency_type>(best_idx);
         best_currency_profit_ = best_profit;
@@ -133,11 +135,11 @@ namespace frequency_scaling {
                                                                                                  total_period_ms);
             VLOG(0) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                     "Updated avg profit hashrate: " << new_hashrate << std::endl;
-			return true;
+            return true;
         } catch (const network_error &err) {
             LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                        "Failed to get avg profit hashrate: " << err.what() << std::endl;
-			return false;
+            return false;
         }
     }
 
@@ -147,11 +149,11 @@ namespace frequency_scaling {
                 std::chrono::system_clock::now().time_since_epoch()).count();
         //update power
         double cur_power = get_avg_power_usage(dci_.device_id_nvml_, system_time_start_ms, system_time_now_ms);
-		if (cur_power <= 0 || !std::isfinite(cur_power)) {
-			LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
-				"Failed to get avg profit power" << std::endl;
-			return false;
-		}
+        if (cur_power <= 0 || !std::isfinite(cur_power)) {
+            LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+                       "Failed to get avg profit power" << std::endl;
+            return false;
+        }
         double last_power = last_profit_measurements_.at(current_mined_ct).power_;
         int cur_period_ms = system_time_now_ms - system_time_start_ms;
         int last_period_ms = last_profit_measurements_.at(current_mined_ct).power_measure_dur_ms_;
@@ -161,7 +163,7 @@ namespace frequency_scaling {
         energy_hash_info_.at(current_mined_ct).optimal_configuration_profit_.update_power(new_power, total_period_ms);
         VLOG(0) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                 "Update profit power: " << new_power << std::endl;
-		return true;
+        return true;
     }
 
     void profit_calculator::update_opt_config_online(currency_type current_mined_ct,
@@ -170,11 +172,11 @@ namespace frequency_scaling {
         energy_hash_info &ehi = energy_hash_info_.at(current_mined_ct);
         ehi.optimal_configuration_online_ = new_config_online;
         ehi.optimal_configuration_profit_.update_freq_config(new_config_online);
-		//update profit hashrate and power also if no profit measurement available yet
-		if (ehi.optimal_configuration_profit_.hashrate_measure_dur_ms_ <= 0)
-			ehi.optimal_configuration_profit_.update_hashrate(new_config_online.hashrate_, 0);
-		if (ehi.optimal_configuration_profit_.power_measure_dur_ms_ <= 0)
-			ehi.optimal_configuration_profit_.update_power(new_config_online.power_, 0);
+        //update profit hashrate and power also if no profit measurement available yet
+        if (ehi.optimal_configuration_profit_.hashrate_measure_dur_ms_ <= 0)
+            ehi.optimal_configuration_profit_.update_hashrate(new_config_online.hashrate_, 0);
+        if (ehi.optimal_configuration_profit_.power_measure_dur_ms_ <= 0)
+            ehi.optimal_configuration_profit_.update_power(new_config_online.power_, 0);
         VLOG(0) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                 "Update opt_config_online" << std::endl;
     }

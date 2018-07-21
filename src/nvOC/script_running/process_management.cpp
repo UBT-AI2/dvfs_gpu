@@ -43,9 +43,9 @@ namespace frequency_scaling {
 
     bool process_management::register_process_cleanup_sighandler() {
         //setup signal handler
-        if (signal(SIGINT, &sig_handler) == SIG_ERR |
-            signal(SIGABRT, &sig_handler) == SIG_ERR |
-            signal(SIGTERM, &sig_handler) == SIG_ERR) {
+        if ((signal(SIGINT, &sig_handler) == SIG_ERR) |
+            (signal(SIGABRT, &sig_handler) == SIG_ERR) |
+            (signal(SIGTERM, &sig_handler) == SIG_ERR)) {
             LOG(ERROR) << "Failed to register signal handler" << std::endl;
             return false;
         }

@@ -8,9 +8,10 @@ namespace frequency_scaling {
     /**
         * @brief The full_expression_accumulator class
         */
+    template<typename OUT_STREAM = std::ostream>
     class full_expression_accumulator {
     public:
-        explicit full_expression_accumulator(std::ostream &os) : os_(os), flushed_(false) {}
+        explicit full_expression_accumulator(OUT_STREAM &os, bool log_cond = true) : os_(os), flushed_(!log_cond) {}
 
         ~full_expression_accumulator() {
             if (!flushed_) {
@@ -19,9 +20,7 @@ namespace frequency_scaling {
             }
         }
 
-        /**
-         *
-         */
+
         template<typename T>
         full_expression_accumulator &operator<<(const T &t) {
             // accumulate into a non-shared stringstream, no threading issues
@@ -47,14 +46,15 @@ namespace frequency_scaling {
 
 
         void flush() {
-            // single call to std::cout << is threadsafe (c++11)
-            os_ << ss_.str() << std::flush;
-            flushed_ = true;
+            if (!flushed_) {
+                // assumption: single call to os_ << is threadsafe
+                os_ << ss_.str() << std::flush;
+                flushed_ = true;
+            }
         }
 
-
     private:
-        std::ostream &os_;
+        OUT_STREAM &os_;
         std::ostringstream ss_;
         bool flushed_;
     };

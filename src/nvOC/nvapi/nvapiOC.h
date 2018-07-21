@@ -2,7 +2,7 @@
 
 namespace frequency_scaling {
 
-    struct nvapi_clock_info{
+    struct nvapi_clock_info {
         int current_freq_, current_oc_;
         int min_oc_, max_oc_;
     };
@@ -13,7 +13,7 @@ namespace frequency_scaling {
 
     void nvapiUnload(int restoreClocks);
 
-    bool nvapiCheckSupport();
+    bool nvapiCheckSupport(int device_id);
 
     int nvapiGetDeviceIndexByBusId(int busId);
 

@@ -56,7 +56,7 @@ namespace frequency_scaling {
         std::string filename = log_utils::get_logdir_name() + "/" +
                                log_utils::get_hash_log_filename(ct, device_id);
         std::ifstream file(filename);
-        if(!file)
+        if (!file)
             THROW_IO_ERROR("Cannot open " + filename);
         file.exceptions(std::ifstream::badbit);
         std::string line;
@@ -113,11 +113,12 @@ namespace frequency_scaling {
         std::string filename = log_utils::get_logdir_name() + "/" +
                                log_utils::get_online_bench_filename(ct, dci.device_id_nvml_);
         std::ofstream logfile(filename, std::ofstream::app);
-        if(!logfile)
+        if (!logfile)
             THROW_IO_ERROR("Cannot open " + filename);
         logfile.exceptions(std::ifstream::badbit);
         logfile << m.mem_clock_ << "," << m.graph_clock_ << "," << m.power_ << "," << m.hashrate_
-                << "," << m.energy_hash_ << "," << m.hashrate_measure_dur_ms_ << "," << system_time_start_ms << std::endl;
+                << "," << m.energy_hash_ << "," << m.hashrate_measure_dur_ms_ << "," << system_time_start_ms
+                << std::endl;
         return m;
     }
 

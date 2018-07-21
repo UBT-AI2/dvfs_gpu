@@ -15,6 +15,7 @@ int main(int argc, char **argv) {
     //
     try {
         nvmlInit_();
+        nvml_register_gpu(device_id);
         nvmlOC(device_id, graphClock, memClock);
         printf("Changed GPU %i clocks: mem:%iMHz graph:%iMHz\n", device_id, memClock, graphClock);
         nvmlShutdown_(false);

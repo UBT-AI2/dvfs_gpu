@@ -42,7 +42,8 @@ add_library(nvapiOC_lib
 add_executable(nvapiOC
         nvapi/main.cpp)
 target_link_libraries(nvapiOC
-        nvapiOC_lib)
+        nvapiOC_lib
+        ${GLOG_LIB_NAME})
 
 #
 add_library(nvmlOC_lib
@@ -52,7 +53,8 @@ target_link_libraries(nvmlOC_lib
 add_executable(nvmlOC
         nvml/main.cpp)
 target_link_libraries(nvmlOC
-        nvmlOC_lib)
+        nvmlOC_lib
+        ${GLOG_LIB_NAME})
 
 #
 add_library(script_running_lib
@@ -132,7 +134,8 @@ target_link_libraries(profit_optimization
 add_executable(gpu_power_monitor
         utils/gpu_power_monitor.cpp)
 target_link_libraries(gpu_power_monitor
-        nvmlOC_lib)
+        nvmlOC_lib
+        ${GLOG_LIB_NAME})
 add_executable(hash-log-excavator
         utils/hash-log-excavator.cpp)
 

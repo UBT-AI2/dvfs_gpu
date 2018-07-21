@@ -21,8 +21,8 @@
 
 #include "../nvml/nvmlOC.h"
 #include "../common_header/exceptions.h"
-#include "cli_utils.h"
 #include "../common_header/constants.h"
+#include "cli_utils.h"
 
 
 namespace frequency_scaling {

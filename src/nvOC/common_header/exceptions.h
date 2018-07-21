@@ -35,7 +35,7 @@ namespace frequency_scaling {
         io_error(const std::string &msg) : std::runtime_error(msg) {}
     };
 
-#define __FILE_INFO_STR__ (std::string("[") + __FILE__ + "," + __FUNCTION__ + "," + std::to_string(__LINE__) + "] ")
+#define __FILE_INFO_STR__ (std::string("[") + __FILE__ + ", " + __FUNCTION__ + ", " + std::to_string(__LINE__) + "] ")
 #define THROW_RUNTIME_ERROR(msg) throw std::runtime_error("RUNTIME_ERROR " + __FILE_INFO_STR__ + (msg))
 #define THROW_OPTIMIZATION_ERROR(msg) throw optimization_error("OPTIMIZATION_ERROR " + __FILE_INFO_STR__ + (msg))
 #define THROW_NVML_ERROR(msg) throw nvml_error("NVML_ERROR " + __FILE_INFO_STR__ + (msg))

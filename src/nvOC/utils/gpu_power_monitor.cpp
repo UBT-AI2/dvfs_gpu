@@ -7,8 +7,9 @@
 
 static const int BUFFER_SIZE = 4096;
 
-static void power_monitor_nvml(int device_id, int sleep_time_ms, std::ofstream& data_file);
-static int power_monitor_popen(int device_id, int sleep_time_ms, std::ofstream& data_file);
+static void power_monitor_nvml(int device_id, int sleep_time_ms, std::ofstream &data_file);
+
+static int power_monitor_popen(int device_id, int sleep_time_ms, std::ofstream &data_file);
 
 
 int main(int argc, char **argv) {
@@ -34,9 +35,9 @@ int main(int argc, char **argv) {
 }
 
 
-static void power_monitor_nvml(int device_id, int sleep_time_ms, std::ofstream& data_file){
+static void power_monitor_nvml(int device_id, int sleep_time_ms, std::ofstream &data_file) {
     frequency_scaling::nvmlInit_();
-    while(true) {
+    while (true) {
         auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch());
         data_file << dur.count() << " " << frequency_scaling::nvmlGetPowerUsage(device_id) << std::endl;
@@ -46,7 +47,7 @@ static void power_monitor_nvml(int device_id, int sleep_time_ms, std::ofstream& 
 }
 
 
-static int power_monitor_popen(int device_id, int sleep_time_ms, std::ofstream& data_file){
+static int power_monitor_popen(int device_id, int sleep_time_ms, std::ofstream &data_file) {
     char cmd[BUFFER_SIZE];
     snprintf(cmd, BUFFER_SIZE,
              "nvidia-smi -a -i %d | grep \"Power Draw\" | cut -d ':' -f 2 | cut -d 'W' -f 1 | awk '{$1=$1};1'",

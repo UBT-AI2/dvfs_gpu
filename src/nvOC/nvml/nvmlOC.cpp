@@ -1,7 +1,8 @@
 #include "nvmlOC.h"
 
-#include <nvml.h>
 #include <set>
+#include <nvml.h>
+#include <glog/logging.h>
 #include "../common_header/constants.h"
 #include "../common_header/exceptions.h"
 
@@ -19,11 +20,13 @@ namespace frequency_scaling {
     }
 
     void nvmlInit_() {
-        printf("NVML initialization...\n");
+        VLOG(0) << "NVML initialization..." << std::endl;
         safeNVMLCall(nvmlInit());
     }
 
     bool nvml_register_gpu(int device_id) {
+        if (!nvmlCheckOCSupport(device_id))
+            THROW_NVML_ERROR("NVML register failed. GPU " + std::to_string(device_id) + " doesnt support OC");
         auto res = registered_gpus.emplace(device_id);
         if (!res.second)
             return false;
@@ -37,7 +40,7 @@ namespace frequency_scaling {
         // pci.busId is very useful to know which device physically you're talking to
         // Using PCI identifier you can also match nvmlDevice handle to CUDA device.
         safeNVMLCall(nvmlDeviceGetPciInfo(device, &pci));
-        printf("NVML GPU %d: %s [%s]\n", device_id, name, pci.busId);
+        VLOG(0) << "Registered NVML GPU " << device_id << ": " << name << " [" << pci.busId << "]" << std::endl;
 
         //enable persistence mode
         //safeNVMLCall(nvmlDeviceSetPersistenceMode(device, 1));
@@ -52,22 +55,26 @@ namespace frequency_scaling {
     void nvmlShutdown_(bool restoreClocks) {
         //shutdown should never throw
         try {
-            printf("NVML shutdown...\n");
+            VLOG(0) << "NVML shutdown..." << std::endl;
             if (restoreClocks) {
                 for (int device_id : registered_gpus) {
                     nvmlDevice_t device;
                     // Query for device handle to perform operations on a device
                     safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
                     safeNVMLCall(nvmlDeviceResetApplicationsClocks(device));
-                    printf("NVML restored clocks for device %i\n", device_id);
+                    VLOG(0) << "NVML restored clocks for GPU " << device_id << std::endl;
                     //safeNVMLCall(nvmlDeviceSetDefaultAutoBoostedClocksEnabled(device, 1, 0));
                     //safeNVMLCall(nvmlDeviceSetAutoBoostedClocksEnabled(device, 1));
                 }
             }
-        } catch (const nvml_error &ex) {}
+        } catch (const nvml_error &ex) {
+            LOG(ERROR) << "NVML restore clocks failed" << std::endl;
+        }
         try {
             safeNVMLCall(nvmlShutdown());
-        } catch (const nvml_error &ex) {}
+        } catch (const nvml_error &ex) {
+            LOG(ERROR) << "NVML shutdown failed" << std::endl;
+        }
     }
 
     bool nvmlCheckOCSupport(int device_id) {
@@ -148,10 +155,12 @@ namespace frequency_scaling {
         safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
         unsigned int res;
         safeNVMLCall(nvmlDeviceGetPowerUsage(device, &res));
-        return res/1000.0;
+        return res / 1000.0;
     }
 
     void nvmlOC(int device_id, int graphClock, int memClock) {
+        if (!registered_gpus.count(device_id))
+            THROW_NVML_ERROR("GPU " + std::to_string(device_id) + " not registered for OC");
         nvmlDevice_t device;
         safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
         //change graph and mem clocks

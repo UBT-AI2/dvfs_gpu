@@ -11,10 +11,10 @@ using namespace frequency_scaling;
 
 int main(int argc, char **argv) {
     if (argc < 10) {
-        full_expression_accumulator(std::cout) << "Usage: " << argv[0]
-                                               << " <currency_type> <device_id> <max_iterations> <mem_step> "
-                                                  "<graph_idx_step> <min_mem_oc> <max_mem_oc> <min_graph_oc> "
-                                                  "<max_graph_oc> [<min_hashrate>]" << std::endl;
+        full_expression_accumulator<>(std::cout) << "Usage: " << argv[0]
+                                                 << " <currency_type> <device_id> <max_iterations> <mem_step> "
+                                                    "<graph_idx_step> <min_mem_oc> <max_mem_oc> <min_graph_oc> "
+                                                    "<max_graph_oc> [<min_hashrate>]" << std::endl;
         return 1;
     }
     currency_type ct = string_to_currency_type(argv[1]);
