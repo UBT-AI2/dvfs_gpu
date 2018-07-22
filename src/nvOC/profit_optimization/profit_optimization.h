@@ -8,10 +8,9 @@
 
 namespace frequency_scaling {
 
-    void mine_most_profitable_currency(const optimization_config &opt_config);
-
     void mine_most_profitable_currency(const optimization_config &opt_config,
-                                       const std::map<int, std::map<currency_type, energy_hash_info>> &opt_result);
+                                       const std::map<int, std::map<currency_type, energy_hash_info>> &opt_results_in =
+                                       std::map<int, std::map<currency_type, energy_hash_info>>());
 
     void save_optimization_result(const std::string &filename,
                                   const std::map<int, std::map<currency_type, energy_hash_info>> &opt_result);

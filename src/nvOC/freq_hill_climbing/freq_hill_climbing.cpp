@@ -179,7 +179,8 @@ namespace frequency_scaling {
         measurement current_node = benchmarkFunc(ct, dci, start_node.mem_oc, start_node.nvml_graph_clock_idx);
         if (current_node.hashrate_ < min_hashrate) {
             //throw optimization_error("Minimum hashrate cannot be reached");
-            LOG(ERROR) << "start_node does not have minimum hashrate" << std::endl;
+            LOG(ERROR) << "start_node does not have minimum hashrate (" <<
+                       current_node.hashrate_ << " < " << min_hashrate << ")" << std::endl;
         }
         measurement best_node;
         if (allow_start_node_result)
