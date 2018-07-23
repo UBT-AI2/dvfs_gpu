@@ -56,8 +56,8 @@ namespace frequency_scaling {
 
         std::vector<std::pair<int, bool>> members_;
         std::atomic_bool failed_;
-        std::mutex mutex_;
-        std::condition_variable cond_var_;
+        mutable std::mutex mutex_;
+        mutable std::condition_variable cond_var_;
     };
 
     struct benchmark_info {
@@ -323,6 +323,7 @@ namespace frequency_scaling {
             for (int j : remaining_devices) {
                 if (i == j)
                     continue;
+                //devices considered equal iff their name is equal
                 if (nvmlGetDeviceName(i) == nvmlGetDeviceName(j))
                     equal_devs.emplace_back(std::make_pair(j, false));
             }
@@ -378,19 +379,19 @@ namespace frequency_scaling {
 
     static void gpu_thread_func(const optimization_config &opt_config,
                                 const device_clock_info &gpu_dci,
-                                const std::map<int, std::set<currency_type>> &gpu_distr,
+                                const std::set<currency_type>& gpu_optimization_work,
                                 std::map<int, std::map<currency_type, energy_hash_info>> &opt_results,
                                 gpu_group &group, std::mutex &all_mutex, std::condition_variable &cond_var,
                                 const std::atomic_bool &terminate,
                                 std::promise<std::pair<int, std::map<currency_type, energy_hash_info>>> &&p) {
         try {
-            if (gpu_distr.at(gpu_dci.device_id_nvml_).empty()) {
+            if (gpu_optimization_work.empty()) {
                 VLOG(0) << "GPU " << gpu_dci.device_id_nvml_ << ": Skipping optimization phase..." << std::endl;
             } else {
                 VLOG(0) << "GPU " << gpu_dci.device_id_nvml_ << ": Starting optimization phase..." << std::endl;
                 const std::map<currency_type, measurement> &gpu_optimal_config_offline =
                         find_optimal_config(benchmark_info(&run_benchmark_script_nvml_nvapi),
-                                            gpu_dci, gpu_distr.at(gpu_dci.device_id_nvml_),
+                                            gpu_dci, gpu_optimization_work,
                                             opt_config.opt_method_params_);
                 std::set<currency_type> online_opt_currencies;
                 for (auto &elem : gpu_optimal_config_offline)
@@ -487,27 +488,45 @@ namespace frequency_scaling {
 
     void mine_most_profitable_currency(const optimization_config &opt_config,
                                        const std::map<int, std::map<currency_type, energy_hash_info>> &opt_results_in) {
-
-
-        //check for equal gpus and distribute optimization work accordingly
+        //check for equal gpus and extract currencies according opt_config
         std::list<gpu_group> &&equal_gpus = find_equal_gpus(opt_config.dcis_);
         std::set<currency_type> currencies;
         for (auto &ui : opt_config.miner_user_infos_.wallet_addresses_)
             currencies.insert(ui.first);
+        //remove gpus/currencies that are not in opt_config from available opt_results
+        std::map<int, std::map<currency_type, energy_hash_info>> opt_results_optphase(opt_results_in.begin(),
+                                                                                      opt_results_in.end());
+        for (auto it = opt_results_optphase.begin(); it != opt_results_optphase.end();) {
+            bool gpu_found = false;
+            for (auto &elem : opt_config.dcis_)
+                if (elem.device_id_nvml_ == it->first) {
+                    gpu_found = true;
+                    break;
+                }
+            if (!gpu_found) {
+                it = opt_results_optphase.erase(it);
+                continue;
+            }
+            for (auto it_inner = it->second.begin(); it_inner != it->second.end();) {
+                if (!currencies.count(it_inner->first))
+                    it_inner = it->second.erase(it_inner);
+                else
+                    ++it_inner;
+            }
+            ++it;
+        }
+        //distribute optimization work exploiting equal gpus and already available opt_results
         const std::map<int, std::set<currency_type>> &gpu_distr =
-                find_optimization_gpu_distr(equal_gpus, currencies, opt_results_in);
-
+                find_optimization_gpu_distr(equal_gpus, currencies, opt_results_optphase);
+        //start optimization and monitoring on each gpu
         std::vector<std::thread> threads;
         std::vector<std::future<std::pair<int, std::map<currency_type, energy_hash_info>>>> futures;
         std::mutex mutex;
         std::condition_variable cond_var;
         std::atomic_bool terminate = ATOMIC_VAR_INIT(false);
-        std::map<int, std::map<currency_type, energy_hash_info>> opt_results_optphase(opt_results_in.begin(),
-                                                                                      opt_results_in.end());
-        for (int i = 0; i < opt_config.dcis_.size(); i++) {
+        for (const device_clock_info &gpu_dci : opt_config.dcis_) {
             std::promise<std::pair<int, std::map<currency_type, energy_hash_info>>> promise;
             futures.push_back(promise.get_future());
-            const device_clock_info &gpu_dci = opt_config.dcis_[i];
             //find group to which gpu belongs
             auto it = equal_gpus.begin();
             for (; it != equal_gpus.end(); ++it) {
@@ -515,8 +534,8 @@ namespace frequency_scaling {
                     break;
             }
             gpu_group &group = *it;
-            //start gpu threads
-            threads.emplace_back(&gpu_thread_func, std::cref(opt_config), std::cref(gpu_dci), std::cref(gpu_distr),
+            //start gpu thread
+            threads.emplace_back(&gpu_thread_func, std::cref(opt_config), std::cref(gpu_dci), std::cref(gpu_distr.at(gpu_dci.device_id_nvml_)),
                                  std::ref(opt_results_optphase), std::ref(group),
                                  std::ref(mutex), std::ref(cond_var), std::cref(terminate), std::move(promise));
         }
