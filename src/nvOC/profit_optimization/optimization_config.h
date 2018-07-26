@@ -31,6 +31,7 @@ namespace frequency_scaling {
         std::map<currency_type, optimization_method_params> opt_method_params_;
         double energy_cost_kwh_;
         int monitoring_interval_sec_;
+        int online_bench_duration_sec_ = 120;
     };
 
 

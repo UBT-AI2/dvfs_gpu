@@ -203,8 +203,7 @@ namespace frequency_scaling {
                                  ehi.optimal_configuration_online_.nvml_graph_clock_idx);
     }
 
-    static bool monitoring_sanity_check(const profit_calculator &profit_calc, const miner_user_info &user_infos,
-                                        long long int &system_time_start_ms, int &current_monitoring_time_ms) {
+    static bool monitoring_sanity_check(const profit_calculator &profit_calc, const miner_user_info &user_infos) {
         int device_id = profit_calc.getDci_().device_id_nvml_;
         bool res = true;
         //check if miner and power_monitor still running and restart if one somehow crashed
@@ -212,15 +211,12 @@ namespace frequency_scaling {
             LOG(ERROR) << gpu_log_prefix(profit_calc.getBest_currency_(), device_id)
                        << "Monitoring sanity check failed: Miner down" << std::endl;
             start_mining_best_currency(profit_calc, user_infos);
-            current_monitoring_time_ms = 0;
             res = false;
         }
         if (!process_management::gpu_has_background_process(device_id, process_type::POWER_MONITOR)) {
             LOG(ERROR) << gpu_log_prefix(profit_calc.getBest_currency_(), device_id)
                        << "Monitoring sanity check failed: Power monitor down" << std::endl;
             start_power_monitoring_script(device_id);
-            system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::system_clock::now().time_since_epoch()).count();
             res = false;
         }
         return res;
@@ -230,15 +226,14 @@ namespace frequency_scaling {
     start_profit_monitoring(profit_calculator &profit_calc,
                             const miner_user_info &user_infos,
                             const std::map<currency_type, optimization_method_params> &opt_method_params,
-                            int update_interval_ms,
+                            int update_interval_ms, int online_bench_duration_ms,
                             std::mutex &mutex, std::condition_variable &cond_var, const std::atomic_bool &terminate) {
-        //start power monitoring
+        //start power monitoring and mining of best currency
         int device_id = profit_calc.getDci_().device_id_nvml_;
         bool pm_started = start_power_monitoring_script(device_id);
-        int current_monitoring_time_ms = 0;
+        start_mining_best_currency(profit_calc, user_infos);
         long long int system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
-        monitoring_sanity_check(profit_calc, user_infos, system_time_start_ms, current_monitoring_time_ms);
         //monitoring loop
         while (!terminate) {
             std::cv_status stat;
@@ -252,16 +247,27 @@ namespace frequency_scaling {
             } while (stat == std::cv_status::no_timeout && !terminate);//prevent spurious wakeups
             if (terminate)
                 break;
-            current_monitoring_time_ms += update_interval_ms;
-            if (!monitoring_sanity_check(profit_calc, user_infos, system_time_start_ms, current_monitoring_time_ms))
+            if (!monitoring_sanity_check(profit_calc, user_infos)) {
+                system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::system_clock::now().time_since_epoch()).count();
                 continue;
+            }
             //currently mined currency
             currency_type old_best_currency = profit_calc.getBest_currency_();
+            int current_monitoring_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now().time_since_epoch()).count() - system_time_start_ms;
+            if(current_monitoring_time_ms > profit_calc.window_dur_ms_) {
+                system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::system_clock::now().time_since_epoch()).count() - profit_calc.window_dur_ms_;
+                current_monitoring_time_ms = profit_calc.window_dur_ms_;
+            }
+            VLOG(0) << gpu_log_prefix(old_best_currency, device_id) << "Entering monitor update cycle. Current time window: "
+                    << current_monitoring_time_ms / (3600*1000.0) << "h." << std::endl;
             //update with pool hashrates and long time power consumption if currency is mined > 1h
             if (current_monitoring_time_ms > 3600 * 1000) {
                 //update power only if hashrate update was successful -> pool could be down!!!
                 if (profit_calc.update_opt_config_hashrate_nanopool(old_best_currency, user_infos,
-                                                                    current_monitoring_time_ms))
+                                                                    system_time_start_ms))
                     profit_calc.update_power_consumption(old_best_currency, system_time_start_ms);
 
             }
@@ -279,15 +285,14 @@ namespace frequency_scaling {
                         << enum_to_string(old_best_currency) << std::endl;
                 //start mining new best currency
                 start_mining_best_currency(profit_calc, user_infos);
-                //reset timestamps
-                current_monitoring_time_ms = 0;
+                //reset timestamp
                 system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::system_clock::now().time_since_epoch()).count();
                 //reoptimize frequencies
                 const std::pair<bool, measurement> &new_opt_config_online =
                         find_optimal_config_currency(benchmark_info(std::bind(&run_benchmark_mining_online_log,
                                                                               std::cref(user_infos),
-                                                                              2 * 60 * 1000,
+                                                                              online_bench_duration_ms,
                                                                               std::placeholders::_1,
                                                                               std::placeholders::_2,
                                                                               std::placeholders::_3,
@@ -296,8 +301,6 @@ namespace frequency_scaling {
                                                                     user_infos),
                                                      profit_calc.getDci_(), new_best_currency,
                                                      opt_method_params.at(new_best_currency));
-                current_monitoring_time_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
-                        std::chrono::system_clock::now().time_since_epoch()).count() - system_time_start_ms;
                 //update config and change frequencies if optimization was successful
                 if (new_opt_config_online.first) {
                     profit_calc.update_opt_config_online(new_best_currency, new_opt_config_online.second);
@@ -306,7 +309,8 @@ namespace frequency_scaling {
                 }
             }
         }
-        //
+        //stop mining and power monitoring
+        stop_mining_script(device_id);
         if (pm_started)
             stop_power_monitoring_script(device_id);
     }
@@ -379,7 +383,7 @@ namespace frequency_scaling {
 
     static void gpu_thread_func(const optimization_config &opt_config,
                                 const device_clock_info &gpu_dci,
-                                const std::set<currency_type>& gpu_optimization_work,
+                                const std::set<currency_type> &gpu_optimization_work,
                                 std::map<int, std::map<currency_type, energy_hash_info>> &opt_results,
                                 gpu_group &group, std::mutex &all_mutex, std::condition_variable &cond_var,
                                 const std::atomic_bool &terminate,
@@ -399,7 +403,7 @@ namespace frequency_scaling {
                 const std::map<currency_type, measurement> &gpu_optimal_config_online =
                         find_optimal_config(benchmark_info(std::bind(&run_benchmark_mining_online_log,
                                                                      std::cref(opt_config.miner_user_infos_),
-                                                                     2 * 60 * 1000,
+                                                                     opt_config.online_bench_duration_sec_ * 1000,
                                                                      std::placeholders::_1,
                                                                      std::placeholders::_2,
                                                                      std::placeholders::_3,
@@ -468,14 +472,13 @@ namespace frequency_scaling {
                 std::lock_guard<std::mutex> lock_all(all_mutex);
                 gpu_opt_res = opt_results.at(gpu_dci.device_id_nvml_);
             }
-            //create profit calculator for gpu
+            //create profit calculator for gpu and start monitoring
             profit_calculator pc(gpu_dci, gpu_opt_res, opt_config.energy_cost_kwh_);
-            start_mining_best_currency(pc, opt_config.miner_user_infos_);
             start_profit_monitoring(pc, opt_config.miner_user_infos_,
                                     opt_config.opt_method_params_,
                                     opt_config.monitoring_interval_sec_ * 1000,
+                                    opt_config.online_bench_duration_sec_ * 1000,
                                     all_mutex, cond_var, terminate);
-            stop_mining_script(gpu_dci.device_id_nvml_);
             //set return value
             p.set_value(std::make_pair(gpu_dci.device_id_nvml_, pc.getEnergy_hash_info_()));
         } catch (const std::exception &ex) {
@@ -535,7 +538,8 @@ namespace frequency_scaling {
             }
             gpu_group &group = *it;
             //start gpu thread
-            threads.emplace_back(&gpu_thread_func, std::cref(opt_config), std::cref(gpu_dci), std::cref(gpu_distr.at(gpu_dci.device_id_nvml_)),
+            threads.emplace_back(&gpu_thread_func, std::cref(opt_config), std::cref(gpu_dci),
+                                 std::cref(gpu_distr.at(gpu_dci.device_id_nvml_)),
                                  std::ref(opt_results_optphase), std::ref(group),
                                  std::ref(mutex), std::ref(cond_var), std::cref(terminate), std::move(promise));
         }

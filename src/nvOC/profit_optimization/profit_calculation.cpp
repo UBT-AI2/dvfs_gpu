@@ -66,19 +66,17 @@ namespace frequency_scaling {
                 best_profit = profit_per_hour;
             }
             //print stats
-            std::ostringstream ss;
-            ss << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
+            VLOG(0) << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
                "Profit calculation using: hashrate=" <<
                get_used_hashrate(ct) << ", power=" << get_used_power(ct) <<
                ", energy_hash=" << get_used_energy_hash(ct) <<
                ", stock_price=" << it_ci->second.cs_.stock_price_eur_
                << std::endl;
-            ss << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
+            VLOG(0) << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
                "Calculated profit [eur/hour]: approximated earnings=" <<
                ci.approximated_earnings_eur_hour_ << ", energy_cost="
                << costs_per_hour << ", profit="
                << profit_per_hour << std::endl;
-            VLOG(0) << ss.str() << std::flush;
         }
         best_currency_ = static_cast<currency_type>(best_idx);
         best_currency_profit_ = best_profit;
@@ -111,8 +109,11 @@ namespace frequency_scaling {
     }
 
     bool profit_calculator::update_opt_config_hashrate_nanopool(currency_type current_mined_ct,
-                                                                const miner_user_info &user_info, int period_ms) {
+                                                                const miner_user_info &user_info, long long int system_time_start_ms) {
         try {
+            long long int system_time_now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now().time_since_epoch()).count();
+            int period_ms = system_time_now_ms - system_time_start_ms;
             const std::map<std::string, double> &avg_hashrates = get_avg_hashrate_per_worker_nanopool(
                     current_mined_ct, user_info.wallet_addresses_.at(current_mined_ct), period_ms);
             const std::string worker = user_info.worker_names_.at(dci_.device_id_nvml_);
