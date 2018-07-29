@@ -9,18 +9,18 @@ namespace frequency_scaling {
 
     void nvapiInit();
 
-    bool nvapi_register_gpu(int device_id);
+    bool nvapi_register_gpu(int device_id_nvapi);
 
     void nvapiUnload(int restoreClocks);
 
-    bool nvapiCheckSupport(int device_id);
+    bool nvapiCheckSupport(int device_id_nvapi);
 
     int nvapiGetDeviceIndexByBusId(int busId);
 
-    nvapi_clock_info nvapiGetMemClockInfo(int deviceIdNvapi);
+    nvapi_clock_info nvapiGetMemClockInfo(int device_id_nvapi);
 
-    nvapi_clock_info nvapiGetGraphClockInfo(int deviceIdNvapi);
+    nvapi_clock_info nvapiGetGraphClockInfo(int device_id_nvapi);
 
-    void nvapiOC(int idxGPU, int graphOCMHz, int memOCMHz);
+    void nvapiOC(int device_id_nvapi, int graphOCMHz, int memOCMHz);
 
 }

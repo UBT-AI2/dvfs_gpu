@@ -18,7 +18,7 @@
 
 namespace frequency_scaling {
 
-    std::string log_utils::logdir_name_;
+    std::string log_utils::logdir_name_ = ".";
     std::atomic_bool log_utils::logging_initialized_ = ATOMIC_VAR_INIT(false);
 
     bool log_utils::init_logging(const std::string &logdir_to_create, const std::string &glog_file_prefix,

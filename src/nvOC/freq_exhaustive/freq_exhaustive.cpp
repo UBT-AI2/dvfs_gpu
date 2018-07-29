@@ -1,38 +1,23 @@
 #include "freq_exhaustive.h"
-
+#include <limits>
 
 namespace frequency_scaling {
 
-    measurement freq_exhaustive(currency_type ms, const device_clock_info &dci, int nvapi_oc_interval,
-                                bool use_nvmlUC, int nvml_clock_idx_interval) {
-        int min_graph_oc = dci.min_graph_oc_;
-        if (use_nvmlUC)
-            min_graph_oc = nvapi_oc_interval;
+	measurement freq_exhaustive(const benchmark_func &benchmarkFunc, currency_type ct,
+		const device_clock_info &dci, int mem_oc_interval, int clock_idx_interval) {
+		measurement best_node;
+		best_node.energy_hash_ = std::numeric_limits<double>::lowest();
+		//for all supported mem clocks
+		for (int mem_oc = dci.min_mem_oc_; mem_oc <= dci.max_mem_oc_; mem_oc += mem_oc_interval) {
+			//for all supported graph clocks
+			for (int j = dci.nvml_graph_clocks_.size() - 1; j >= 0; j -= clock_idx_interval) {
+				const measurement &m = benchmarkFunc(ct, dci, mem_oc, j);
+				if (m.energy_hash_ > best_node.energy_hash_)
+					best_node = m;
+			}
+		}
 
-        measurement best_node;
-        best_node.energy_hash_ = -1e37;
-        //
-        //for all supported mem clocks (nvapi)
-        for (int mem_oc = dci.min_mem_oc_; mem_oc <= dci.max_mem_oc_; mem_oc += nvapi_oc_interval) {
-
-            if (use_nvmlUC) {
-                //for all supported graph clocks (nvml) -> underclocking
-                for (int j = dci.nvml_graph_clocks_.size() - 1; j >= 0; j -= nvml_clock_idx_interval) {
-                    const measurement &m = run_benchmark_script_nvml_nvapi(ms, dci, mem_oc, j);
-                    if (m.energy_hash_ > best_node.energy_hash_)
-                        best_node = m;
-                }
-            }
-
-            //for all supported graph clocks (nvapi) -> overclocking
-            for (int graph_oc = min_graph_oc; graph_oc <= dci.max_graph_oc_; graph_oc += nvapi_oc_interval) {
-                const measurement &m = run_benchmark_script_nvapi_only(ms, dci, mem_oc, graph_oc);
-                if (m.energy_hash_ > best_node.energy_hash_)
-                    best_node = m;
-            }
-        }
-
-        return best_node;
-    }
+		return best_node;
+	}
 
 }

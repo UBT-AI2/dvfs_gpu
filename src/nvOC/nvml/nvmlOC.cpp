@@ -19,14 +19,23 @@ namespace frequency_scaling {
         }
     }
 
+	static nvmlReturn_t __nvmlCheckOCSupport(int device_id) {
+		nvmlDevice_t device;
+		safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
+		nvmlReturn_t res = nvmlDeviceResetApplicationsClocks(device);
+		return res;
+	}
+
     void nvmlInit_() {
         VLOG(0) << "NVML initialization..." << std::endl;
         safeNVMLCall(nvmlInit());
     }
 
     bool nvml_register_gpu(int device_id) {
-        if (!nvmlCheckOCSupport(device_id))
-            THROW_NVML_ERROR("NVML register failed. GPU " + std::to_string(device_id) + " doesnt support OC");
+		nvmlReturn_t check_ret = __nvmlCheckOCSupport(device_id);
+        if (check_ret != NVML_SUCCESS)
+            THROW_NVML_ERROR("NVML register failed. GPU " + std::to_string(device_id) + 
+				" doesnt support OC: " + std::string(nvmlErrorString(check_ret)));
         auto res = registered_gpus.emplace(device_id);
         if (!res.second)
             return false;
@@ -78,10 +87,7 @@ namespace frequency_scaling {
     }
 
     bool nvmlCheckOCSupport(int device_id) {
-        nvmlDevice_t device;
-        safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
-        nvmlReturn_t res = nvmlDeviceResetApplicationsClocks(device);
-        return res == NVML_SUCCESS;
+        return __nvmlCheckOCSupport(device_id) == NVML_SUCCESS;
     }
 
     std::vector<int> nvmlGetAvailableMemClocks(int device_id) {

@@ -1,6 +1,6 @@
 #!/bin/bash
 BIN_DIR=../bin
-DEVICE_ID=1
+DEVICE_ID=0
 
 function save_call_command {
 	"$@"
@@ -12,20 +12,10 @@ function save_call_command {
     fi
 }
 
-function move_result_files {
-	local CURRENCY=$1
-	local OUTDIR=exhaustive_result_${CURRENCY}
-	mkdir $OUTDIR
-	mkdir $OUTDIR/data
-	mv result_${DEVICE_ID}* $OUTDIR
-	mv log_${DEVICE_ID}_* power_results_${DEVICE_ID}_* $OUTDIR/data
-}
-
 function exhaustive_test {
-	for CURRENCY in xmr eth zec;
+	for CURRENCY in eth zec;
 	do
-		save_call_command ./freq_exhaustive.exe ${CURRENCY} ${DEVICE_ID} 0 -1000 900 -200 200
-		move_result_files $CURRENCY
+		save_call_command ./freq_exhaustive.exe ${CURRENCY} ${DEVICE_ID}
 		sleep 60
 	done
 }

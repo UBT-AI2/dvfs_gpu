@@ -10,20 +10,24 @@
 using namespace frequency_scaling;
 
 int main(int argc, char **argv) {
-    if (argc < 8) {
+    if (argc < 3) {
         full_expression_accumulator<>(std::cout) << "Usage: " << argv[0]
-                                                 << " <currency_type> <device_id> <use_nvmlUC> <min_mem_oc> "
-                                                    "<max_mem_oc> <min_graph_oc> <max_graph_oc>" << std::endl;
+                                                 << " <currency_type> <device_id> "
+                                                    "[<min_mem_oc>] [<max_mem_oc>] [<min_graph_oc>] [<max_graph_oc>]" << std::endl;
         return 1;
     }
     currency_type ct = string_to_currency_type(argv[1]);
     unsigned int device_id = atoi(argv[2]);
-    int interval = 50;
-    int use_nvmlUC = atoi(argv[3]);
-    int min_mem_oc = atoi(argv[4]), max_mem_oc = atoi(argv[5]);
-    int min_graph_oc = atoi(argv[6]), max_graph_oc = atoi(argv[7]);
-    if (use_nvmlUC)
-        min_graph_oc = interval;
+	int min_mem_oc = 1, max_mem_oc = -1;
+	int min_graph_oc = 1, max_graph_oc = -1;
+	if(argc > 3)
+		min_mem_oc = atoi(argv[3]);
+	if (argc > 4)
+		max_mem_oc = atoi(argv[4]);
+	if (argc > 5)
+		min_graph_oc = atoi(argv[5]);
+	if (argc > 6)
+		max_graph_oc = atoi(argv[6]);
 
     try {
         //init apis
@@ -37,7 +41,7 @@ int main(int argc, char **argv) {
         device_clock_info dci(device_id, min_mem_oc, min_graph_oc, max_mem_oc, max_graph_oc);
 
         //
-        const measurement &m = freq_exhaustive(ct, dci, interval, use_nvmlUC, 2);
+        const measurement &m = freq_exhaustive(&run_benchmark_script_nvml_nvapi, ct, dci, 50, 2);
         VLOG(0) << "Best energy-hash value: " << m.energy_hash_ << std::endl;
 
         //stop power monitoring
