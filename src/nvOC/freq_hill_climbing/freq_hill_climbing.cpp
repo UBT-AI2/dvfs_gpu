@@ -41,10 +41,10 @@ namespace frequency_scaling {
             int graph_minus_idx = current_node.nvml_graph_clock_idx - graph_step_idx;
 
             //horizontal/vertical 4 neighborhood
-            if (expl_type == exploration_type::NEIGHBORHOOD_8 ||
+            if (!dci.nvapi_supported_ || expl_type == exploration_type::NEIGHBORHOOD_8 ||
                 expl_type == exploration_type::NEIGHBORHOOD_4_STRAIGHT ||
                 (expl_type == exploration_type::NEIGHBORHOOD_4_ALTERNATING && (iteration % 2))) {
-                if (mem_plus <= dci.max_mem_oc_) {
+                if (dci.nvapi_supported_ && mem_plus <= dci.max_mem_oc_) {
                     const measurement &m = benchmarkFunc(ms, dci, mem_plus,
                                                          current_node.nvml_graph_clock_idx);
                     if (m.hashrate_ >= min_hashrate) {
@@ -53,7 +53,7 @@ namespace frequency_scaling {
                                 compute_derivatives(dci, m, current_node, current_slope), m);
                     }
                 }
-                if (mem_minus >= dci.min_mem_oc_) {
+                if (dci.nvapi_supported_ && mem_minus >= dci.min_mem_oc_) {
                     const measurement &m = benchmarkFunc(ms, dci, mem_minus,
                                                          current_node.nvml_graph_clock_idx);
                     if (m.hashrate_ >= min_hashrate) {
@@ -83,9 +83,10 @@ namespace frequency_scaling {
             }
 
             //diagonal 4 neighborhood
-            if (expl_type == exploration_type::NEIGHBORHOOD_8 ||
-                expl_type == exploration_type::NEIGHBORHOOD_4_DIAGONAL ||
-                (expl_type == exploration_type::NEIGHBORHOOD_4_ALTERNATING && !(iteration % 2))) {
+            if (dci.nvapi_supported_ && (expl_type == exploration_type::NEIGHBORHOOD_8 ||
+                                         expl_type == exploration_type::NEIGHBORHOOD_4_DIAGONAL ||
+                                         (expl_type == exploration_type::NEIGHBORHOOD_4_ALTERNATING &&
+                                          !(iteration % 2)))) {
                 if (mem_plus <= dci.max_mem_oc_ && graph_plus_idx < dci.nvml_graph_clocks_.size()) {
                     const measurement &m = benchmarkFunc(ms, dci, mem_plus, graph_plus_idx);
                     if (m.hashrate_ >= min_hashrate) {

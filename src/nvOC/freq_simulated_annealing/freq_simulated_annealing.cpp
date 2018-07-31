@@ -94,12 +94,11 @@ namespace frequency_scaling {
     measurement
     freq_simulated_annealing(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
                              int max_iterations, int mem_step, int graph_idx_step, double min_hashrate) {
-        double start_temperature = guess_start_temperature(benchmarkFunc, ct, dci);
         //initial guess at maximum frequencies
         measurement start_node;
         start_node.mem_oc = dci.max_mem_oc_;
         start_node.nvml_graph_clock_idx = 0;
-        return freq_simulated_annealing(benchmarkFunc, ct, dci, start_node, start_temperature,
+        return freq_simulated_annealing(benchmarkFunc, ct, dci, start_node,
                                         max_iterations, mem_step, graph_idx_step, min_hashrate);
     }
 

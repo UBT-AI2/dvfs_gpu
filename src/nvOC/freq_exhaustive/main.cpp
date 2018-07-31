@@ -13,21 +13,22 @@ int main(int argc, char **argv) {
     if (argc < 3) {
         full_expression_accumulator<>(std::cout) << "Usage: " << argv[0]
                                                  << " <currency_type> <device_id> "
-                                                    "[<min_mem_oc>] [<max_mem_oc>] [<min_graph_oc>] [<max_graph_oc>]" << std::endl;
+                                                    "[<min_mem_oc>] [<max_mem_oc>] [<min_graph_oc>] [<max_graph_oc>]"
+                                                 << std::endl;
         return 1;
     }
     currency_type ct = string_to_currency_type(argv[1]);
     unsigned int device_id = atoi(argv[2]);
-	int min_mem_oc = 1, max_mem_oc = -1;
-	int min_graph_oc = 1, max_graph_oc = -1;
-	if(argc > 3)
-		min_mem_oc = atoi(argv[3]);
-	if (argc > 4)
-		max_mem_oc = atoi(argv[4]);
-	if (argc > 5)
-		min_graph_oc = atoi(argv[5]);
-	if (argc > 6)
-		max_graph_oc = atoi(argv[6]);
+    int min_mem_oc = 1, max_mem_oc = -1;
+    int min_graph_oc = 1, max_graph_oc = -1;
+    if (argc > 3)
+        min_mem_oc = atoi(argv[3]);
+    if (argc > 4)
+        max_mem_oc = atoi(argv[4]);
+    if (argc > 5)
+        min_graph_oc = atoi(argv[5]);
+    if (argc > 6)
+        max_graph_oc = atoi(argv[6]);
 
     try {
         //init apis

@@ -17,7 +17,7 @@ namespace frequency_scaling {
         std::vector<int> nvml_mem_clocks_, nvml_graph_clocks_;
         int min_mem_oc_, min_graph_oc_;
         int max_mem_oc_, max_graph_oc_;
-        bool nvml_supported_;
+        bool nvml_supported_, nvapi_supported_;
     };
 
     struct measurement {
