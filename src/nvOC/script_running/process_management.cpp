@@ -32,12 +32,10 @@ namespace frequency_scaling {
 
     static void sig_handler(int signo) {
         LOG(ERROR) << "Catched signal " << signo << ". Perform cleanup..." << std::endl;
-        if (signo == SIGINT) {
-            process_management::kill_all_processes(false);
-            nvapiUnload(1);
-            nvmlShutdown_(true);
-            exit(1);
-        }
+        process_management::kill_all_processes(false);
+        nvapiUnload(1);
+        nvmlShutdown_(true);
+        exit(1);
     }
 
 
