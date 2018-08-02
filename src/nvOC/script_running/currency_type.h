@@ -12,5 +12,7 @@ namespace frequency_scaling {
 
     currency_type string_to_currency_type(const std::string &str);
 
+    std::string gpu_log_prefix(int device_id_nvml);
+
     std::string gpu_log_prefix(currency_type ct, int device_id_nvml);
 }

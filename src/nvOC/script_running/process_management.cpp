@@ -233,7 +233,7 @@ namespace frequency_scaling {
                 process_management::all_processes_.emplace_back(pid, background);
             }
             VLOG(0) << "Started process: " << cmd << " (PID: " << pid << ")"
-                                                   << std::endl;
+                    << std::endl;
             if (!background) {
                 int status;
                 waitpid(pid, &status, 0);

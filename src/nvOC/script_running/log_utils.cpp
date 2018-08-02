@@ -10,8 +10,10 @@
 #include <windows.h>
 
 #else
+
 #include <sys/types.h>
 #include <sys/stat.h>
+
 #endif
 
 #include "../common_header/constants.h"

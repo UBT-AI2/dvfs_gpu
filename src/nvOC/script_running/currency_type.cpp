@@ -3,6 +3,7 @@
 //
 #include "currency_type.h"
 #include "../common_header/exceptions.h"
+#include "../nvml/nvmlOC.h"
 
 namespace frequency_scaling {
 
@@ -30,9 +31,14 @@ namespace frequency_scaling {
             THROW_RUNTIME_ERROR("Currency " + str + " not available");
     }
 
+    std::string gpu_log_prefix(int device_id_nvml) {
+        return "GPU " + std::to_string(device_id_nvml) + " [" +
+               nvmlGetDeviceName(device_id_nvml) + "]: ";
+    }
+
     std::string gpu_log_prefix(currency_type ct, int device_id_nvml) {
-        return "GPU " + std::to_string(device_id_nvml) + ": " +
-               enum_to_string(ct) + ": ";
+        return "GPU " + std::to_string(device_id_nvml) + " [" +
+               nvmlGetDeviceName(device_id_nvml) + "]: " + enum_to_string(ct) + ": ";
     }
 
 }

@@ -2,6 +2,7 @@
 
 #include <map>
 #include <set>
+#include <mutex>
 #include "../script_running/benchmark.h"
 #include "../script_running/mining.h"
 #include "../script_running/network_requests.h"
@@ -34,6 +35,31 @@ namespace frequency_scaling {
         measurement optimal_configuration_profit_;
     };
 
+    class best_profit_stats {
+    public:
+        struct device_stats {
+            currency_type ct_;
+            double earnings_, costs_, profit_;
+            double power_, hashrate_, energy_hash_;
+        };
+
+        void update_device_stats(int device_id, currency_type ct, double earnings,
+                                 double costs, double power, double hashrate);
+
+        double get_global_earnings() const;
+
+        double get_global_costs() const;
+
+        double get_global_profit() const;
+
+        double get_global_power() const;
+
+        const device_stats &get_device_stats(int device_id) const;
+
+    private:
+        mutable std::mutex map_mutex_;
+        std::map<int, device_stats> stats_map_;
+    };
 
     class profit_calculator {
     public:
@@ -79,6 +105,8 @@ namespace frequency_scaling {
 
         void save_current_period(currency_type ct);
 
+        static const best_profit_stats &get_best_profit_stats_global();
+
         const int window_dur_ms_ = 6 * 3600 * 1000;
     private:
         device_clock_info dci_;
@@ -86,8 +114,7 @@ namespace frequency_scaling {
         std::map<currency_type, energy_hash_info> energy_hash_info_;
         std::map<currency_type, measurement> last_profit_measurements_;
         double power_cost_kwh_;
-        currency_type best_currency_;
-        double best_currency_profit_;
+        static best_profit_stats best_profit_stats_global_;
     };
 
 }

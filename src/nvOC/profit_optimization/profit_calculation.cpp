@@ -33,6 +33,61 @@ namespace frequency_scaling {
             optimal_configuration_profit) {}
 
 
+    void best_profit_stats::update_device_stats(int device_id, currency_type ct, double earnings,
+                                                double costs, double power, double hashrate) {
+        std::lock_guard<std::mutex> lock(map_mutex_);
+        device_stats ds;
+        ds.ct_ = ct;
+        ds.earnings_ = earnings;
+        ds.costs_ = costs;
+        ds.profit_ = earnings - costs;
+        ds.power_ = power;
+        ds.hashrate_ = hashrate;
+        ds.energy_hash_ = hashrate / power;
+        stats_map_.erase(device_id);
+        stats_map_.emplace(device_id, ds);
+    }
+
+    double best_profit_stats::get_global_earnings() const {
+        std::lock_guard<std::mutex> lock(map_mutex_);
+        double sum = 0;
+        for (auto &elem : stats_map_)
+            sum += elem.second.earnings_;
+        return sum;
+    }
+
+    double best_profit_stats::get_global_costs() const {
+        std::lock_guard<std::mutex> lock(map_mutex_);
+        double sum = 0;
+        for (auto &elem : stats_map_)
+            sum += elem.second.costs_;
+        return sum;
+    }
+
+    double best_profit_stats::get_global_profit() const {
+        std::lock_guard<std::mutex> lock(map_mutex_);
+        double sum = 0;
+        for (auto &elem : stats_map_)
+            sum += elem.second.profit_;
+        return sum;
+    }
+
+    double best_profit_stats::get_global_power() const {
+        std::lock_guard<std::mutex> lock(map_mutex_);
+        double sum = 0;
+        for (auto &elem : stats_map_)
+            sum += elem.second.power_;
+        return sum;
+    }
+
+    const best_profit_stats::device_stats &best_profit_stats::get_device_stats(int device_id) const {
+        std::lock_guard<std::mutex> lock(map_mutex_);
+        return stats_map_.at(device_id);
+    }
+
+
+    best_profit_stats profit_calculator::best_profit_stats_global_;
+
     profit_calculator::profit_calculator(const device_clock_info &dci,
                                          const std::map<currency_type, energy_hash_info> &energy_hash_info,
                                          double power_cost_kwh) : dci_(dci),
@@ -49,7 +104,6 @@ namespace frequency_scaling {
 
     void
     profit_calculator::recalculate_best_currency() {
-        int best_idx = -1;
         double best_profit = std::numeric_limits<double>::lowest();
         for (int i = 0; i < static_cast<int>(currency_type::count); i++) {
             currency_type ct = static_cast<currency_type>(i);
@@ -62,8 +116,13 @@ namespace frequency_scaling {
             double costs_per_hour = ehi.optimal_configuration_profit_.power_ * (power_cost_kwh_ / 1000.0);
             double profit_per_hour = ci.approximated_earnings_eur_hour_ - costs_per_hour;
             if (profit_per_hour > best_profit) {
-                best_idx = i;
                 best_profit = profit_per_hour;
+                //update global profit stats for this device
+                profit_calculator::best_profit_stats_global_.update_device_stats(dci_.device_id_nvml_, ct,
+                                                                                 ci.approximated_earnings_eur_hour_,
+                                                                                 costs_per_hour,
+                                                                                 ehi.optimal_configuration_profit_.power_,
+                                                                                 ehi.optimal_configuration_profit_.hashrate_);
             }
             //print stats
             VLOG(0) << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
@@ -78,8 +137,11 @@ namespace frequency_scaling {
                     << costs_per_hour << ", profit="
                     << profit_per_hour << std::endl;
         }
-        best_currency_ = static_cast<currency_type>(best_idx);
-        best_currency_profit_ = best_profit;
+        const best_profit_stats &bps = profit_calculator::best_profit_stats_global_;
+        VLOG(0) << "Global profit stats [eur/hour]: approximated earnings=" <<
+                bps.get_global_earnings() << ", energy_cost=" << bps.get_global_costs() <<
+                "(" << bps.get_global_power() << "W), profit=" << bps.get_global_profit() << std::endl;
+
     }
 
     void profit_calculator::update_currency_info_nanopool() {
@@ -222,11 +284,11 @@ namespace frequency_scaling {
     }
 
     currency_type profit_calculator::getBest_currency_() const {
-        return best_currency_;
+        return profit_calculator::best_profit_stats_global_.get_device_stats(dci_.device_id_nvml_).ct_;
     }
 
     double profit_calculator::getBest_currency_profit_() const {
-        return best_currency_profit_;
+        return profit_calculator::best_profit_stats_global_.get_device_stats(dci_.device_id_nvml_).profit_;
     }
 
 
@@ -247,6 +309,10 @@ namespace frequency_scaling {
 
     void profit_calculator::save_current_period(currency_type ct) {
         last_profit_measurements_.at(ct) = energy_hash_info_.at(ct).optimal_configuration_profit_;
+    }
+
+    const best_profit_stats &profit_calculator::get_best_profit_stats_global() {
+        return profit_calculator::best_profit_stats_global_;
     }
 
 }

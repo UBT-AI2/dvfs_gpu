@@ -28,10 +28,10 @@ namespace frequency_scaling {
         nvml_supported_ = nvmlCheckOCSupport(device_id_nvml);
         device_id_nvapi_ = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id_nvml));
         nvapi_supported_ = (device_id_nvapi_ < 0) ? false : nvapiCheckSupport(device_id_nvapi_);
-        VLOG(0) << "GPU " << device_id_nvml << ": NVAPI support: " << ((nvapi_supported_) ? "Yes. " : "No. ") <<
+        VLOG(0) << gpu_log_prefix(device_id_nvml) << "NVAPI support: " << ((nvapi_supported_) ? "Yes. " : "No. ") <<
                 "NVML support: " << ((nvml_supported_) ? "Yes" : "No. ") << std::endl;
         LOG_IF(WARNING, !nvapi_supported_ && !nvml_supported_)
-        << "GPU " << device_id_nvml << ": NVML and NVAPI not supported: Frequency optimization not possible"
+        << gpu_log_prefix(device_id_nvml) << "NVML and NVAPI not supported: Frequency optimization not possible"
         << std::endl;
         CUresult res = cuDeviceGetByPCIBusId(&device_id_cuda_, nvmlGetBusIdString(device_id_nvml).c_str());
         if (res == CUDA_ERROR_NOT_INITIALIZED) {
