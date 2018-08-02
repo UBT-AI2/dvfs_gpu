@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
         device_clock_info dci(device_id, min_mem_oc, min_graph_oc, max_mem_oc, max_graph_oc);
 
         //
-        const measurement &m = freq_exhaustive(&run_benchmark_script_nvml_nvapi, ct, dci, 50, 2);
+        const measurement &m = freq_exhaustive(&run_benchmark_mining_offline, ct, dci, 50, 2);
         VLOG(0) << "Best energy-hash value: " << m.energy_hash_ << std::endl;
 
         //stop power monitoring

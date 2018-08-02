@@ -13,7 +13,7 @@ function save_call_command {
 }
 
 function exhaustive_test {
-	for CURRENCY in eth zec;
+	for CURRENCY in xmr eth zec;
 	do
 		save_call_command ./freq_exhaustive.exe ${CURRENCY} ${DEVICE_ID}
 		sleep 60

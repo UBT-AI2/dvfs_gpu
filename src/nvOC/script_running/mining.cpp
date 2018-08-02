@@ -89,7 +89,7 @@ namespace frequency_scaling {
                 "Running online benchmark with clocks: mem:" << mem_clock << ",graph:" << graph_clock
                 << std::endl;
         //change graph and mem clocks and start mining
-        change_clocks_nvml_nvapi(dci, mem_oc, nvml_graph_clock_idx);
+        change_gpu_clocks(dci, mem_oc, nvml_graph_clock_idx);
         bool mining_started = start_mining_script(ct, dci, user_info);
         //sleep
         long long int system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(

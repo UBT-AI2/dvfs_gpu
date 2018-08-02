@@ -200,8 +200,8 @@ namespace frequency_scaling {
                 << std::endl;
         //change frequencies at the end (danger to trigger nvml unknown error)
         const energy_hash_info &ehi = profit_calc.getEnergy_hash_info_().at(best_currency);
-        change_clocks_nvml_nvapi(profit_calc.getDci_(), ehi.optimal_configuration_online_.mem_oc,
-                                 ehi.optimal_configuration_online_.nvml_graph_clock_idx);
+        change_gpu_clocks(profit_calc.getDci_(), ehi.optimal_configuration_online_.mem_oc,
+                          ehi.optimal_configuration_online_.nvml_graph_clock_idx);
     }
 
     static bool monitoring_sanity_check(const profit_calculator &profit_calc, const miner_user_info &user_infos) {
@@ -301,8 +301,8 @@ namespace frequency_scaling {
                 //update config and change frequencies if optimization was successful
                 if (new_opt_config_online.first) {
                     profit_calc.update_opt_config_online(new_best_currency, new_opt_config_online.second);
-                    change_clocks_nvml_nvapi(profit_calc.getDci_(), new_opt_config_online.second.mem_oc,
-                                             new_opt_config_online.second.nvml_graph_clock_idx);
+                    change_gpu_clocks(profit_calc.getDci_(), new_opt_config_online.second.mem_oc,
+                                      new_opt_config_online.second.nvml_graph_clock_idx);
                 }
             }
         }
@@ -391,7 +391,7 @@ namespace frequency_scaling {
             } else {
                 VLOG(0) << "GPU " << gpu_dci.device_id_nvml_ << ": Starting optimization phase..." << std::endl;
                 const std::map<currency_type, measurement> &gpu_optimal_config_offline =
-                        find_optimal_config(benchmark_info(&run_benchmark_script_nvml_nvapi),
+                        find_optimal_config(benchmark_info(&run_benchmark_mining_offline),
                                             gpu_dci, gpu_optimization_work,
                                             opt_config.opt_method_params_);
                 std::set<currency_type> online_opt_currencies;

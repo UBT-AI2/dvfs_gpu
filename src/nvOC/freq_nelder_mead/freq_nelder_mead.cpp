@@ -182,11 +182,19 @@ namespace frequency_scaling {
             return freq_nelder_mead2D(benchmarkFunc, ct, dci, start_node, min_iterations, max_iterations, mem_step,
                                       graph_idx_step,
                                       min_hashrate, mem_scale, graph_scale);
-        else
+        else if (dci.nvml_supported_)
             return freq_nelder_mead1D(benchmarkFunc, ct, dci, start_node, min_iterations, max_iterations, mem_step,
                                       graph_idx_step,
                                       min_hashrate, mem_scale, graph_scale);
+        else {
+            measurement current_node = benchmarkFunc(ct, dci, start_node.mem_oc, start_node.nvml_graph_clock_idx);
+            if (current_node.hashrate_ < min_hashrate) {
+                //throw optimization_error("Minimum hashrate cannot be reached");
+                LOG(ERROR) << "start_node does not have minimum hashrate (" <<
+                           current_node.hashrate_ << " < " << min_hashrate << ")" << std::endl;
+            }
+            return current_node;
+        }
     }
-
 
 }

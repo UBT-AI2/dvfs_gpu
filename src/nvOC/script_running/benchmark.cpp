@@ -28,6 +28,11 @@ namespace frequency_scaling {
         nvml_supported_ = nvmlCheckOCSupport(device_id_nvml);
         device_id_nvapi_ = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id_nvml));
         nvapi_supported_ = (device_id_nvapi_ < 0) ? false : nvapiCheckSupport(device_id_nvapi_);
+        VLOG(0) << "GPU " << device_id_nvml << ": NVAPI support: " << ((nvapi_supported_) ? "Yes. " : "No. ") <<
+                "NVML support: " << ((nvml_supported_) ? "Yes" : "No. ") << std::endl;
+        LOG_IF(WARNING, !nvapi_supported_ && !nvml_supported_)
+        << "GPU " << device_id_nvml << ": NVML and NVAPI not supported: Frequency optimization not possible"
+        << std::endl;
         CUresult res = cuDeviceGetByPCIBusId(&device_id_cuda_, nvmlGetBusIdString(device_id_nvml).c_str());
         if (res == CUDA_ERROR_NOT_INITIALIZED) {
             cuInit(0);
@@ -35,10 +40,7 @@ namespace frequency_scaling {
         }
         VLOG(0) << "Matching device by PCIBusId: NVML-Id=" << device_id_nvml << ", NVAPI-Id=" <<
                 device_id_nvapi_ << ", CUDA-Id=" << device_id_cuda_ << std::endl;
-        if (!nvapi_supported_ && !nvml_supported_)
-            THROW_RUNTIME_ERROR("GPU " + std::to_string(device_id_nvml) +
-                                ": NVML and NVAPI not supported: No kind of OC possible");
-
+        //set default min and max frequencies
         //##############################
         if (nvml_supported_)
             nvml_register_gpu(device_id_nvml);
@@ -69,14 +71,12 @@ namespace frequency_scaling {
             else if (min_graph_oc > 0)
                 min_graph_oc_ = graph_clocks.back() - nvapi_default_graph_clock_;
         }
-
         if (min_mem_oc_ > max_mem_oc_)
-            throw std::invalid_argument("max_mem_oc >= min_mem_oc violated");
+            THROW_RUNTIME_ERROR("max_mem_oc >= min_mem_oc violated");
         if (min_graph_oc_ > max_graph_oc_)
-            throw std::invalid_argument("max_graph_oc >= min_graph_oc violated");
-
+            THROW_RUNTIME_ERROR("max_graph_oc >= min_graph_oc violated");
+        //fill frequency vectors
         //###############################
-
         int oc_interval = 15;
         if (nvml_supported_) {
             nvml_mem_clocks_ = nvmlGetAvailableMemClocks(device_id_nvml);
@@ -146,7 +146,6 @@ namespace frequency_scaling {
             return false;
         return true;
     }
-
 
     static measurement run_benchmark_script(currency_type ct, const device_clock_info &dci,
                                             int graph_clock, int mem_clock) {
@@ -253,10 +252,10 @@ namespace frequency_scaling {
         return res / count;
     }
 
-    void change_clocks_nvml_nvapi(const device_clock_info &dci,
-                                  int mem_oc, int nvml_graph_clock_idx) {
-        int graph_clock = dci.nvml_graph_clocks_[nvml_graph_clock_idx];
+    void change_gpu_clocks(const device_clock_info &dci,
+                           int mem_oc, int nvml_graph_clock_idx) {
         if (dci.nvapi_supported_) {
+            int graph_clock = dci.nvml_graph_clocks_[nvml_graph_clock_idx];
             if (!dci.nvml_supported_ || graph_clock > dci.nvapi_default_graph_clock_) {
                 int graph_oc = graph_clock - dci.nvapi_default_graph_clock_;
                 nvapiOC(dci.device_id_nvapi_, graph_oc, mem_oc);
@@ -264,22 +263,22 @@ namespace frequency_scaling {
                 nvapiOC(dci.device_id_nvapi_, 0, mem_oc);
                 nvmlOC(dci.device_id_nvml_, graph_clock, dci.nvml_mem_clocks_[0]);
             }
-        } else {
+        } else if (dci.nvml_supported_) {
+            int graph_clock = dci.nvml_graph_clocks_[nvml_graph_clock_idx];
             if (mem_oc != 0)
                 THROW_RUNTIME_ERROR("mem_oc != 0 althought nvapi not supported");
             nvmlOC(dci.device_id_nvml_, graph_clock, dci.nvml_mem_clocks_[0]);
+        } else {
+            if (mem_oc != 0 || nvml_graph_clock_idx != 0)
+                THROW_RUNTIME_ERROR("mem_oc != 0 or graph_clock_idx != 0 although nvapi and nvml not supported");
         }
     }
 
-    void change_clocks_nvapi_only(const device_clock_info &dci,
-                                  int mem_oc, int graph_oc) {
-        nvapiOC(dci.device_id_nvapi_, graph_oc, mem_oc);
-    }
 
-    measurement run_benchmark_script_nvml_nvapi(currency_type ct, const device_clock_info &dci,
-                                                int mem_oc, int nvml_graph_clock_idx) {
+    measurement run_benchmark_mining_offline(currency_type ct, const device_clock_info &dci,
+                                             int mem_oc, int nvml_graph_clock_idx) {
         //change graph and mem clocks
-        change_clocks_nvml_nvapi(dci, mem_oc, nvml_graph_clock_idx);
+        change_gpu_clocks(dci, mem_oc, nvml_graph_clock_idx);
         int mem_clock = dci.nvapi_default_mem_clock_ + mem_oc;
         int graph_clock = dci.nvml_graph_clocks_[nvml_graph_clock_idx];
         //run script_running
@@ -289,20 +288,5 @@ namespace frequency_scaling {
         m.graph_oc = graph_clock - dci.nvapi_default_graph_clock_;
         return m;
     }
-
-    measurement run_benchmark_script_nvapi_only(currency_type ct, const device_clock_info &dci,
-                                                int mem_oc, int graph_oc) {
-        //change graph and mem clocks
-        change_clocks_nvapi_only(dci, mem_oc, graph_oc);
-        int mem_clock = dci.nvapi_default_mem_clock_ + mem_oc;
-        int graph_clock = dci.nvapi_default_graph_clock_ + graph_oc;
-        //run script_running
-        measurement &&m = run_benchmark_script(ct, dci, graph_clock, mem_clock);
-        m.nvml_graph_clock_idx = -1;
-        m.mem_oc = mem_oc;
-        m.graph_oc = graph_oc;
-        return m;
-    }
-
 
 }

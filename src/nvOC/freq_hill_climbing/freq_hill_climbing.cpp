@@ -183,6 +183,8 @@ namespace frequency_scaling {
             LOG(ERROR) << "start_node does not have minimum hashrate (" <<
                        current_node.hashrate_ << " < " << min_hashrate << ")" << std::endl;
         }
+        if (!dci.nvml_supported_ && !dci.nvapi_supported_)
+            return current_node;
         measurement best_node;
         if (allow_start_node_result)
             best_node = current_node;

@@ -49,17 +49,11 @@ namespace frequency_scaling {
     double get_avg_power_usage(int device_id, long long int system_timestamp_start_ms,
                                long long int system_timestamp_end_ms);
 
-    void change_clocks_nvml_nvapi(const device_clock_info &dci,
-                                  int mem_oc, int nvml_graph_clock_idx);
-
-    void change_clocks_nvapi_only(const device_clock_info &dci,
-                                  int mem_oc, int graph_oc);
+    void change_gpu_clocks(const device_clock_info &dci,
+                           int mem_oc, int nvml_graph_clock_idx);
 
     measurement
-    run_benchmark_script_nvml_nvapi(currency_type ct, const device_clock_info &dci, int mem_oc,
-                                    int nvml_graph_clock_idx);
-
-    measurement
-    run_benchmark_script_nvapi_only(currency_type ct, const device_clock_info &dci, int mem_oc, int graph_oc);
+    run_benchmark_mining_offline(currency_type ct, const device_clock_info &dci, int mem_oc,
+                                 int nvml_graph_clock_idx);
 
 }
