@@ -151,7 +151,7 @@ namespace frequency_scaling {
                                             int graph_clock, int mem_clock) {
         {
             VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml_) <<
-                    "Running offline benchmark with clocks: mem:" << mem_clock << ",graph:" << graph_clock
+                    "Running offline benchmark with clocks: mem=" << mem_clock << ",graph=" << graph_clock
                     << std::endl;
             //run benchmark script to get measurement
             char cmd2[BUFFER_SIZE];
@@ -204,6 +204,14 @@ namespace frequency_scaling {
                 pt = strtok(nullptr, ",");
             }
         }
+		//
+		if (data.size() < 6) {
+			LOG(ERROR) << gpu_log_prefix(ct, dci.device_id_nvml_) << 
+				"Offline benchmark with clocks : mem=" << mem_clock << ",graph=" << graph_clock << " failed"
+				<< std::endl;
+			//return invalid measurement
+			return measurement(mem_clock, graph_clock, 0, 0);
+		}
         measurement m(mem_clock, graph_clock, data.at(2), data.at(3));
         m.hashrate_measure_dur_ms_ = data.at(5);
         m.power_measure_dur_ms_ = data.at(5);

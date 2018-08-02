@@ -3,32 +3,40 @@
     "monitoring_interval": "3601",
     "online_bench_duration": "120",
     "email": "alexander.fiebig@uni-bayreuth.de",
-    "devices_to_use": [
-        {
-            "index": "1",
-            "min_mem_oc": "1",
-			"min_graph_oc": "1",
-            "max_mem_oc": "-1",
-            "max_graph_oc": "-1",
-            "worker_name": "DESKTOP-6817PNB_gpu1"
-        },
-		{
-            "index": "0",
-            "min_mem_oc": "1",
-			"min_graph_oc": "1",
-            "max_mem_oc": "-1",
-            "max_graph_oc": "-1",
-            "worker_name": "DESKTOP-6817PNB_gpu0"
-        },
-		{
-            "index": "2",
-            "min_mem_oc": "1",
-			"min_graph_oc": "1",
-            "max_mem_oc": "-1",
-            "max_graph_oc": "-1",
-            "worker_name": "DESKTOP-6817PNB_gpu2"
-        }
-    ],
+  "devices_to_use": [
+    {
+      "index": "0",
+      "min_mem_oc": "1",
+      "min_graph_oc": "1",
+      "max_mem_oc": "-1",
+      "max_graph_oc": "-1",
+      "worker_name": "DESKTOP-6817PNB_gpu0"
+    },
+    {
+      "index": "1",
+      "min_mem_oc": "1",
+      "min_graph_oc": "1",
+      "max_mem_oc": "-1",
+      "max_graph_oc": "-1",
+      "worker_name": "DESKTOP-6817PNB_gpu1"
+    },
+    {
+      "index": "2",
+      "min_mem_oc": "1",
+      "min_graph_oc": "1",
+      "max_mem_oc": "-1",
+      "max_graph_oc": "-1",
+      "worker_name": "DESKTOP-6817PNB_gpu2"
+    },
+    {
+      "index": "3",
+      "min_mem_oc": "1",
+      "min_graph_oc": "1",
+      "max_mem_oc": "-1",
+      "max_graph_oc": "-1",
+      "worker_name": "DESKTOP-6817PNB_gpu3"
+    }
+  ],
     "currencies_to_use": {
         "ETH": {
             "wallet_address": "0x8291ca623a1f1a877fa189b594f6098c74aad0b3",
