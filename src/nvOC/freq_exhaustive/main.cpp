@@ -43,7 +43,8 @@ int main(int argc, char **argv) {
 
         //
         const measurement &m = freq_exhaustive(&run_benchmark_mining_offline, ct, dci, 50, 2);
-        VLOG(0) << "Best energy-hash value: " << m.energy_hash_ << std::endl;
+		VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml_) << "Computed optimal energy-hash ratio: "
+			<< m.energy_hash_ << " (mem=" << m.mem_clock_ << ",graph=" << m.graph_clock_ << ")" << std::endl;
 
         //stop power monitoring
         stop_power_monitoring_script(device_id);

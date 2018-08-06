@@ -159,25 +159,26 @@ namespace frequency_scaling {
     }
 
     measurement freq_nelder_mead(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
-                                 int min_iterations, int max_iterations,
+                                 int max_iterations,
                                  int mem_step, int graph_idx_step,
-                                 double min_hashrate,
-                                 double mem_scale, double graph_scale) {
+                                 double min_hashrate) {
         //initial guess at maximum frequencies
         measurement start_node;
         start_node.mem_oc = dci.max_mem_oc_;
         start_node.nvml_graph_clock_idx = 0;
-        return freq_nelder_mead(benchmarkFunc, ct, dci, start_node, min_iterations, max_iterations, mem_step,
+        return freq_nelder_mead(benchmarkFunc, ct, dci, start_node, max_iterations, mem_step,
                                 graph_idx_step,
-                                min_hashrate, mem_scale, graph_scale);
+                                min_hashrate);
     }
 
     measurement freq_nelder_mead(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
                                  const measurement &start_node,
-                                 int min_iterations, int max_iterations,
+                                 int max_iterations,
                                  int mem_step, int graph_idx_step,
-                                 double min_hashrate,
-                                 double mem_scale, double graph_scale) {
+                                 double min_hashrate) {
+		int min_iterations = 1;
+		double mem_scale = 1.5, graph_scale = 2.5;
+		//
         if (dci.nvapi_supported_)
             return freq_nelder_mead2D(benchmarkFunc, ct, dci, start_node, min_iterations, max_iterations, mem_step,
                                       graph_idx_step,

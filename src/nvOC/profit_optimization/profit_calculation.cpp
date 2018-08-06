@@ -140,7 +140,7 @@ namespace frequency_scaling {
         const best_profit_stats &bps = profit_calculator::best_profit_stats_global_;
         VLOG(0) << "Global profit stats [eur/hour]: approximated earnings=" <<
                 bps.get_global_earnings() << ", energy_cost=" << bps.get_global_costs() <<
-                "(" << bps.get_global_power() << "W), profit=" << bps.get_global_profit() << std::endl;
+                " (" << bps.get_global_power() << "W), profit=" << bps.get_global_profit() << std::endl;
 
     }
 

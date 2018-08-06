@@ -64,8 +64,8 @@
                 "method": "NM",
                 "min_hashrate": "-1",
                 "max_iterations": "8",
-                "mem_step": "400",
-                "graph_idx_step": "15"
+                "mem_step": "500",
+                "graph_idx_step": "25"
             }
         }
     }

@@ -97,13 +97,13 @@ namespace frequency_scaling {
                 case optimization_method::NELDER_MEAD:
                     if (bi.offline_)
                         optimal_config = freq_nelder_mead(bi.bf_, ct, dci,
-                                                          1, opt_params_ct.max_iterations_, opt_params_ct.mem_step_,
+                                                          opt_params_ct.max_iterations_, opt_params_ct.mem_step_,
                                                           opt_params_ct.graph_idx_step_,
                                                           opt_params_ct.min_hashrate_);
                     else
                         optimal_config = freq_nelder_mead(bi.bf_, ct, dci,
                                                           bi.start_values_.at(ct),
-                                                          1, opt_params_ct.max_iterations_ / online_div,
+                                                          opt_params_ct.max_iterations_ / online_div,
                                                           opt_params_ct.mem_step_ / online_div,
                                                           opt_params_ct.graph_idx_step_ / online_div,
                                                           opt_params_ct.min_hashrate_);

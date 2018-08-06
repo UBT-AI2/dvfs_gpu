@@ -49,10 +49,10 @@ int main(int argc, char **argv) {
         device_clock_info dci(device_id, min_mem_oc, min_graph_oc, max_mem_oc, max_graph_oc);
 
         //
-        const measurement &m = freq_nelder_mead(&run_benchmark_mining_offline, ct, dci, 1, max_iterations, mem_step,
-                                                graph_idx_step,
-                                                min_hashrate);
-        VLOG(0) << "Best energy-hash value: " << m.energy_hash_ << std::endl;
+        const measurement &m = freq_nelder_mead(&run_benchmark_mining_offline, ct, dci, max_iterations, mem_step,
+                                                graph_idx_step, min_hashrate);
+		VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml_) << "Computed optimal energy-hash ratio: "
+			<< m.energy_hash_ << " (mem=" << m.mem_clock_ << ",graph=" << m.graph_clock_ << ")" << std::endl;
 
         //stop power monitoring
         stop_power_monitoring_script(device_id);
