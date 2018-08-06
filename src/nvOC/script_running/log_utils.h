@@ -19,11 +19,11 @@ namespace frequency_scaling {
 
         static std::string get_power_log_filename(int device_id_nvml);
 
-        static std::string get_hash_log_filename(currency_type ct, int device_id_nvml);
+        static std::string get_hash_log_filename(const currency_type &ct, int device_id_nvml);
 
-        static std::string get_offline_bench_filename(currency_type ct, int device_id_nvml);
+        static std::string get_offline_bench_filename(const currency_type &ct, int device_id_nvml);
 
-        static std::string get_online_bench_filename(currency_type ct, int device_id_nvml);
+        static std::string get_online_bench_filename(const currency_type &ct, int device_id_nvml);
 
     private:
         static std::string logdir_name_;

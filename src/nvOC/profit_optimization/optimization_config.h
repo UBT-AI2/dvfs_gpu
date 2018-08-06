@@ -35,11 +35,12 @@ namespace frequency_scaling {
     };
 
 
-    optimization_config get_config_user_dialog();
+    optimization_config get_config_user_dialog(const std::map<std::string, currency_type> &available_currencies);
 
     void write_config_json(const std::string &filename, const optimization_config &opt_config);
 
-    optimization_config parse_config_json(const std::string &filename);
+    optimization_config
+    parse_config_json(const std::string &filename, const std::map<std::string, currency_type> &available_currencies);
 
     std::string enum_to_string(optimization_method opt_method);
 

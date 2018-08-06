@@ -58,16 +58,16 @@ namespace frequency_scaling {
         return "power_results_" + std::to_string(device_id_nvml) + ".txt";
     }
 
-    std::string log_utils::get_hash_log_filename(currency_type ct, int device_id_nvml) {
-        return "hash_log_" + enum_to_string(ct) + "_" + std::to_string(device_id_nvml) + ".txt";
+    std::string log_utils::get_hash_log_filename(const currency_type &ct, int device_id_nvml) {
+        return "hash_log_" + ct.currency_name_ + "_" + std::to_string(device_id_nvml) + ".txt";
     }
 
-    std::string log_utils::get_offline_bench_filename(currency_type ct, int device_id_nvml) {
-        return "offline_bench_result_gpu" + std::to_string(device_id_nvml) + "_" + enum_to_string(ct) + ".dat";
+    std::string log_utils::get_offline_bench_filename(const currency_type &ct, int device_id_nvml) {
+        return "offline_bench_result_gpu" + std::to_string(device_id_nvml) + "_" + ct.currency_name_ + ".dat";
     }
 
-    std::string log_utils::get_online_bench_filename(currency_type ct, int device_id_nvml) {
-        return "online_bench_result_gpu" + std::to_string(device_id_nvml) + "_" + enum_to_string(ct) + ".dat";
+    std::string log_utils::get_online_bench_filename(const currency_type &ct, int device_id_nvml) {
+        return "online_bench_result_gpu" + std::to_string(device_id_nvml) + "_" + ct.currency_name_ + ".dat";
     }
 
 }

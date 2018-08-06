@@ -16,6 +16,7 @@ namespace frequency_scaling {
                                   const std::map<int, std::map<currency_type, energy_hash_info>> &opt_result);
 
     std::map<int, std::map<currency_type, energy_hash_info>>
-    load_optimization_result(const std::string &filename);
+    load_optimization_result(const std::string &filename,
+                             const std::map<std::string, currency_type> &available_currencies);
 
 }

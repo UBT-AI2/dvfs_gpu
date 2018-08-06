@@ -32,8 +32,8 @@ namespace frequency_scaling {
         switch (method) {
             case optimization_method::NELDER_MEAD:
                 max_iterations_ = 8;
-                mem_step_ = 400;
-                graph_idx_step_ = 15;
+                mem_step_ = 500;
+                graph_idx_step_ = 25;
                 break;
             case optimization_method::HILL_CLIMBING:
             case optimization_method::SIMULATED_ANNEALING:
@@ -69,7 +69,7 @@ namespace frequency_scaling {
     }
 
 
-    optimization_config get_config_user_dialog() {
+    optimization_config get_config_user_dialog(const std::map<std::string, currency_type> &available_currencies) {
         optimization_config opt_config;
         std::string user_in, user_msg;
         //input energy costs
@@ -99,22 +99,16 @@ namespace frequency_scaling {
         if (opt_config.dcis_.empty())
             THROW_RUNTIME_ERROR("No device selected");
 
-        opt_config.miner_user_infos_.wallet_addresses_.emplace(currency_type::ETH,
-                                                               "0x8291ca623a1f1a877fa189b594f6098c74aad0b3");
-        opt_config.miner_user_infos_.wallet_addresses_.emplace(currency_type::ZEC,
-                                                               "t1Z8gLLGyxGRkjRFbNnJ2n6yvHb1Vo3pXKH");
-        opt_config.miner_user_infos_.wallet_addresses_.emplace(currency_type::XMR,
-                                                               "49obKYMTctj2owFCjjPwmDELGNCc7kz3WBVLGgpF1MC3cWYH3psdpyV8rBdZUycYPr3qU9ChEmj4ZMFLLf2gN2bcFEzNPpv");
         //select currencies to mine
-        for (int i = 0; i < static_cast<int>(currency_type::count); i++) {
-            currency_type ct = static_cast<currency_type>(i);
-            user_msg = "Include currency " + enum_to_string(ct) + "? [y/n]";
+        for (auto &elem : available_currencies) {
+            const currency_type &ct = elem.second;
+            user_msg = "Include currency " + ct.currency_name_ + "? [y/n]";
             user_in = cli_get_string(user_msg, "[yn]");
             if (user_in != "y")
                 continue;
-            //user_msg = "Enter wallet_address:";
-            //user_in = cli_get_string(user_msg, "[a-zA-Z0-9]+");
-            //opt_config.miner_user_infos_.wallet_addresses_.emplace(ct, user_in);
+            user_msg = "Enter wallet_address:";
+            user_in = cli_get_string(user_msg, "[a-zA-Z0-9]+");
+            opt_config.miner_user_infos_.wallet_addresses_.emplace(ct, user_in);
             //choose optimization method
             user_msg = "Select method used to optimize energy-hash ratio: [NM/HC/SA]";
             user_in = cli_get_string(user_msg, "NM|HC|SA");
@@ -158,30 +152,30 @@ namespace frequency_scaling {
         root.add_child("devices_to_use", devices_to_use);
         //write currencies to use
         pt::ptree currencies_to_use;
-        for (int i = 0; i < static_cast<int>(currency_type::count); i++) {
-            currency_type ct = static_cast<currency_type>(i);
-            auto it_mui = opt_config.miner_user_infos_.wallet_addresses_.find(ct);
-            auto it_omp = opt_config.opt_method_params_.find(ct);
-            if (it_mui == opt_config.miner_user_infos_.wallet_addresses_.end() ||
-                it_omp == opt_config.opt_method_params_.end())
-                continue;
+        for (auto &elem : opt_config.miner_user_infos_.wallet_addresses_) {
+            const currency_type &ct = elem.first;
+            if (!opt_config.opt_method_params_.count(ct))
+                THROW_RUNTIME_ERROR("Invalid opt_config: no opt_method_params for " + ct.currency_name_ +
+                                    " wallet_address available");
+            const optimization_method_params &opt_params = opt_config.opt_method_params_.at(ct);
             //
             pt::ptree pt_currency;
             pt::ptree pt_opt_method_params;
-            pt_currency.put("wallet_address", it_mui->second);
-            pt_opt_method_params.put("method", enum_to_string(it_omp->second.method_));
-            pt_opt_method_params.put("min_hashrate", it_omp->second.min_hashrate_);
-            pt_opt_method_params.put("max_iterations", it_omp->second.max_iterations_);
-            pt_opt_method_params.put("mem_step", it_omp->second.mem_step_);
-            pt_opt_method_params.put("graph_idx_step", it_omp->second.graph_idx_step_);
+            pt_currency.put("wallet_address", elem.second);
+            pt_opt_method_params.put("method", enum_to_string(opt_params.method_));
+            pt_opt_method_params.put("min_hashrate", opt_params.min_hashrate_);
+            pt_opt_method_params.put("max_iterations", opt_params.max_iterations_);
+            pt_opt_method_params.put("mem_step", opt_params.mem_step_);
+            pt_opt_method_params.put("graph_idx_step", opt_params.graph_idx_step_);
             pt_currency.add_child("opt_method_params", pt_opt_method_params);
-            currencies_to_use.push_back(std::make_pair(enum_to_string(ct), pt_currency));
+            currencies_to_use.push_back(std::make_pair(ct.currency_name_, pt_currency));
         }
         root.add_child("currencies_to_use", currencies_to_use);
         pt::write_json(filename, root);
     }
 
-    optimization_config parse_config_json(const std::string &filename) {
+    optimization_config
+    parse_config_json(const std::string &filename, const std::map<std::string, currency_type> &available_currencies) {
         namespace pt = boost::property_tree;
         pt::ptree root;
         pt::read_json(filename, root);
@@ -202,7 +196,10 @@ namespace frequency_scaling {
         }
         //read currencies to use
         for (const pt::ptree::value_type &array_elem : root.get_child("currencies_to_use")) {
-            currency_type ct = string_to_currency_type(array_elem.first);
+            if (!available_currencies.count(array_elem.first))
+                THROW_RUNTIME_ERROR(
+                        "Invalid opt_config: opt_config contains currency not available in currency config");
+            const currency_type &ct = available_currencies.at(array_elem.first);
             const boost::property_tree::ptree &pt_currency = array_elem.second;
             const boost::property_tree::ptree &pt_opt_method_params = array_elem.second.get_child("opt_method_params");
             opt_config.miner_user_infos_.wallet_addresses_.emplace(ct, pt_currency.get<std::string>("wallet_address"));

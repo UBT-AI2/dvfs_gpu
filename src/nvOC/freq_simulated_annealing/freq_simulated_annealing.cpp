@@ -15,19 +15,20 @@
 namespace frequency_scaling {
 
     static double
-    guess_start_temperature(const benchmark_func &benchmarkFunc, currency_type ms, const device_clock_info &dci) {
+    guess_start_temperature(const benchmark_func &benchmarkFunc, const currency_type &ct,
+                            const device_clock_info &dci) {
         int min_graph_idx = dci.nvml_graph_clocks_.size() - 1;
         int min_mem_oc = dci.max_mem_oc_;
-        const measurement &min_node = benchmarkFunc(ms, dci, min_mem_oc, min_graph_idx);
+        const measurement &min_node = benchmarkFunc(ct, dci, min_mem_oc, min_graph_idx);
         int max_graph_idx = 0.5 * dci.nvml_graph_clocks_.size();
         int max_mem_oc = dci.min_mem_oc_ + 0.5 * (dci.max_mem_oc_ - dci.min_mem_oc_);
-        const measurement &max_node = benchmarkFunc(ms, dci, max_mem_oc, max_graph_idx);
+        const measurement &max_node = benchmarkFunc(ct, dci, max_mem_oc, max_graph_idx);
         //start temperature should be higher than the maximum energy difference between all configurations
         return abs(max_node.energy_hash_ - min_node.energy_hash_);
     }
 
     static measurement
-    freq_simulated_annealing(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
+    freq_simulated_annealing(const benchmark_func &benchmarkFunc, const currency_type &ct, const device_clock_info &dci,
                              const measurement &start_node,
                              double start_temperature, int max_iterations,
                              int mem_step, int graph_idx_step, double min_hashrate) {
@@ -94,7 +95,7 @@ namespace frequency_scaling {
 
 
     measurement
-    freq_simulated_annealing(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
+    freq_simulated_annealing(const benchmark_func &benchmarkFunc, const currency_type &ct, const device_clock_info &dci,
                              int max_iterations, int mem_step, int graph_idx_step, double min_hashrate) {
         //initial guess at maximum frequencies
         measurement start_node;
@@ -106,7 +107,7 @@ namespace frequency_scaling {
 
 
     measurement
-    freq_simulated_annealing(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
+    freq_simulated_annealing(const benchmark_func &benchmarkFunc, const currency_type &ct, const device_clock_info &dci,
                              const measurement &start_node, int max_iterations, int mem_step, int graph_idx_step,
                              double min_hashrate) {
         double start_temperature = guess_start_temperature(benchmarkFunc, ct, dci);

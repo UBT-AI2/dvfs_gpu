@@ -78,7 +78,7 @@ namespace frequency_scaling {
 
     static std::pair<bool, measurement>
     find_optimal_config_currency(const benchmark_info &bi, const device_clock_info &dci,
-                                 currency_type ct, const optimization_method_params &opt_params_ct) {
+                                 const currency_type &ct, const optimization_method_params &opt_params_ct) {
         //start power monitoring
         bool pm_started = start_power_monitoring_script(dci.device_id_nvml_);
         bool mining_started = false;
@@ -174,7 +174,7 @@ namespace frequency_scaling {
         if (!bi.offline_)
             stop_mining_script(dci.device_id_nvml_);
         //
-        for (currency_type ct : currencies) {
+        for (auto &ct : currencies) {
             const std::pair<bool, measurement> &opt_config =
                     find_optimal_config_currency(bi, dci, ct, opt_method_params.at(ct));
             if (opt_config.first)
@@ -191,10 +191,10 @@ namespace frequency_scaling {
         int device_id = profit_calc.getDci_().device_id_nvml_;
         //stops mining if its running!!!
         stop_mining_script(device_id);
-        currency_type best_currency = profit_calc.getBest_currency_();
+        const currency_type &best_currency = profit_calc.getBest_currency_();
         start_mining_script(best_currency, profit_calc.getDci_(), user_infos);
         VLOG(0) << gpu_log_prefix(device_id) <<
-                "Started mining best currency " << enum_to_string(best_currency)
+                "Started mining best currency " << best_currency.currency_name_
                 << " with approximated profit of "
                 << profit_calc.getBest_currency_profit_() << " euro/h"
                 << std::endl;
@@ -235,6 +235,7 @@ namespace frequency_scaling {
         start_mining_best_currency(profit_calc, user_infos);
         long long int system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
+        long long int system_time_start_ms_no_window = system_time_start_ms;
         //monitoring loop
         while (!terminate) {
             std::cv_status stat;
@@ -249,12 +250,12 @@ namespace frequency_scaling {
             if (terminate)
                 break;
             if (!monitoring_sanity_check(profit_calc, user_infos)) {
-                system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                system_time_start_ms = system_time_start_ms_no_window = std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::system_clock::now().time_since_epoch()).count();
                 continue;
             }
             //currently mined currency
-            currency_type old_best_currency = profit_calc.getBest_currency_();
+            const currency_type &old_best_currency = profit_calc.getBest_currency_();
             int current_monitoring_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::system_clock::now().time_since_epoch()).count() - system_time_start_ms;
             if (current_monitoring_time_ms > profit_calc.window_dur_ms_) {
@@ -266,24 +267,24 @@ namespace frequency_scaling {
             << gpu_log_prefix(old_best_currency, device_id) << "Entering monitor update cycle. Current time window: "
             << current_monitoring_time_ms / (3600 * 1000.0) << "h." << std::endl;
             //update power only if hashrate update was successful -> pool could be down!!!
-            if (profit_calc.update_opt_config_hashrate_nanopool(old_best_currency, user_infos, system_time_start_ms))
+            if (profit_calc.update_opt_config_profit_hashrate(old_best_currency, user_infos, system_time_start_ms))
                 profit_calc.update_power_consumption(old_best_currency, system_time_start_ms);
             //update approximated earnings based on current power,hashrate and stock price
             profit_calc.update_currency_info_nanopool();
             // recalc and check for new best currency
             profit_calc.recalculate_best_currency();
-            currency_type new_best_currency = profit_calc.getBest_currency_();
+            const currency_type &new_best_currency = profit_calc.getBest_currency_();
             if (old_best_currency != new_best_currency) {
                 //stop mining former best currency
-                profit_calc.save_current_period(old_best_currency);
+                profit_calc.save_current_period(old_best_currency, system_time_start_ms_no_window);
                 stop_mining_script(device_id);
                 VLOG(0) << gpu_log_prefix(device_id) <<
                         "Stopped mining currency "
-                        << enum_to_string(old_best_currency) << std::endl;
+                        << old_best_currency.currency_name_ << std::endl;
                 //start mining new best currency
                 start_mining_best_currency(profit_calc, user_infos);
                 //reset timestamp
-                system_time_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                system_time_start_ms = system_time_start_ms_no_window = std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::system_clock::now().time_since_epoch()).count();
                 //reoptimize frequencies
                 const std::pair<bool, measurement> &new_opt_config_online =
@@ -347,7 +348,7 @@ namespace frequency_scaling {
 
         for (auto &eg : equal_gpus) {
             int next_insert_idx = 0;
-            for (currency_type ct : currencies) {
+            for (auto &ct : currencies) {
                 for (int i = next_insert_idx; i < eg.members_.size(); i++) {
                     int gpu = eg.members_.at(i).first;
                     if (opt_results.count(gpu) && opt_results.at(gpu).count(ct))
@@ -616,7 +617,7 @@ namespace frequency_scaling {
                                config_type.second.hashrate_measure_dur_ms_);
                     pt_config_type.add_child(config_type.first, pt_ehi);
                 }
-                pt_currencies.add_child(enum_to_string(currency.first), pt_config_type);
+                pt_currencies.add_child(currency.first.currency_name_, pt_config_type);
             }
             //
             root.add_child(std::to_string(device.first), pt_currencies);
@@ -625,7 +626,8 @@ namespace frequency_scaling {
     }
 
 
-    std::map<int, std::map<currency_type, energy_hash_info>> load_optimization_result(const std::string &filename) {
+    std::map<int, std::map<currency_type, energy_hash_info>> load_optimization_result(const std::string &filename,
+                                                                                      const std::map<std::string, currency_type> &available_currencies) {
         std::map<int, std::map<currency_type, energy_hash_info>> opt_results;
         namespace pt = boost::property_tree;
         pt::ptree root;
@@ -636,7 +638,7 @@ namespace frequency_scaling {
             std::map<currency_type, energy_hash_info> opt_res_device;
             //read currencies
             for (const pt::ptree::value_type &array_elem2 : pt_device) {
-                currency_type ct = string_to_currency_type(array_elem2.first);
+                const currency_type &ct = available_currencies.at(array_elem2.first);
                 std::vector<std::pair<std::string, pt::ptree>> pt_config_type_vec =
                         {std::make_pair("offline", array_elem2.second.get_child("offline")),
                          std::make_pair("online", array_elem2.second.get_child("online")),

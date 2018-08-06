@@ -28,7 +28,7 @@ namespace frequency_scaling {
 
 
     static std::vector<measurement>
-    explore_neighborhood(const benchmark_func &benchmarkFunc, currency_type ms, const device_clock_info &dci,
+    explore_neighborhood(const benchmark_func &benchmarkFunc, const currency_type &ms, const device_clock_info &dci,
                          const measurement &current_node, double current_slope,
                          int mem_step, int graph_step_idx, double min_hashrate, exploration_type expl_type,
                          int iteration) {
@@ -163,8 +163,9 @@ namespace frequency_scaling {
     }
 
 
-    measurement freq_hill_climbing(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
-                                   int max_iterations, int mem_step, int graph_idx_step, double min_hashrate) {
+    measurement
+    freq_hill_climbing(const benchmark_func &benchmarkFunc, const currency_type &ct, const device_clock_info &dci,
+                       int max_iterations, int mem_step, int graph_idx_step, double min_hashrate) {
         //initial guess at maximum frequencies
         measurement start_node;
         start_node.mem_oc = dci.max_mem_oc_;
@@ -174,9 +175,10 @@ namespace frequency_scaling {
     }
 
 
-    measurement freq_hill_climbing(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
-                                   const measurement &start_node, bool allow_start_node_result,
-                                   int max_iterations, int mem_step, int graph_idx_step, double min_hashrate) {
+    measurement
+    freq_hill_climbing(const benchmark_func &benchmarkFunc, const currency_type &ct, const device_clock_info &dci,
+                       const measurement &start_node, bool allow_start_node_result,
+                       int max_iterations, int mem_step, int graph_idx_step, double min_hashrate) {
         measurement current_node = benchmarkFunc(ct, dci, start_node.mem_oc, start_node.nvml_graph_clock_idx);
         if (current_node.hashrate_ < min_hashrate) {
             //throw optimization_error("Minimum hashrate cannot be reached");

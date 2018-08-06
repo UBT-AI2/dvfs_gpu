@@ -10,12 +10,12 @@
 
 namespace frequency_scaling {
 
-    currency_info::currency_info(currency_type type, double approximated_earnings_eur_hour,
-                                 const currency_stats &cs)
+    currency_info::currency_info(const currency_type &type, double approximated_earnings_eur_hour,
+                                 double used_hashrate, const currency_stats &cs)
             : type_(type), approximated_earnings_eur_hour_(approximated_earnings_eur_hour),
-              cs_(cs) {}
+              used_hashrate_(used_hashrate), cs_(cs) {}
 
-    energy_hash_info::energy_hash_info(currency_type type,
+    energy_hash_info::energy_hash_info(const currency_type &type,
                                        const measurement &optimal_configuration_offline,
                                        const measurement &optimal_configuration_online) :
             energy_hash_info(type, optimal_configuration_offline, optimal_configuration_online,
@@ -24,7 +24,7 @@ namespace frequency_scaling {
         optimal_configuration_profit_.power_measure_dur_ms_ = 0;
     }
 
-    energy_hash_info::energy_hash_info(currency_type type,
+    energy_hash_info::energy_hash_info(const currency_type &type,
                                        const measurement &optimal_configuration_offline,
                                        const measurement &optimal_configuration_online,
                                        const measurement &optimal_configuration_profit) : type_(
@@ -33,19 +33,19 @@ namespace frequency_scaling {
             optimal_configuration_profit) {}
 
 
-    void best_profit_stats::update_device_stats(int device_id, currency_type ct, double earnings,
+    best_profit_stats::device_stats::device_stats(const currency_type &ct, double earnings, double costs,
+                                                  double power, double hashrate) : ct_(ct), earnings_(earnings),
+                                                                                   costs_(costs),
+                                                                                   profit_(earnings - costs),
+                                                                                   power_(power),
+                                                                                   hashrate_(hashrate),
+                                                                                   energy_hash_(hashrate / power) {}
+
+    void best_profit_stats::update_device_stats(int device_id, const currency_type &ct, double earnings,
                                                 double costs, double power, double hashrate) {
         std::lock_guard<std::mutex> lock(map_mutex_);
-        device_stats ds;
-        ds.ct_ = ct;
-        ds.earnings_ = earnings;
-        ds.costs_ = costs;
-        ds.profit_ = earnings - costs;
-        ds.power_ = power;
-        ds.hashrate_ = hashrate;
-        ds.energy_hash_ = hashrate / power;
         stats_map_.erase(device_id);
-        stats_map_.emplace(device_id, ds);
+        stats_map_.emplace(device_id, device_stats(ct, earnings, costs, power, hashrate));
     }
 
     double best_profit_stats::get_global_earnings() const {
@@ -82,6 +82,8 @@ namespace frequency_scaling {
 
     const best_profit_stats::device_stats &best_profit_stats::get_device_stats(int device_id) const {
         std::lock_guard<std::mutex> lock(map_mutex_);
+        if (!stats_map_.count(device_id))
+            THROW_RUNTIME_ERROR("No profit stats available for GPU " + std::to_string(device_id));
         return stats_map_.at(device_id);
     }
 
@@ -94,8 +96,10 @@ namespace frequency_scaling {
                                                                   energy_hash_info_(energy_hash_info),
                                                                   power_cost_kwh_(power_cost_kwh) {
         for (auto &ehi : energy_hash_info) {
-            last_profit_measurements_.emplace(ehi.first, measurement());
-            save_current_period(ehi.first);
+            //init last profit measurement with saved profit config
+            last_profit_measurements_.emplace(ehi.first, energy_hash_info_.at(ehi.first).optimal_configuration_profit_);
+            currency_mining_timespans_.emplace(ehi.first, std::vector<std::pair<long long int, int>>());
+            timespan_current_pool_hashrates_.emplace(ehi.first, std::vector<std::pair<long long int, double>>());
         }
         update_currency_info_nanopool();
         recalculate_best_currency();
@@ -105,24 +109,24 @@ namespace frequency_scaling {
     void
     profit_calculator::recalculate_best_currency() {
         double best_profit = std::numeric_limits<double>::lowest();
-        for (int i = 0; i < static_cast<int>(currency_type::count); i++) {
-            currency_type ct = static_cast<currency_type>(i);
-            auto it_ehi = energy_hash_info_.find(ct);
+        for (auto &elem : energy_hash_info_) {
+            const currency_type &ct = elem.first;
             auto it_ci = currency_info_.find(ct);
-            if (it_ehi == energy_hash_info_.end() || it_ci == currency_info_.end())
+            if (it_ci == currency_info_.end()) {
+                LOG(WARNING) << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
+                             "Skipping profit calculation: No currency info available" << std::endl;
                 continue;
-            const energy_hash_info &ehi = it_ehi->second;
+            }
             const currency_info &ci = it_ci->second;
-            double costs_per_hour = ehi.optimal_configuration_profit_.power_ * (power_cost_kwh_ / 1000.0);
+            double costs_per_hour = get_used_power(ct) * (power_cost_kwh_ / 1000.0);
             double profit_per_hour = ci.approximated_earnings_eur_hour_ - costs_per_hour;
             if (profit_per_hour > best_profit) {
                 best_profit = profit_per_hour;
                 //update global profit stats for this device
                 profit_calculator::best_profit_stats_global_.update_device_stats(dci_.device_id_nvml_, ct,
                                                                                  ci.approximated_earnings_eur_hour_,
-                                                                                 costs_per_hour,
-                                                                                 ehi.optimal_configuration_profit_.power_,
-                                                                                 ehi.optimal_configuration_profit_.hashrate_);
+                                                                                 costs_per_hour, get_used_power(ct),
+                                                                                 get_used_hashrate(ct));
             }
             //print stats
             VLOG(0) << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
@@ -146,21 +150,25 @@ namespace frequency_scaling {
 
     void profit_calculator::update_currency_info_nanopool() {
         for (auto &elem : energy_hash_info_) {
-            currency_type ct = elem.first;
+            const currency_type &ct = elem.first;
             try {
-                double used_hashrate = get_used_hashrate(ct);
+                double used_hashrate = calculate_used_hashrate(ct);
                 const currency_stats &cs = get_currency_stats(ct);
                 double approximated_earnings;
-                try {
-                    approximated_earnings = get_approximated_earnings_per_hour_nanopool(ct, used_hashrate);
-                } catch (const network_error &err) {
-                    //fallback
-                    VLOG(1) << "Nanopool approximated earnings API call failed: " << err.what() <<
-                            ". Using fallback..." << std::endl;
+                if (!ct.has_approximated_earnings_api()) {
                     approximated_earnings = cs.calc_approximated_earnings_eur_hour(used_hashrate);
+                } else {
+                    try {
+                        approximated_earnings = get_approximated_earnings_per_hour(ct, used_hashrate);
+                    } catch (const network_error &err) {
+                        //fallback
+                        VLOG(1) << "Nanopool approximated earnings API call failed: " << err.what() <<
+                                ". Using fallback..." << std::endl;
+                        approximated_earnings = cs.calc_approximated_earnings_eur_hour(used_hashrate);
+                    }
                 }
                 currency_info_.erase(ct);
-                currency_info_.emplace(ct, currency_info(ct, approximated_earnings, cs));
+                currency_info_.emplace(ct, currency_info(ct, approximated_earnings, used_hashrate, cs));
                 VLOG(0) << gpu_log_prefix(ct, dci_.device_id_nvml_) << "Update currency info using hashrate "
                         << used_hashrate << std::endl;
             } catch (const network_error &err) {
@@ -170,47 +178,45 @@ namespace frequency_scaling {
         }
     }
 
-    bool profit_calculator::update_opt_config_hashrate_nanopool(currency_type current_mined_ct,
-                                                                const miner_user_info &user_info,
-                                                                long long int system_time_start_ms) {
-        try {
-            long long int system_time_now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::system_clock::now().time_since_epoch()).count();
-            int period_ms = system_time_now_ms - system_time_start_ms;
-            //update with pool hashrates only if currency is mined >= 1h
-            if (period_ms < 3600 * 1000)
+    bool profit_calculator::update_opt_config_profit_hashrate(const currency_type &current_mined_ct,
+                                                              const miner_user_info &user_info,
+                                                              long long int system_time_start_ms) {
+        long long int system_time_now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
+        int period_ms = system_time_now_ms - system_time_start_ms;
+        double cur_hashrate = 0;
+        if (current_mined_ct.has_avg_hashrate_api()) {
+            const std::pair<bool, double> &res = get_avg_pool_hashrate(current_mined_ct, user_info, period_ms);
+            if (!res.first)
                 return false;
-            const std::map<std::string, double> &avg_hashrates = get_avg_hashrate_per_worker_nanopool(
-                    current_mined_ct, user_info.wallet_addresses_.at(current_mined_ct), period_ms);
-            const std::string worker = user_info.worker_names_.at(dci_.device_id_nvml_);
-            auto it_hr = avg_hashrates.find(worker);
-            if (it_hr == avg_hashrates.end() || it_hr->second <= 0 || !std::isfinite(it_hr->second)) {
-                LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
-                           "Failed to get avg profit hashrate: Worker "
-                           << worker << " not available" << std::endl;
+            cur_hashrate = res.second;
+        } else if (current_mined_ct.has_current_hashrate_api()) {
+            const std::pair<bool, double> &res = get_current_pool_hashrate(current_mined_ct, user_info, period_ms);
+            if (!res.first)
                 return false;
-            }
-            //update hashrate
-            double cur_hashrate = it_hr->second;
-            double last_hashrate = last_profit_measurements_.at(current_mined_ct).hashrate_;
-            int cur_period_ms = period_ms;
-            int last_period_ms = last_profit_measurements_.at(current_mined_ct).hashrate_measure_dur_ms_;
-            int total_period_ms = last_period_ms + cur_period_ms;
-            double new_hashrate = (cur_period_ms / (double) total_period_ms) * cur_hashrate +
-                                  (last_period_ms / (double) total_period_ms) * last_hashrate;
-            energy_hash_info_.at(current_mined_ct).optimal_configuration_profit_.update_hashrate(new_hashrate,
-                                                                                                 total_period_ms);
-            VLOG(0) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
-                    "Updated avg profit hashrate: " << new_hashrate << std::endl;
-            return true;
-        } catch (const network_error &err) {
-            LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
-                       "Failed to get avg profit hashrate: " << err.what() << std::endl;
-            return false;
+            timespan_current_pool_hashrates_.at(current_mined_ct).emplace_back(system_time_now_ms, res.second);
+            for (auto &elem : timespan_current_pool_hashrates_.at(current_mined_ct))
+                if (elem.first >= system_time_start_ms)
+                    cur_hashrate += elem.second;
+            cur_hashrate /= timespan_current_pool_hashrates_.at(current_mined_ct).size();
+        } else {
+            cur_hashrate = energy_hash_info_.at(current_mined_ct).optimal_configuration_online_.hashrate_;
         }
+        //update hashrate
+        double last_hashrate = last_profit_measurements_.at(current_mined_ct).hashrate_;
+        int cur_period_ms = period_ms;
+        int last_period_ms = last_profit_measurements_.at(current_mined_ct).hashrate_measure_dur_ms_;
+        int total_period_ms = last_period_ms + cur_period_ms;
+        double new_hashrate = (cur_period_ms / (double) total_period_ms) * cur_hashrate +
+                              (last_period_ms / (double) total_period_ms) * last_hashrate;
+        energy_hash_info_.at(current_mined_ct).optimal_configuration_profit_.update_hashrate(new_hashrate,
+                                                                                             total_period_ms);
+        VLOG(0) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+                "Updated avg profit hashrate: " << new_hashrate << std::endl;
+        return true;
     }
 
-    bool profit_calculator::update_power_consumption(currency_type current_mined_ct,
+    bool profit_calculator::update_power_consumption(const currency_type &current_mined_ct,
                                                      long long int system_time_start_ms) {
         long long int system_time_now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
@@ -233,7 +239,7 @@ namespace frequency_scaling {
         return true;
     }
 
-    void profit_calculator::update_opt_config_online(currency_type current_mined_ct,
+    void profit_calculator::update_opt_config_online(const currency_type &current_mined_ct,
                                                      const measurement &new_config_online) {
 
         energy_hash_info &ehi = energy_hash_info_.at(current_mined_ct);
@@ -292,27 +298,103 @@ namespace frequency_scaling {
     }
 
 
-    double profit_calculator::get_used_hashrate(currency_type ct) const {
+    double profit_calculator::calculate_used_hashrate(const currency_type &ct) const {
         const measurement &cur_profit_measurement = energy_hash_info_.at(ct).optimal_configuration_profit_;
         const measurement &cur_online_measurement = energy_hash_info_.at(ct).optimal_configuration_online_;
-        double alpha = std::min(1.0, cur_profit_measurement.hashrate_measure_dur_ms_ / (double) window_dur_ms_);
-        return alpha * cur_profit_measurement.hashrate_ + (1 - alpha) * cur_online_measurement.hashrate_;
+        //currently mined currency?
+        if (ct == getBest_currency_()) {
+            double alpha = std::min(1.0, cur_profit_measurement.hashrate_measure_dur_ms_ / (double) window_dur_ms_);
+            return alpha * cur_profit_measurement.hashrate_ + (1 - alpha) * cur_online_measurement.hashrate_;
+        } else {
+            long long int time_since_last_mined = window_dur_ms_;
+            if (!currency_mining_timespans_.at(ct).empty()) {
+                long long int system_time_now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::system_clock::now().time_since_epoch()).count();
+                time_since_last_mined = system_time_now_ms -
+                                        (currency_mining_timespans_.at(ct).back().first +
+                                         currency_mining_timespans_.at(ct).back().second);
+            }
+            double alpha = std::min(1.0, time_since_last_mined / (double) window_dur_ms_);
+            return alpha * cur_online_measurement.hashrate_ + (1 - alpha) * cur_profit_measurement.hashrate_;
+        }
     }
 
-    double profit_calculator::get_used_power(currency_type ct) const {
+    double profit_calculator::get_used_hashrate(const currency_type &ct) const {
+        if (!currency_info_.count(ct))
+            return -1;
+        return currency_info_.at(ct).used_hashrate_;
+    }
+
+    double profit_calculator::get_used_power(const currency_type &ct) const {
         return energy_hash_info_.at(ct).optimal_configuration_profit_.power_;
     }
 
-    double profit_calculator::get_used_energy_hash(currency_type ct) const {
+    double profit_calculator::get_used_energy_hash(const currency_type &ct) const {
         return get_used_hashrate(ct) / get_used_power(ct);
     }
 
-    void profit_calculator::save_current_period(currency_type ct) {
+    void profit_calculator::save_current_period(const currency_type &ct, long long int system_time_start_ms_no_window) {
         last_profit_measurements_.at(ct) = energy_hash_info_.at(ct).optimal_configuration_profit_;
+        timespan_current_pool_hashrates_.at(ct).clear();
+        long long int system_time_now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
+        int period_ms = system_time_now_ms - system_time_start_ms_no_window;
+        currency_mining_timespans_.at(ct).emplace_back(system_time_start_ms_no_window, period_ms);
     }
 
     const best_profit_stats &profit_calculator::get_best_profit_stats_global() {
         return profit_calculator::best_profit_stats_global_;
+    }
+
+    std::pair<bool, double> profit_calculator::get_avg_pool_hashrate(const currency_type &current_mined_ct,
+                                                                     const miner_user_info &user_info,
+                                                                     int period_ms) const {
+        try {
+            //update with pool hashrates only if currency is mined >= 1h
+            if (!current_mined_ct.has_avg_hashrate_api() || period_ms < current_mined_ct.avg_hashrate_min_period_ms())
+                return std::make_pair(false, 0);
+            const std::string &worker = user_info.worker_names_.at(dci_.device_id_nvml_);
+            double avg_hashrate = get_avg_worker_hashrate(current_mined_ct,
+                                                          user_info.wallet_addresses_.at(current_mined_ct),
+                                                          worker, period_ms);
+            if (avg_hashrate <= 0 || !std::isfinite(avg_hashrate)) {
+                LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+                           "Failed to get avg profit hashrate: Worker "
+                           << worker << " not available" << std::endl;
+                return std::make_pair(false, 0);
+            }
+            return std::make_pair(true, avg_hashrate);
+        } catch (const network_error &err) {
+            LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+                       "Failed to get avg profit hashrate: " << err.what() << std::endl;
+            return std::make_pair(false, 0);
+        }
+    }
+
+    std::pair<bool, double> profit_calculator::get_current_pool_hashrate(const currency_type &current_mined_ct,
+                                                                         const miner_user_info &user_info,
+                                                                         int period_ms) const {
+        try {
+            //update with pool hashrates only if currency is mined >= 1h
+            if (!current_mined_ct.has_current_hashrate_api() ||
+                period_ms < current_mined_ct.current_hashrate_min_period_ms())
+                return std::make_pair(false, 0);
+            const std::string &worker = user_info.worker_names_.at(dci_.device_id_nvml_);
+            double current_hashrate = get_current_worker_hashrate(current_mined_ct,
+                                                                  user_info.wallet_addresses_.at(current_mined_ct),
+                                                                  worker, period_ms);
+            if (current_hashrate <= 0 || !std::isfinite(current_hashrate)) {
+                LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+                           "Failed to get current profit hashrate: Worker "
+                           << worker << " not available" << std::endl;
+                return std::make_pair(false, 0);
+            }
+            return std::make_pair(true, current_hashrate);
+        } catch (const network_error &err) {
+            LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+                       "Failed to get current profit hashrate: " << err.what() << std::endl;
+            return std::make_pair(false, 0);
+        }
     }
 
 }

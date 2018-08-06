@@ -16,32 +16,18 @@
 namespace frequency_scaling {
 
 
-    bool start_mining_script(currency_type ct, const device_clock_info &dci, const miner_user_info &user_info) {
+    bool start_mining_script(const currency_type &ct, const device_clock_info &dci, const miner_user_info &user_info) {
         const std::string &wallet_addr = user_info.wallet_addresses_.at(ct);
         const std::string &worker_name = user_info.worker_names_.at(dci.device_id_nvml_);
         //start mining in background process
-        char cmd1[BUFFER_SIZE];
-        switch (ct) {
-            case currency_type::ETH:
-                snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_eth.sh %i %i %s %s %s %s",
-                         dci.device_id_nvml_, dci.device_id_cuda_, wallet_addr.c_str(),
-                         worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str());
-                break;
-            case currency_type::ZEC:
-                snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_zec.sh %i %i %s %s %s %s",
-                         dci.device_id_nvml_, dci.device_id_cuda_, wallet_addr.c_str(),
-                         worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str());
-                break;
-            case currency_type::XMR:
-                snprintf(cmd1, BUFFER_SIZE, "bash ../scripts/start_mining_xmr.sh %i %i %s %s %s %s",
-                         dci.device_id_nvml_, dci.device_id_cuda_, wallet_addr.c_str(),
-                         worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str());
-                break;
-            default:
-                THROW_RUNTIME_ERROR("Invalid enum value");
-        }
+        char cmd[BUFFER_SIZE];
+        //TODO pool address as script arg
+        snprintf(cmd, BUFFER_SIZE, "bash %s %i %i %s %s %s %s",
+                 ct.mining_script_path_.c_str(), dci.device_id_nvml_, dci.device_id_cuda_, wallet_addr.c_str(),
+                 worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str());
+
         //
-        return process_management::gpu_start_process(cmd1, dci.device_id_nvml_, process_type::MINER, true);
+        return process_management::gpu_start_process(cmd, dci.device_id_nvml_, process_type::MINER, true);
     }
 
 
@@ -50,7 +36,7 @@ namespace frequency_scaling {
     }
 
 
-    double get_avg_hashrate_online_log(currency_type ct, int device_id, long long int system_timestamp_start_ms,
+    double get_avg_hashrate_online_log(const currency_type &ct, int device_id, long long int system_timestamp_start_ms,
                                        long long int system_timestamp_end_ms) {
 
         std::string filename = log_utils::get_logdir_name() + "/" +
@@ -79,9 +65,9 @@ namespace frequency_scaling {
     }
 
     static measurement run_benchmark_mining_online(
-            const std::function<double(currency_type, int, long long int, long long int)> &hashrate_func,
+            const std::function<double(const currency_type &, int, long long int, long long int)> &hashrate_func,
             const miner_user_info &user_info, int period_ms,
-            currency_type ct, const device_clock_info &dci, int mem_oc,
+            const currency_type &ct, const device_clock_info &dci, int mem_oc,
             int nvml_graph_clock_idx) {
         int mem_clock = dci.nvapi_default_mem_clock_ + mem_oc;
         int graph_clock = dci.nvml_graph_clocks_[nvml_graph_clock_idx];
@@ -123,22 +109,26 @@ namespace frequency_scaling {
     }
 
     measurement run_benchmark_mining_online_nanopool(const miner_user_info &user_info, int period_ms,
-                                                     currency_type ct, const device_clock_info &dci, int mem_oc,
+                                                     const currency_type &ct, const device_clock_info &dci, int mem_oc,
                                                      int nvml_graph_clock_idx) {
-        auto hashrate_func = [&user_info, period_ms](currency_type ct, int device_id,
-                                                     long long int, long long int) -> double {
-            const std::map<std::string, double> &avg_hashrates = get_avg_hashrate_per_worker_nanopool(
-                    ct, user_info.wallet_addresses_.at(ct), period_ms);
-            const std::string worker = user_info.worker_names_.at(device_id);
-            return avg_hashrates.at(worker);
-        };
-        //
-        return run_benchmark_mining_online(hashrate_func, user_info, period_ms, ct, dci, mem_oc, nvml_graph_clock_idx);
+        if (!ct.has_avg_hashrate_api() || period_ms < ct.avg_hashrate_min_period_ms()) {
+            return run_benchmark_mining_online_log(user_info, period_ms, ct, dci, mem_oc, nvml_graph_clock_idx);
+        } else {
+            auto hashrate_func = [&user_info, period_ms](const currency_type &ct, int device_id,
+                                                         long long int, long long int) -> double {
+                double avg_hashrate = get_avg_worker_hashrate(
+                        ct, user_info.wallet_addresses_.at(ct), user_info.worker_names_.at(device_id), period_ms);
+                return avg_hashrate;
+            };
+            //
+            return run_benchmark_mining_online(hashrate_func, user_info, period_ms, ct, dci, mem_oc,
+                                               nvml_graph_clock_idx);
+        }
     }
 
 
     measurement run_benchmark_mining_online_log(const miner_user_info &user_info, int period_ms,
-                                                currency_type ct, const device_clock_info &dci, int mem_oc,
+                                                const currency_type &ct, const device_clock_info &dci, int mem_oc,
                                                 int nvml_graph_clock_idx) {
         return run_benchmark_mining_online(&get_avg_hashrate_online_log, user_info, period_ms, ct, dci, mem_oc,
                                            nvml_graph_clock_idx);

@@ -14,7 +14,7 @@ namespace frequency_scaling {
     typedef Eigen::Matrix<double, 2, 1> vec_type2D;
 
     static measurement
-    freq_nelder_mead1D(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
+    freq_nelder_mead1D(const benchmark_func &benchmarkFunc, const currency_type &ct, const device_clock_info &dci,
                        const measurement &start_node,
                        int min_iterations, int max_iterations,
                        int mem_step, int graph_idx_step,
@@ -84,7 +84,7 @@ namespace frequency_scaling {
     }
 
     static measurement
-    freq_nelder_mead2D(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
+    freq_nelder_mead2D(const benchmark_func &benchmarkFunc, const currency_type &ct, const device_clock_info &dci,
                        const measurement &start_node,
                        int min_iterations, int max_iterations,
                        int mem_step, int graph_idx_step,
@@ -162,6 +162,7 @@ namespace frequency_scaling {
                                  int max_iterations,
                                  int mem_step, int graph_idx_step,
                                  double min_hashrate) {
+
         //initial guess at maximum frequencies
         measurement start_node;
         start_node.mem_oc = dci.max_mem_oc_;
@@ -176,9 +177,9 @@ namespace frequency_scaling {
                                  int max_iterations,
                                  int mem_step, int graph_idx_step,
                                  double min_hashrate) {
-		int min_iterations = 1;
-		double mem_scale = 1.5, graph_scale = 2.5;
-		//
+        int min_iterations = 1;
+        double mem_scale = 1.5, graph_scale = 2.5;
+        //
         if (dci.nvapi_supported_)
             return freq_nelder_mead2D(benchmarkFunc, ct, dci, start_node, min_iterations, max_iterations, mem_step,
                                       graph_idx_step,

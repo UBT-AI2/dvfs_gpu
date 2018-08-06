@@ -40,7 +40,7 @@ namespace frequency_scaling {
         int power_measure_dur_ms_ = 0, hashrate_measure_dur_ms_ = 0;
     };
 
-    typedef std::function<measurement(currency_type, const device_clock_info &, int, int)> benchmark_func;
+    typedef std::function<measurement(const currency_type &, const device_clock_info &, int, int)> benchmark_func;
 
     bool start_power_monitoring_script(int device_id, int interval_sleep_ms = 200);
 
@@ -53,7 +53,7 @@ namespace frequency_scaling {
                            int mem_oc, int nvml_graph_clock_idx);
 
     measurement
-    run_benchmark_mining_offline(currency_type ct, const device_clock_info &dci, int mem_oc,
+    run_benchmark_mining_offline(const currency_type &ct, const device_clock_info &dci, int mem_oc,
                                  int nvml_graph_clock_idx);
 
 }

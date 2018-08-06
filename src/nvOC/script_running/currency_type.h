@@ -1,18 +1,63 @@
 #pragma once
 
 #include <string>
+#include <map>
 
 namespace frequency_scaling {
 
-    enum class currency_type {
-        ETH, ZEC, XMR, count
+    struct currency_type {
+        explicit currency_type(const std::string &currency_name);
+
+        bool has_avg_hashrate_api() const;
+
+        bool has_current_hashrate_api() const;
+
+        bool has_approximated_earnings_api() const;
+
+        int avg_hashrate_min_period_ms() const;
+
+        int current_hashrate_min_period_ms() const;
+
+        bool operator<(const currency_type &other) const;
+
+        bool operator==(const currency_type &other) const;
+
+        bool operator!=(const currency_type &other) const;
+
+        const std::string currency_name_;
+        //relative to binary
+        std::string bench_script_path_, mining_script_path_;
+        std::string pool_address_;
+        int whattomine_coin_id_;
+        std::string cryptocompare_fsym_;
+        //optional api options
+        //#########################################################################
+        //printf format string: wallet_address, worker_name
+        std::string pool_current_hashrate_api_address_, pool_current_hashrate_json_path_;
+        //target unit H/s
+        double pool_current_hashrate_api_unit_factor_hashrate_ = -1;
+        //#########################################################################
+        //printf format string: wallet_address, worker_name, period
+        std::string pool_avg_hashrate_api_address_, pool_avg_hashrate_json_path_;
+        //target unit H/s | target unit ms
+        double pool_avg_hashrate_api_unit_factor_hashrate_ = -1, pool_avg_hashrate_api_unit_factor_period_ = -1;
+        //#########################################################################
+        //printf format string: hashrate | ptree path
+        std::string pool_approximated_earnings_api_address_, pool_approximated_earnings_json_path_;
+        //target unit H/s | target unit hours
+        double pool_approximated_earnings_api_unit_factor_hashrate_ = -1, pool_approximated_earnings_api_unit_factor_period_ = -1;
     };
 
-    std::string enum_to_string(currency_type ct);
-
-    currency_type string_to_currency_type(const std::string &str);
 
     std::string gpu_log_prefix(int device_id_nvml);
 
-    std::string gpu_log_prefix(currency_type ct, int device_id_nvml);
+    std::string gpu_log_prefix(const currency_type &ct, int device_id_nvml);
+
+    std::map<std::string, currency_type> create_default_currency_config();
+
+    std::map<std::string, currency_type> read_currency_config(const std::string &filename);
+
+    void write_currency_config(const std::string &filename,
+                               const std::map<std::string, currency_type> &currency_config);
+
 }

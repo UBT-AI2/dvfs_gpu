@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <glog/logging.h>
+#include <boost/algorithm/string.hpp>
 #include "../common_header/fullexpr_accum.h"
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
@@ -10,25 +11,26 @@
 using namespace frequency_scaling;
 
 int main(int argc, char **argv) {
-    if (argc < 3) {
+    if (argc < 4) {
         full_expression_accumulator<>(std::cout) << "Usage: " << argv[0]
-                                                 << " <currency_type> <device_id> "
+                                                 << " <currency_config> <currency_type> <device_id> "
                                                     "[<min_mem_oc>] [<max_mem_oc>] [<min_graph_oc>] [<max_graph_oc>]"
                                                  << std::endl;
         return 1;
     }
-    currency_type ct = string_to_currency_type(argv[1]);
-    unsigned int device_id = atoi(argv[2]);
+    const std::map<std::string, currency_type> &available_currencies = read_currency_config(argv[1]);
+    const currency_type &ct = available_currencies.at(boost::algorithm::to_upper_copy(std::string(argv[2])));
+    unsigned int device_id = atoi(argv[3]);
     int min_mem_oc = 1, max_mem_oc = -1;
     int min_graph_oc = 1, max_graph_oc = -1;
-    if (argc > 3)
-        min_mem_oc = atoi(argv[3]);
     if (argc > 4)
-        max_mem_oc = atoi(argv[4]);
+        min_mem_oc = atoi(argv[4]);
     if (argc > 5)
-        min_graph_oc = atoi(argv[5]);
+        max_mem_oc = atoi(argv[5]);
     if (argc > 6)
-        max_graph_oc = atoi(argv[6]);
+        min_graph_oc = atoi(argv[6]);
+    if (argc > 7)
+        max_graph_oc = atoi(argv[7]);
 
     try {
         //init apis
@@ -43,8 +45,8 @@ int main(int argc, char **argv) {
 
         //
         const measurement &m = freq_exhaustive(&run_benchmark_mining_offline, ct, dci, 50, 2);
-		VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml_) << "Computed optimal energy-hash ratio: "
-			<< m.energy_hash_ << " (mem=" << m.mem_clock_ << ",graph=" << m.graph_clock_ << ")" << std::endl;
+        VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml_) << "Computed optimal energy-hash ratio: "
+                << m.energy_hash_ << " (mem=" << m.mem_clock_ << ",graph=" << m.graph_clock_ << ")" << std::endl;
 
         //stop power monitoring
         stop_power_monitoring_script(device_id);

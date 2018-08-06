@@ -147,34 +147,19 @@ namespace frequency_scaling {
         return true;
     }
 
-    static measurement run_benchmark_script(currency_type ct, const device_clock_info &dci,
+    static measurement run_benchmark_script(const currency_type &ct, const device_clock_info &dci,
                                             int graph_clock, int mem_clock) {
         {
             VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml_) <<
                     "Running offline benchmark with clocks: mem=" << mem_clock << ",graph=" << graph_clock
                     << std::endl;
             //run benchmark script to get measurement
-            char cmd2[BUFFER_SIZE];
-            switch (ct) {
-                case currency_type::ETH:
-                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_eth.sh %i %i %i %i %s",
-                             dci.device_id_nvml_, dci.device_id_cuda_, mem_clock, graph_clock,
-                             log_utils::get_logdir_name().c_str());
-                    break;
-                case currency_type::ZEC:
-                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_zec.sh %i %i %i %i %s",
-                             dci.device_id_nvml_, dci.device_id_cuda_, mem_clock, graph_clock,
-                             log_utils::get_logdir_name().c_str());
-                    break;
-                case currency_type::XMR:
-                    snprintf(cmd2, BUFFER_SIZE, "bash ../scripts/run_benchmark_xmr.sh %i %i %i %i %s",
-                             dci.device_id_nvml_, dci.device_id_cuda_, mem_clock, graph_clock,
-                             log_utils::get_logdir_name().c_str());
-                    break;
-                default:
-                    THROW_RUNTIME_ERROR("Invalid enum value");
-            }
-            process_management::gpu_start_process(cmd2, dci.device_id_nvml_, process_type::MINER, false);
+            char cmd[BUFFER_SIZE];
+            snprintf(cmd, BUFFER_SIZE, "bash %s %i %i %i %i %s",
+                     ct.bench_script_path_.c_str(), dci.device_id_nvml_, dci.device_id_cuda_,
+                     mem_clock, graph_clock, log_utils::get_logdir_name().c_str());
+
+            process_management::gpu_start_process(cmd, dci.device_id_nvml_, process_type::MINER, false);
         }
 
         //get last measurement from data file
@@ -204,14 +189,14 @@ namespace frequency_scaling {
                 pt = strtok(nullptr, ",");
             }
         }
-		//
-		if (data.size() < 6) {
-			LOG(ERROR) << gpu_log_prefix(ct, dci.device_id_nvml_) << 
-				"Offline benchmark with clocks : mem=" << mem_clock << ",graph=" << graph_clock << " failed"
-				<< std::endl;
-			//return invalid measurement
-			return measurement(mem_clock, graph_clock, 0, 0);
-		}
+        //
+        if (data.size() < 6) {
+            LOG(ERROR) << gpu_log_prefix(ct, dci.device_id_nvml_) <<
+                       "Offline benchmark with clocks : mem=" << mem_clock << ",graph=" << graph_clock << " failed"
+                       << std::endl;
+            //return invalid measurement
+            return measurement(mem_clock, graph_clock, 0, 0);
+        }
         measurement m(mem_clock, graph_clock, data.at(2), data.at(3));
         m.hashrate_measure_dur_ms_ = data.at(5);
         m.power_measure_dur_ms_ = data.at(5);
@@ -283,7 +268,7 @@ namespace frequency_scaling {
     }
 
 
-    measurement run_benchmark_mining_offline(currency_type ct, const device_clock_info &dci,
+    measurement run_benchmark_mining_offline(const currency_type &ct, const device_clock_info &dci,
                                              int mem_oc, int nvml_graph_clock_idx) {
         //change graph and mem clocks
         change_gpu_clocks(dci, mem_oc, nvml_graph_clock_idx);

@@ -12,19 +12,27 @@ using namespace frequency_scaling;
 
 int main(int argc, char **argv) {
     try {
-        //init logging stuff
-        log_utils::init_logging("profit-optimization-logs", "glog-profit-optimization-", 0, argv[0]);
         //parse cmd options
         const std::map<std::string, std::string> &cmd_args = parse_cmd_options(argc, argv);
         if (cmd_args.count("--help")) {
             full_expression_accumulator<>(std::cout) << "Options:\n\t"
                                                         "--help\t\t\t\tshows this message\n\t"
+                                                        "--currency_config=<filename>\tcurrency configuration json file\n\t"
                                                         "--user_config=<filename>\tuser configuration json file\n\t"
                                                         "--opt_result=<filename>\t\toptimization result json file"
                                                      << std::endl;
             return 1;
         }
-
+        //read currency config if given, otherwise create default one
+        std::map<std::string, currency_type> available_currencies;
+        if (cmd_args.count("--currency_config")) {
+            available_currencies = read_currency_config(cmd_args.at("--currency_config"));
+        } else {
+            available_currencies = create_default_currency_config();
+            write_currency_config("currency_config_default.json", available_currencies);
+        }
+        //init logging stuff
+        log_utils::init_logging("profit-optimization-logs", "glog-profit-optimization-", 0, argv[0]);
         //init apis
         nvapiInit();
         nvmlInit_();
@@ -32,10 +40,10 @@ int main(int argc, char **argv) {
 
         //start mining and monitoring best currency;
         const optimization_config &opt_config = (cmd_args.count("--user_config")) ? parse_config_json(
-                cmd_args.at("--user_config")) : get_config_user_dialog();
+                cmd_args.at("--user_config"), available_currencies) : get_config_user_dialog(available_currencies);
         if (cmd_args.count("--opt_result")) {
             const std::map<int, std::map<currency_type, energy_hash_info>> &opt_result =
-                    load_optimization_result(cmd_args.at("--opt_result"));
+                    load_optimization_result(cmd_args.at("--opt_result"), available_currencies);
             mine_most_profitable_currency(opt_config, opt_result);
         } else {
             mine_most_profitable_currency(opt_config);

@@ -7,6 +7,7 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <curl/curl.h>
 #include "../common_header/exceptions.h"
+#include "../common_header/constants.h"
 
 namespace frequency_scaling {
 
@@ -60,49 +61,21 @@ namespace frequency_scaling {
         return response_string;
     }
 
-    //#################################################################################################
+    //####################################################################################################
 
-    static std::string get_nanopool_url(currency_type type) {
-        switch (type) {
-            case currency_type::ZEC:
-                return "https://api.nanopool.org/v1/zec";
-            case currency_type::ETH:
-                return "https://api.nanopool.org/v1/eth";
-            case currency_type::XMR:
-                return "https://api.nanopool.org/v1/xmr";
-            default:
-                THROW_RUNTIME_ERROR("Invalid enum value");
-        }
-    }
-
-    static std::string get_whattomine_url(currency_type type) {
-        switch (type) {
-            case currency_type::ZEC:
-                return "https://whattomine.com/coins/166.json";
-            case currency_type::ETH:
-                return "https://whattomine.com/coins/151.json";
-            case currency_type::XMR:
-                return "https://whattomine.com/coins/101.json";
-            default:
-                THROW_RUNTIME_ERROR("Invalid enum value");
-        }
-    }
-
-//#######################################################################################################
-
-    static double get_current_stock_price_cryptocompare(currency_type ct) {
+    static double get_current_stock_price_cryptocompare(const currency_type &ct) {
         const std::string &json_response = curl_https_get(
                 "https://min-api.cryptocompare.com/data/price?fsym=" +
-                enum_to_string(ct) + "&tsyms=BTC,USD,EUR");
+                ct.cryptocompare_fsym_ + "&tsyms=BTC,USD,EUR");
         std::istringstream is(json_response);
         boost::property_tree::ptree root;
         boost::property_tree::json_parser::read_json(is, root);
         return root.get<double>("EUR");
     }
 
-    static void get_currency_stats_whattomine(currency_type ct, currency_stats &cs) {
+    static void get_currency_stats_whattomine(const currency_type &ct, currency_stats &cs) {
         const std::string &json_response = curl_https_get(
-                get_whattomine_url(ct));
+                "https://whattomine.com/coins/" + std::to_string(ct.whattomine_coin_id_) + ".json");
         std::istringstream is(json_response);
         boost::property_tree::ptree root;
         boost::property_tree::json_parser::read_json(is, root);
@@ -116,46 +89,49 @@ namespace frequency_scaling {
     //#######################################################################################################
 
 
-    static double __get_approximated_earnings_per_hour_nanopool(currency_type type, double hashrate_hs) {
-        double hashrate_arg = (type == currency_type::ETH) ? hashrate_hs / 1e6 : hashrate_hs;
-        const std::string &json_response = curl_https_get(
-                get_nanopool_url(type) + "/approximated_earnings/" + std::to_string(hashrate_arg));
+    static double __get_approximated_earnings_per_hour(const currency_type &ct, double hashrate_hs) {
+        char api_address[BUFFER_SIZE];
+        snprintf(api_address, BUFFER_SIZE, ct.pool_approximated_earnings_api_address_.c_str(),
+                 hashrate_hs / ct.pool_approximated_earnings_api_unit_factor_hashrate_);
+        const std::string &json_response = curl_https_get(api_address);
         //
         std::istringstream is(json_response);
         boost::property_tree::ptree root;
         boost::property_tree::json_parser::read_json(is, root);
-        std::string status = root.get<std::string>("status", "false");
-        if (status != "true")
-            THROW_NETWORK_ERROR("Nanopool REST API error: " + root.get<std::string>("data"));
-        return root.get<double>("data.hour.euros");
+        //api return unit: coins of mined currency
+        return root.get<double>(ct.pool_approximated_earnings_json_path_) *
+               ct.pool_approximated_earnings_api_unit_factor_period_ * get_current_stock_price_cryptocompare(ct);
     }
 
 
-    static std::map<std::string, double>
-    __get_avg_hashrate_per_worker_nanopool(currency_type ct, const std::string &wallet_address, int period_ms) {
-        double period_hours = period_ms / (1000.0 * 3600.0);
-        const std::string &json_response = curl_https_get(
-                get_nanopool_url(ct) + "/avghashrateworkers/" + wallet_address + "/" +
-                std::to_string(period_hours));
+    static double __get_avg_worker_hashrate(const currency_type &ct, const std::string &wallet_address,
+                                            const std::string &worker_name, int period_ms) {
+        char api_address[BUFFER_SIZE];
+        snprintf(api_address, BUFFER_SIZE, ct.pool_avg_hashrate_api_address_.c_str(),
+                 wallet_address.c_str(), worker_name.c_str(), period_ms / ct.pool_avg_hashrate_api_unit_factor_period_);
+        const std::string &json_response = curl_https_get(api_address);
         //
         std::istringstream is(json_response);
         boost::property_tree::ptree root;
         boost::property_tree::json_parser::read_json(is, root);
-        std::string status = root.get<std::string>("status", "false");
-        if (status != "true")
-            THROW_NETWORK_ERROR("Nanopool REST API error: " + root.get<std::string>("data"));
-        std::map<std::string, double> res;
-        for (const boost::property_tree::ptree::value_type &array_elem : root.get_child("data")) {
-            const boost::property_tree::ptree &subtree = array_elem.second;
-            double worker_hashrate_mhs = subtree.get<double>("hashrate");
-            res.emplace(subtree.get<std::string>("worker"),
-                        ((ct == currency_type::ETH) ? worker_hashrate_mhs * 1e6 : worker_hashrate_mhs));
-        }
-        return res;
+        return root.get<double>(ct.pool_current_hashrate_json_path_) * ct.pool_avg_hashrate_api_unit_factor_hashrate_;
     };
 
+    static double __get_current_worker_hashrate(const currency_type &ct, const std::string &wallet_address,
+                                                const std::string &worker_name) {
+        char api_address[BUFFER_SIZE];
+        snprintf(api_address, BUFFER_SIZE, ct.pool_current_hashrate_api_address_.c_str(),
+                 wallet_address.c_str(), worker_name.c_str());
+        const std::string &json_response = curl_https_get(api_address);
+        //
+        std::istringstream is(json_response);
+        boost::property_tree::ptree root;
+        boost::property_tree::json_parser::read_json(is, root);
+        return root.get<double>(ct.pool_current_hashrate_json_path_) *
+               ct.pool_current_hashrate_api_unit_factor_hashrate_;
+    };
 
-    static currency_stats __get_currency_stats(currency_type ct) {
+    static currency_stats __get_currency_stats(const currency_type &ct) {
         currency_stats cs;
         cs.stock_price_eur_ = get_current_stock_price_cryptocompare(ct);
         get_currency_stats_whattomine(ct, cs);
@@ -192,25 +168,30 @@ namespace frequency_scaling {
     }
 
 
-    double get_approximated_earnings_per_hour_nanopool(currency_type ct, double hashrate_hs, int trials,
-                                                       int trial_timeout_ms) {
-        return safe_network_proxycall<double, currency_type, double>(
-                trials, trial_timeout_ms, &__get_approximated_earnings_per_hour_nanopool, std::move(ct),
+    double get_approximated_earnings_per_hour(const currency_type &ct, double hashrate_hs, int trials,
+                                              int trial_timeout_ms) {
+        return safe_network_proxycall<double, const currency_type &, double>(
+                trials, trial_timeout_ms, &__get_approximated_earnings_per_hour, std::move(ct),
                 std::move(hashrate_hs));
     }
 
 
-    std::map<std::string, double>
-    get_avg_hashrate_per_worker_nanopool(currency_type ct, const std::string &wallet_address, int period_ms,
-                                         int trials, int trial_timeout_ms) {
-        return safe_network_proxycall<std::map<std::string, double>, currency_type, const std::string &, int>(
-                trials, trial_timeout_ms, &__get_avg_hashrate_per_worker_nanopool,
-                std::move(ct), std::move(wallet_address), std::move(period_ms));
+    double get_avg_worker_hashrate(const currency_type &ct, const std::string &wallet_address,
+                                   const std::string &worker_name, int period_ms, int trials, int trial_timeout_ms) {
+        return safe_network_proxycall<double, const currency_type &, const std::string &, const std::string &, int>(
+                trials, trial_timeout_ms, &__get_avg_worker_hashrate,
+                std::move(ct), std::move(wallet_address), std::move(worker_name), std::move(period_ms));
     };
 
+    double get_current_worker_hashrate(const currency_type &ct, const std::string &wallet_address,
+                                       const std::string &worker_name, int trials, int trial_timeout_ms) {
+        return safe_network_proxycall<double, const currency_type &, const std::string &, const std::string &>(
+                trials, trial_timeout_ms, &__get_current_worker_hashrate,
+                std::move(ct), std::move(wallet_address), std::move(worker_name));
+    };
 
-    currency_stats get_currency_stats(currency_type ct, int trials, int trial_timeout_ms) {
-        return safe_network_proxycall<currency_stats, currency_type>(
+    currency_stats get_currency_stats(const currency_type &ct, int trials, int trial_timeout_ms) {
+        return safe_network_proxycall<currency_stats, const currency_type &>(
                 trials, trial_timeout_ms, &__get_currency_stats, std::move(ct));
     }
 
