@@ -92,7 +92,7 @@ namespace frequency_scaling {
     static double __get_approximated_earnings_per_hour(const currency_type &ct, double hashrate_hs) {
         char api_address[BUFFER_SIZE];
         snprintf(api_address, BUFFER_SIZE, ct.pool_approximated_earnings_api_address_.c_str(),
-                 hashrate_hs / ct.pool_approximated_earnings_api_unit_factor_hashrate_);
+                 std::to_string(hashrate_hs / ct.pool_approximated_earnings_api_unit_factor_hashrate_).c_str());
         const std::string &json_response = curl_https_get(api_address);
         //
         std::istringstream is(json_response);
@@ -108,13 +108,13 @@ namespace frequency_scaling {
                                             const std::string &worker_name, int period_ms) {
         char api_address[BUFFER_SIZE];
         snprintf(api_address, BUFFER_SIZE, ct.pool_avg_hashrate_api_address_.c_str(),
-                 wallet_address.c_str(), worker_name.c_str(), period_ms / ct.pool_avg_hashrate_api_unit_factor_period_);
+                 wallet_address.c_str(), worker_name.c_str(), std::to_string(period_ms / ct.pool_avg_hashrate_api_unit_factor_period_).c_str());
         const std::string &json_response = curl_https_get(api_address);
         //
         std::istringstream is(json_response);
         boost::property_tree::ptree root;
         boost::property_tree::json_parser::read_json(is, root);
-        return root.get<double>(ct.pool_current_hashrate_json_path_) * ct.pool_avg_hashrate_api_unit_factor_hashrate_;
+        return root.get<double>(ct.pool_avg_hashrate_json_path_) * ct.pool_avg_hashrate_api_unit_factor_hashrate_;
     };
 
     static double __get_current_worker_hashrate(const currency_type &ct, const std::string &wallet_address,

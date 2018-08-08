@@ -302,18 +302,16 @@ namespace frequency_scaling {
         const measurement &cur_profit_measurement = energy_hash_info_.at(ct).optimal_configuration_profit_;
         const measurement &cur_online_measurement = energy_hash_info_.at(ct).optimal_configuration_online_;
         //currently mined currency?
-        if (ct == getBest_currency_()) {
+        if (currency_mining_timespans_.at(ct).empty() || ct == getBest_currency_()) {
             double alpha = std::min(1.0, cur_profit_measurement.hashrate_measure_dur_ms_ / (double) window_dur_ms_);
             return alpha * cur_profit_measurement.hashrate_ + (1 - alpha) * cur_online_measurement.hashrate_;
         } else {
-            long long int time_since_last_mined = window_dur_ms_;
-            if (!currency_mining_timespans_.at(ct).empty()) {
-                long long int system_time_now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            long long int system_time_now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::system_clock::now().time_since_epoch()).count();
-                time_since_last_mined = system_time_now_ms -
+            long long int time_since_last_mined = system_time_now_ms -
                                         (currency_mining_timespans_.at(ct).back().first +
                                          currency_mining_timespans_.at(ct).back().second);
-            }
+            
             double alpha = std::min(1.0, time_since_last_mined / (double) window_dur_ms_);
             return alpha * cur_online_measurement.hashrate_ + (1 - alpha) * cur_profit_measurement.hashrate_;
         }
