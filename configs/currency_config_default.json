@@ -1,0 +1,61 @@
+{
+  "available_currencies": [
+    {
+      "currency_name": "ETH",
+      "bench_script_path": "..\/scripts\/run_benchmark_eth_ethminer.sh",
+      "mining_script_path": "..\/scripts\/start_mining_eth_ethminer.sh",
+      "pool_address": "eth-eu1.nanopool.org:9999",
+      "whattomine_coin_id": "151",
+      "cryptocompare_fsym": "ETH",
+      "pool_avg_hashrate_api_address": "https:\/\/api.nanopool.org\/v1\/eth\/avghashratelimited\/%s\/%s\/%s",
+      "pool_avg_hashrate_json_path": "data",
+      "pool_avg_hashrate_api_unit_factor_hashrate": "1000000",
+      "pool_avg_hashrate_api_unit_factor_period": "3600000",
+      "pool_current_hashrate_api_address": "",
+      "pool_current_hashrate_json_path": "",
+      "pool_current_hashrate_api_unit_factor_hashrate": "-1",
+      "pool_approximated_earnings_api_address": "https:\/\/api.nanopool.org\/v1\/eth\/approximated_earnings\/%s",
+      "pool_approximated_earnings_json_path": "data.hour.coins",
+      "pool_approximated_earnings_api_unit_factor_hashrate": "1000000",
+      "pool_approximated_earnings_api_unit_factor_period": "1"
+    },
+    {
+      "currency_name": "XMR",
+      "bench_script_path": "..\/scripts\/run_benchmark_xmr_xmrstak.sh",
+      "mining_script_path": "..\/scripts\/start_mining_xmr_xmrstak.sh",
+      "pool_address": "xmr-eu1.nanopool.org:14433",
+      "whattomine_coin_id": "101",
+      "cryptocompare_fsym": "XMR",
+      "pool_avg_hashrate_api_address": "https:\/\/api.nanopool.org\/v1\/xmr\/avghashratelimited\/%s\/%s\/%s",
+      "pool_avg_hashrate_json_path": "data",
+      "pool_avg_hashrate_api_unit_factor_hashrate": "1",
+      "pool_avg_hashrate_api_unit_factor_period": "3600000",
+      "pool_current_hashrate_api_address": "",
+      "pool_current_hashrate_json_path": "",
+      "pool_current_hashrate_api_unit_factor_hashrate": "-1",
+      "pool_approximated_earnings_api_address": "https:\/\/api.nanopool.org\/v1\/xmr\/approximated_earnings\/%s",
+      "pool_approximated_earnings_json_path": "data.hour.coins",
+      "pool_approximated_earnings_api_unit_factor_hashrate": "1",
+      "pool_approximated_earnings_api_unit_factor_period": "1"
+    },
+    {
+      "currency_name": "ZEC",
+      "bench_script_path": "..\/scripts\/run_benchmark_zec_excavator.sh",
+      "mining_script_path": "..\/scripts\/start_mining_zec_excavator.sh",
+      "pool_address": "zec-eu1.nanopool.org:6666",
+      "whattomine_coin_id": "166",
+      "cryptocompare_fsym": "ZEC",
+      "pool_avg_hashrate_api_address": "https:\/\/api.nanopool.org\/v1\/zec\/avghashratelimited\/%s\/%s\/%s",
+      "pool_avg_hashrate_json_path": "data",
+      "pool_avg_hashrate_api_unit_factor_hashrate": "1",
+      "pool_avg_hashrate_api_unit_factor_period": "3600000",
+      "pool_current_hashrate_api_address": "",
+      "pool_current_hashrate_json_path": "",
+      "pool_current_hashrate_api_unit_factor_hashrate": "-1",
+      "pool_approximated_earnings_api_address": "https:\/\/api.nanopool.org\/v1\/zec\/approximated_earnings\/%s",
+      "pool_approximated_earnings_json_path": "data.hour.coins",
+      "pool_approximated_earnings_api_unit_factor_hashrate": "1",
+      "pool_approximated_earnings_api_unit_factor_period": "1"
+    }
+  ]
+}
