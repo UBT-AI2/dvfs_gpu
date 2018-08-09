@@ -108,7 +108,8 @@ namespace frequency_scaling {
                                             const std::string &worker_name, int period_ms) {
         char api_address[BUFFER_SIZE];
         snprintf(api_address, BUFFER_SIZE, ct.pool_avg_hashrate_api_address_.c_str(),
-                 wallet_address.c_str(), worker_name.c_str(), std::to_string(period_ms / ct.pool_avg_hashrate_api_unit_factor_period_).c_str());
+                 wallet_address.c_str(), worker_name.c_str(),
+                 std::to_string(period_ms / ct.pool_avg_hashrate_api_unit_factor_period_).c_str());
         const std::string &json_response = curl_https_get(api_address);
         //
         std::istringstream is(json_response);

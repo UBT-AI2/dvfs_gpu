@@ -19,12 +19,16 @@ namespace frequency_scaling {
     bool start_mining_script(const currency_type &ct, const device_clock_info &dci, const miner_user_info &user_info) {
         const std::string &wallet_addr = user_info.wallet_addresses_.at(ct);
         const std::string &worker_name = user_info.worker_names_.at(dci.device_id_nvml_);
+        std::string pool_csv;
+        for (int i = 0; i < ct.pool_addresses_.size() - 1; i++)
+            pool_csv += ct.pool_addresses_[i] + ",";
+        pool_csv += ct.pool_addresses_.back();
         //start mining in background process
         char cmd[BUFFER_SIZE];
-        //TODO pool address as script arg
-        snprintf(cmd, BUFFER_SIZE, "bash %s %i %i %s %s %s %s",
+        snprintf(cmd, BUFFER_SIZE, "bash %s %i %i %s %s %s %s %s",
                  ct.mining_script_path_.c_str(), dci.device_id_nvml_, dci.device_id_cuda_, wallet_addr.c_str(),
-                 worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str());
+                 worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str(),
+                 pool_csv.c_str());
 
         //
         return process_management::gpu_start_process(cmd, dci.device_id_nvml_, process_type::MINER, true);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <map>
 
 namespace frequency_scaling {
@@ -27,7 +28,7 @@ namespace frequency_scaling {
         const std::string currency_name_;
         //relative to binary
         std::string bench_script_path_, mining_script_path_;
-        std::string pool_address_;
+        std::vector<std::string> pool_addresses_;
         int whattomine_coin_id_;
         std::string cryptocompare_fsym_;
         //optional api options

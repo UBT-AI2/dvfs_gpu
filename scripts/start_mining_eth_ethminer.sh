@@ -6,6 +6,7 @@ wallet_address=$3
 worker_name=$4
 email=$5
 log_dir=$6
+pool_csv=$7
 if [[ "$OSTYPE" == "msys" ]]
 then
 #MINGW
@@ -17,14 +18,13 @@ fi
 LOGFILE=${log_dir}/mining_log_ethminer_gpu${device_id}.txt
 #################################################################################
 
+pool_list=($(echo ${pool_csv} | tr "," "\n"))
+for pool in "${pool_list[@]}"
+do
+    pool_option_str="${pool_option_str} -P stratum1+tcp://${wallet_address}@${pool}/${worker_name}/${email}"
+done
+
 echo -e "\n##########################\nSTARTED ETHMINER $(date +%Y-%m-%d_%H-%M-%S)\n##########################\n" >> ${LOGFILE}
-${MINER_BINARY} --farm-recheck 2000 -U -RH \
--P stratum1+tcp://${wallet_address}@eth-eu1.nanopool.org:9999/${worker_name}/${email} \
--P stratum1+tcp://${wallet_address}@eth-eu2.nanopool.org:9999/${worker_name}/${email} \
--P stratum1+tcp://${wallet_address}@eth-au1.nanopool.org:9999/${worker_name}/${email} \
--P stratum1+tcp://${wallet_address}@eth-jp1.nanopool.org:9999/${worker_name}/${email} \
--P stratum1+tcp://${wallet_address}@eth-us-west1.nanopool.org:9999/${worker_name}/${email} \
--P stratum1+tcp://${wallet_address}@eth-us-east1.nanopool.org:9999/${worker_name}/${email} \
--P stratum1+tcp://${wallet_address}@eth-asia1.nanopool.org:9999/${worker_name}/${email} \
+${MINER_BINARY} --farm-recheck 2000 -U -RH ${pool_option_str}
 --cuda-devices ${device_id_cuda} --cuda-parallel-hash 8 --hash-logfile ${log_dir}/hash_log_ETH_${device_id}.txt &>> ${LOGFILE}
 

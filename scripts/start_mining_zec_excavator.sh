@@ -6,6 +6,7 @@ wallet_address=$3
 worker_name=$4
 email=$5
 log_dir=$6
+pool_csv=$7
 if [[ "$OSTYPE" == "msys" ]]
 then
 #MINGW
@@ -18,6 +19,9 @@ exit 1
 fi
 #################################################################################
 
+pool_list=($(echo ${pool_csv} | tr "," "\n"))
+pool_option_str=${pool_list[0]}
+
 echo -e "\n##########################\nSTARTED EXCAVATOR $(date +%Y-%m-%d_%H-%M-%S)\n##########################\n" >> ${LOGFILE}
-${MINER_BINARY} -a equihash -s zec-au1.nanopool.org:6666 -u ${wallet_address}/${worker_name}/${email} \
+${MINER_BINARY} -a equihash -s ${pool_option_str} -u ${wallet_address}/${worker_name}/${email} \
 -p 0 -d 2 -cd $device_id_cuda 2>&1 | ./hash-log-excavator ${log_dir}/hash_log_ZEC_${device_id}.txt &>> ${LOGFILE}

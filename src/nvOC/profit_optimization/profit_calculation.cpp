@@ -307,11 +307,11 @@ namespace frequency_scaling {
             return alpha * cur_profit_measurement.hashrate_ + (1 - alpha) * cur_online_measurement.hashrate_;
         } else {
             long long int system_time_now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                        std::chrono::system_clock::now().time_since_epoch()).count();
+                    std::chrono::system_clock::now().time_since_epoch()).count();
             long long int time_since_last_mined = system_time_now_ms -
-                                        (currency_mining_timespans_.at(ct).back().first +
-                                         currency_mining_timespans_.at(ct).back().second);
-            
+                                                  (currency_mining_timespans_.at(ct).back().first +
+                                                   currency_mining_timespans_.at(ct).back().second);
+
             double alpha = std::min(1.0, time_since_last_mined / (double) window_dur_ms_);
             return alpha * cur_online_measurement.hashrate_ + (1 - alpha) * cur_profit_measurement.hashrate_;
         }

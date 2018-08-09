@@ -64,7 +64,10 @@ namespace frequency_scaling {
             currency_type ct_eth("ETH");
             ct_eth.bench_script_path_ = "../scripts/run_benchmark_eth_ethminer.sh";
             ct_eth.mining_script_path_ = "../scripts/start_mining_eth_ethminer.sh";
-            ct_eth.pool_address_ = "eth-eu1.nanopool.org:9999";
+            ct_eth.pool_addresses_ = {"eth-eu1.nanopool.org:9999", "eth-eu2.nanopool.org:9999",
+                                      "eth-au1.nanopool.org:9999", "eth-jp1.nanopool.org:9999",
+                                      "eth-us-west1.nanopool.org:9999", "eth-us-east1.nanopool.org:9999",
+                                      "eth-asia1.nanopool.org:9999"};
             ct_eth.whattomine_coin_id_ = 151;
             ct_eth.cryptocompare_fsym_ = "ETH";
             ct_eth.pool_avg_hashrate_api_address_ = "https://api.nanopool.org/v1/eth/avghashratelimited/%s/%s/%s";
@@ -81,7 +84,7 @@ namespace frequency_scaling {
             currency_type ct_zec("ZEC");
             ct_zec.bench_script_path_ = "../scripts/run_benchmark_zec_excavator.sh";
             ct_zec.mining_script_path_ = "../scripts/start_mining_zec_excavator.sh";
-            ct_zec.pool_address_ = "zec-eu1.nanopool.org:6666";
+            ct_zec.pool_addresses_ = {"zec-eu1.nanopool.org:6666"};
             ct_zec.whattomine_coin_id_ = 166;
             ct_zec.cryptocompare_fsym_ = "ZEC";
             ct_zec.pool_avg_hashrate_api_address_ = "https://api.nanopool.org/v1/zec/avghashratelimited/%s/%s/%s";
@@ -98,7 +101,7 @@ namespace frequency_scaling {
             currency_type ct_xmr("XMR");
             ct_xmr.bench_script_path_ = "../scripts/run_benchmark_xmr_xmrstak.sh";
             ct_xmr.mining_script_path_ = "../scripts/start_mining_xmr_xmrstak.sh";
-            ct_xmr.pool_address_ = "xmr-eu1.nanopool.org:14433";
+            ct_xmr.pool_addresses_ = {"xmr-eu1.nanopool.org:14433"};
             ct_xmr.whattomine_coin_id_ = 101;
             ct_xmr.cryptocompare_fsym_ = "XMR";
             ct_xmr.pool_avg_hashrate_api_address_ = "https://api.nanopool.org/v1/xmr/avghashratelimited/%s/%s/%s";
@@ -126,7 +129,11 @@ namespace frequency_scaling {
             currency_type ct(pt_currency_type.get<std::string>("currency_name"));
             ct.bench_script_path_ = pt_currency_type.get<std::string>("bench_script_path");
             ct.mining_script_path_ = pt_currency_type.get<std::string>("mining_script_path");
-            ct.pool_address_ = pt_currency_type.get<std::string>("pool_address");
+            for (const pt::ptree::value_type &pt_pool : pt_currency_type.get_child("pool_addresses")) {
+                ct.pool_addresses_.emplace_back(pt_pool.second.data());
+            }
+            if (ct.pool_addresses_.empty())
+                THROW_RUNTIME_ERROR("Currency config " + filename + " : No pool specified for " + ct.currency_name_);
             ct.whattomine_coin_id_ = pt_currency_type.get<int>("whattomine_coin_id");
             //optional fields
             ct.cryptocompare_fsym_ = pt_currency_type.get<std::string>("cryptocompare_fsym", ct.currency_name_);
@@ -167,7 +174,13 @@ namespace frequency_scaling {
             pt_currency_type.put("currency_name", ct.currency_name_);
             pt_currency_type.put("bench_script_path", ct.bench_script_path_);
             pt_currency_type.put("mining_script_path", ct.mining_script_path_);
-            pt_currency_type.put("pool_address", ct.pool_address_);
+            pt::ptree pt_pool_array;
+            for (auto &pool : ct.pool_addresses_) {
+                pt::ptree pt_pool;
+                pt_pool.put("", pool);
+                pt_pool_array.push_back(std::make_pair("", pt_pool));
+            }
+            pt_currency_type.add_child("pool_addresses", pt_pool_array);
             pt_currency_type.put("whattomine_coin_id", ct.whattomine_coin_id_);
             //optional fields
             pt_currency_type.put("cryptocompare_fsym", ct.cryptocompare_fsym_);

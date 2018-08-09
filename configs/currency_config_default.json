@@ -4,7 +4,15 @@
       "currency_name": "ETH",
       "bench_script_path": "..\/scripts\/run_benchmark_eth_ethminer.sh",
       "mining_script_path": "..\/scripts\/start_mining_eth_ethminer.sh",
-      "pool_address": "eth-eu1.nanopool.org:9999",
+      "pool_addresses": [
+        "eth-eu1.nanopool.org:9999",
+        "eth-eu2.nanopool.org:9999",
+        "eth-au1.nanopool.org:9999",
+        "eth-jp1.nanopool.org:9999",
+        "eth-us-west1.nanopool.org:9999",
+        "eth-us-east1.nanopool.org:9999",
+        "eth-asia1.nanopool.org:9999"
+      ],
       "whattomine_coin_id": "151",
       "cryptocompare_fsym": "ETH",
       "pool_avg_hashrate_api_address": "https:\/\/api.nanopool.org\/v1\/eth\/avghashratelimited\/%s\/%s\/%s",
@@ -23,7 +31,9 @@
       "currency_name": "XMR",
       "bench_script_path": "..\/scripts\/run_benchmark_xmr_xmrstak.sh",
       "mining_script_path": "..\/scripts\/start_mining_xmr_xmrstak.sh",
-      "pool_address": "xmr-eu1.nanopool.org:14433",
+      "pool_addresses": [
+        "xmr-eu1.nanopool.org:14433"
+      ],
       "whattomine_coin_id": "101",
       "cryptocompare_fsym": "XMR",
       "pool_avg_hashrate_api_address": "https:\/\/api.nanopool.org\/v1\/xmr\/avghashratelimited\/%s\/%s\/%s",
@@ -42,7 +52,9 @@
       "currency_name": "ZEC",
       "bench_script_path": "..\/scripts\/run_benchmark_zec_excavator.sh",
       "mining_script_path": "..\/scripts\/start_mining_zec_excavator.sh",
-      "pool_address": "zec-eu1.nanopool.org:6666",
+      "pool_addresses": [
+        "zec-eu1.nanopool.org:6666"
+      ],
       "whattomine_coin_id": "166",
       "cryptocompare_fsym": "ZEC",
       "pool_avg_hashrate_api_address": "https:\/\/api.nanopool.org\/v1\/zec\/avghashratelimited\/%s\/%s\/%s",

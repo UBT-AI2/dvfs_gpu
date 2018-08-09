@@ -1,6 +1,7 @@
 #!/bin/bash
 BIN_DIR=../bin
 DEVICE_ID=0
+CONFIG_JSON=../configs/currency_config_default.json
 
 function save_call_command {
 	"$@"
@@ -13,9 +14,9 @@ function save_call_command {
 }
 
 function exhaustive_test {
-	for CURRENCY in xmr eth zec;
+	for CURRENCY in XMR ETH ZEC;
 	do
-		save_call_command ./freq_exhaustive.exe ${CURRENCY} ${DEVICE_ID}
+		save_call_command ./freq_exhaustive.exe $CONFIG_JSON ${CURRENCY} ${DEVICE_ID}
 		sleep 60
 	done
 }
