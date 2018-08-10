@@ -7,7 +7,9 @@ worker_name=$4
 email=$5
 log_dir=$6
 pool_csv=$7
+currency_name=$8
+algo=$9
 #################################################################################
 
 source $(dirname $(readlink -f $0))/ccminer_generic.sh
-ccminer_start_mining ZEC
+ccminer_start_mining ${currency_name} ${algo}

@@ -9,7 +9,13 @@
 
 namespace frequency_scaling {
 
-    currency_type::currency_type(const std::string &currency_name) : currency_name_(currency_name) {}
+    currency_type::currency_type(const std::string &currency_name, bool use_ccminer) :
+    currency_name_(currency_name), use_ccminer_(use_ccminer) {
+        if(use_ccminer_){
+            bench_script_path_ = "../scripts/run_benchmark_generic_ccminer.sh";
+            mining_script_path_ = "../scripts/start_mining_generic_ccminer.sh";
+        }
+    }
 
     bool currency_type::has_avg_hashrate_api() const {
         return !pool_avg_hashrate_api_address_.empty() && !pool_avg_hashrate_json_path_.empty() &&
@@ -61,7 +67,7 @@ namespace frequency_scaling {
     std::map<std::string, currency_type> create_default_currency_config() {
         std::map<std::string, currency_type> res;
         {
-            currency_type ct_eth("ETH");
+            currency_type ct_eth("ETH", false);
             ct_eth.bench_script_path_ = "../scripts/run_benchmark_eth_ethminer.sh";
             ct_eth.mining_script_path_ = "../scripts/start_mining_eth_ethminer.sh";
             ct_eth.pool_addresses_ = {"eth-eu1.nanopool.org:9999", "eth-eu2.nanopool.org:9999",
@@ -81,7 +87,8 @@ namespace frequency_scaling {
             res.emplace(ct_eth.currency_name_, ct_eth);
         }
         {
-            currency_type ct_zec("ZEC");
+#ifdef _WIN32
+            currency_type ct_zec("ZEC", false);
             ct_zec.bench_script_path_ = "../scripts/run_benchmark_zec_excavator.sh";
             ct_zec.mining_script_path_ = "../scripts/start_mining_zec_excavator.sh";
             ct_zec.pool_addresses_ = {"zec-eu2.nanopool.org:6666"};
@@ -95,10 +102,21 @@ namespace frequency_scaling {
             ct_zec.pool_approximated_earnings_json_path_ = "data.hour.coins";
             ct_zec.pool_approximated_earnings_api_unit_factor_hashrate_ = 1;
             ct_zec.pool_approximated_earnings_api_unit_factor_period_ = 1;
+#else
+            currency_type ct_zec("ZEC", true);
+            ct_zec.ccminer_algo_ = "equihash",
+            ct_zec.pool_addresses_ = {"eu1-zcash.flypool.org:13333", "us1-zcash.flypool.org:13333",
+                                      "asia1-zcash.flypool.org:13333"};
+            ct_zec.whattomine_coin_id_ = 166;
+            ct_zec.cryptocompare_fsym_ = "ZEC";
+            ct_zec.pool_current_hashrate_api_address_ = "https://api-zcash.flypool.org/miner/%s/worker/%s/currentStats";
+            ct_zec.pool_current_hashrate_json_path_ = "data.currentHashrate";
+            ct_zec.pool_current_hashrate_api_unit_factor_hashrate_ = 1;
+#endif
             res.emplace(ct_zec.currency_name_, ct_zec);
         }
         {
-            currency_type ct_xmr("XMR");
+            currency_type ct_xmr("XMR", false);
             ct_xmr.bench_script_path_ = "../scripts/run_benchmark_xmr_xmrstak.sh";
             ct_xmr.mining_script_path_ = "../scripts/start_mining_xmr_xmrstak.sh";
             ct_xmr.pool_addresses_ = {"xmr-eu2.nanopool.org:14444"};
@@ -114,6 +132,38 @@ namespace frequency_scaling {
             ct_xmr.pool_approximated_earnings_api_unit_factor_period_ = 1;
             res.emplace(ct_xmr.currency_name_, ct_xmr);
         }
+        {
+            currency_type ct_lux("LUX", true);
+            ct_lux.ccminer_algo_ = "phi2",
+            ct_lux.pool_addresses_ = {"omegapool.cc:8003", "yiimp.eu:8332"};
+            ct_lux.whattomine_coin_id_ = 212;
+            ct_lux.cryptocompare_fsym_ = "LUX";
+            res.emplace(ct_lux.currency_name_, ct_lux);
+        }
+        {
+            currency_type ct_btx("BTX", true);
+            ct_btx.ccminer_algo_ = "bitcore",
+            ct_btx.pool_addresses_ = {"mine.zpool.ca:3556", "yiimp.eu:3566"};
+            ct_btx.whattomine_coin_id_ = 202;
+            ct_btx.cryptocompare_fsym_ = "BTX";
+            res.emplace(ct_btx.currency_name_, ct_btx);
+        }
+        {
+            currency_type ct_vtc("VTC", true);
+            ct_vtc.ccminer_algo_ = "lyra2v2",
+            ct_vtc.pool_addresses_ = {"vtc.coinfoundry.org:3096", "yiimp.eu:4533"};
+            ct_vtc.whattomine_coin_id_ = 5;
+            ct_vtc.cryptocompare_fsym_ = "VTC";
+            res.emplace(ct_vtc.currency_name_, ct_vtc);
+        }
+        {
+            currency_type ct_rvn("RVN", true);
+            ct_rvn.ccminer_algo_ = "x16r",
+            ct_rvn.pool_addresses_ = {"omegapool.cc:8006", "rvn.coinfoundry.org:3172", "yiimp.eu:3636"};
+            ct_rvn.whattomine_coin_id_ = 234;
+            ct_rvn.cryptocompare_fsym_ = "RVN";
+            res.emplace(ct_rvn.currency_name_, ct_rvn);
+        }
         return res;
     }
 
@@ -126,9 +176,14 @@ namespace frequency_scaling {
         //read device infos
         for (const pt::ptree::value_type &array_elem : root.get_child("available_currencies")) {
             const boost::property_tree::ptree &pt_currency_type = array_elem.second;
-            currency_type ct(pt_currency_type.get<std::string>("currency_name"));
-            ct.bench_script_path_ = pt_currency_type.get<std::string>("bench_script_path");
-            ct.mining_script_path_ = pt_currency_type.get<std::string>("mining_script_path");
+            currency_type ct(pt_currency_type.get<std::string>("currency_name"),
+                    pt_currency_type.get<bool>("use_ccminer"));
+            if(ct.use_ccminer_) {
+                ct.ccminer_algo_ = pt_currency_type.get<std::string>("ccminer_algo");
+            } else{
+                ct.bench_script_path_ = pt_currency_type.get<std::string>("bench_script_path");
+                ct.mining_script_path_ = pt_currency_type.get<std::string>("mining_script_path");
+            }
             for (const pt::ptree::value_type &pt_pool : pt_currency_type.get_child("pool_addresses")) {
                 ct.pool_addresses_.emplace_back(pt_pool.second.data());
             }
@@ -172,6 +227,8 @@ namespace frequency_scaling {
             const currency_type &ct = elem.second;
             pt::ptree pt_currency_type;
             pt_currency_type.put("currency_name", ct.currency_name_);
+            pt_currency_type.put("use_ccminer", ct.use_ccminer_);
+            pt_currency_type.put("ccminer_algo", ct.ccminer_algo_);
             pt_currency_type.put("bench_script_path", ct.bench_script_path_);
             pt_currency_type.put("mining_script_path", ct.mining_script_path_);
             pt::ptree pt_pool_array;

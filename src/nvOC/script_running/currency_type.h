@@ -7,7 +7,7 @@
 namespace frequency_scaling {
 
     struct currency_type {
-        explicit currency_type(const std::string &currency_name);
+        explicit currency_type(const std::string &currency_name, bool use_ccminer);
 
         bool has_avg_hashrate_api() const;
 
@@ -27,7 +27,9 @@ namespace frequency_scaling {
 
         const std::string currency_name_;
         //relative to binary
-        std::string bench_script_path_, mining_script_path_;
+        const bool use_ccminer_;
+        std::string ccminer_algo_;//specify if ccminer
+        std::string bench_script_path_, mining_script_path_;//specify if not ccminer
         std::vector<std::string> pool_addresses_;
         int whattomine_coin_id_;
         std::string cryptocompare_fsym_;

@@ -58,7 +58,7 @@ namespace frequency_scaling {
             if (min_graph_oc > 0)
                 min_graph_oc_ = nvapi_ci_graph.min_oc_;
             if (max_graph_oc < 0)
-                max_graph_oc_ = std::min(150, nvapi_ci_graph.max_oc_);
+                max_graph_oc_ = std::min(100, nvapi_ci_graph.max_oc_);
         } else {
             min_mem_oc_ = max_mem_oc_ = 0;
             nvapi_default_mem_clock_ = nvmlGetAvailableMemClocks(device_id_nvml)[0];
@@ -155,9 +155,16 @@ namespace frequency_scaling {
                     << std::endl;
             //run benchmark script to get measurement
             char cmd[BUFFER_SIZE];
-            snprintf(cmd, BUFFER_SIZE, "bash %s %i %i %i %i %s",
-                     ct.bench_script_path_.c_str(), dci.device_id_nvml_, dci.device_id_cuda_,
-                     mem_clock, graph_clock, log_utils::get_logdir_name().c_str());
+            if(ct.use_ccminer_){
+                snprintf(cmd, BUFFER_SIZE, "bash %s %i %i %i %i %s %s %s",
+                         ct.bench_script_path_.c_str(), dci.device_id_nvml_, dci.device_id_cuda_,
+                         mem_clock, graph_clock, log_utils::get_logdir_name().c_str(),
+                         ct.currency_name_.c_str(), ct.ccminer_algo_.c_str());
+            }else {
+                snprintf(cmd, BUFFER_SIZE, "bash %s %i %i %i %i %s",
+                         ct.bench_script_path_.c_str(), dci.device_id_nvml_, dci.device_id_cuda_,
+                         mem_clock, graph_clock, log_utils::get_logdir_name().c_str());
+            }
 
             process_management::gpu_start_process(cmd, dci.device_id_nvml_, process_type::MINER, false);
         }

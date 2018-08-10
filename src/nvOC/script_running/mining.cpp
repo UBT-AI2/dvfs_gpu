@@ -25,11 +25,17 @@ namespace frequency_scaling {
         pool_csv += ct.pool_addresses_.back();
         //start mining in background process
         char cmd[BUFFER_SIZE];
-        snprintf(cmd, BUFFER_SIZE, "bash %s %i %i %s %s %s %s %s",
-                 ct.mining_script_path_.c_str(), dci.device_id_nvml_, dci.device_id_cuda_, wallet_addr.c_str(),
-                 worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str(),
-                 pool_csv.c_str());
-
+        if(ct.use_ccminer_){
+            snprintf(cmd, BUFFER_SIZE, "bash %s %i %i %s %s %s %s %s %s %s",
+                     ct.mining_script_path_.c_str(), dci.device_id_nvml_, dci.device_id_cuda_, wallet_addr.c_str(),
+                     worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str(),
+                     pool_csv.c_str(), ct.currency_name_.c_str(), ct.ccminer_algo_.c_str());
+        }else {
+            snprintf(cmd, BUFFER_SIZE, "bash %s %i %i %s %s %s %s %s",
+                     ct.mining_script_path_.c_str(), dci.device_id_nvml_, dci.device_id_cuda_, wallet_addr.c_str(),
+                     worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str(),
+                     pool_csv.c_str());
+        }
         //
         return process_management::gpu_start_process(cmd, dci.device_id_nvml_, process_type::MINER, true);
     }

@@ -2,12 +2,12 @@
 
 device_id=$1
 device_id_cuda=$2
-wallet_address=$3
-worker_name=$4
-email=$5
-log_dir=$6
-pool_csv=$7
+mem_clock=$3
+graph_clock=$4
+log_dir=$5
+currency_name=$6
+algo=$7
 #################################################################################
 
 source $(dirname $(readlink -f $0))/ccminer_generic.sh
-ccminer_start_mining LUX phi2
+ccminer_run_benchmark ${currency_name} ${algo}

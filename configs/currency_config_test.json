@@ -2,10 +2,12 @@
   "available_currencies": [
     {
       "currency_name": "ZEC",
-      "bench_script_path": "..\/scripts\/run_benchmark_zec_ccminer.sh",
-      "mining_script_path": "..\/scripts\/start_mining_zec_ccminer.sh",
+      "use_ccminer": "true",
+      "ccminer_algo": "equihash",
       "pool_addresses": [
-        "eu1-zcash.flypool.org:13333"
+        "eu1-zcash.flypool.org:13333",
+        "us1-zcash.flypool.org:13333",
+        "asia1-zcash.flypool.org:13333"
       ],
       "whattomine_coin_id": "166",
       "cryptocompare_fsym": "ZEC",
@@ -15,8 +17,8 @@
     },
     {
       "currency_name": "LUX",
-      "bench_script_path": "..\/scripts\/run_benchmark_lux_ccminer.sh",
-      "mining_script_path": "..\/scripts\/start_mining_lux_ccminer.sh",
+      "use_ccminer": "true",
+      "ccminer_algo": "phi2",
       "pool_addresses": [
         "omegapool.cc:8003"
       ],

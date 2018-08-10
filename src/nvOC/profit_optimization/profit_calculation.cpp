@@ -195,10 +195,13 @@ namespace frequency_scaling {
             if (!res.first)
                 return false;
             timespan_current_pool_hashrates_.at(current_mined_ct).emplace_back(system_time_now_ms, res.second);
+            int counter = 0;
             for (auto &elem : timespan_current_pool_hashrates_.at(current_mined_ct))
-                if (elem.first >= system_time_start_ms)
+                if (elem.first >= system_time_start_ms) {
                     cur_hashrate += elem.second;
-            cur_hashrate /= timespan_current_pool_hashrates_.at(current_mined_ct).size();
+                    counter++;
+                }
+            cur_hashrate /= counter;
         } else {
             cur_hashrate = energy_hash_info_.at(current_mined_ct).optimal_configuration_online_.hashrate_;
         }
@@ -333,7 +336,6 @@ namespace frequency_scaling {
 
     void profit_calculator::save_current_period(const currency_type &ct, long long int system_time_start_ms_no_window) {
         last_profit_measurements_.at(ct) = energy_hash_info_.at(ct).optimal_configuration_profit_;
-        timespan_current_pool_hashrates_.at(ct).clear();
         long long int system_time_now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
         int period_ms = system_time_now_ms - system_time_start_ms_no_window;
