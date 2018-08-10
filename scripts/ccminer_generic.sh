@@ -9,13 +9,13 @@ else
 MINER_BINARY=../../miner/binaries/linux/ccminer-build/ccminer
 fi
 ######################################################################################################
+source $(dirname $(readlink -f $0))/util_functions.sh
 
 function ccminer_run_benchmark {
     currency=$1
     algo=$2
 
-    source $(dirname $(readlink -f $0))/util_functions.sh
-    genric_bench ${currency} \
+    generic_bench ${currency} \
     '${MINER_BINARY} -a ${algo} --benchmark -d ${device_id_cuda}' \
     'grep -oP "${algo} hashrate =\s*\K[+-]?[0-9]+([.][0-9]+)?"'
 }
@@ -26,10 +26,10 @@ function ccminer_start_mining {
     algo=$2
     LOGFILE=${log_dir}/mining_log_ccminer-${currency}_gpu${device_id}.txt
 
-    local pool_list=($(echo ${pool_csv} | tr "," "\n"))
+    pool_list=($(echo ${pool_csv} | tr "," "\n"))
     for pool in "${pool_list[@]}"
     do
-        local pool_option_str="${pool_option_str} -a ${algo} -o stratum+tcp://${pool} -u ${wallet_address}.${worker_name} -p x"
+        pool_option_str="${pool_option_str} -a ${algo} -o stratum+tcp://${pool} -u ${wallet_address}.${worker_name} -p x"
     done
 
     echo -e "\n##########################\nSTARTED CCMINER-${currency} $(date +%Y-%m-%d_%H-%M-%S)\n##########################\n" >> ${LOGFILE}

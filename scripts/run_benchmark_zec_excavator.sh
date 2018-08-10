@@ -18,7 +18,6 @@ fi
 #################################################################################
 
 source $(dirname $(readlink -f $0))/util_functions.sh
-genric_bench ZEC \
+generic_bench ZEC \
 '${MINER_BINARY} -b -a equihash -cd ${device_id_cuda}' \
-'grep -oP 'Total measured:\s*\K[+-]?[0-9]+([.][0-9]+)?''
-#"grep -i 'Total measured:' | grep -Eo '[+-]?[0-9]+([.][0-9]+)?' | tail -n 1"
+'grep -oP "Total measured:\s*\K[+-]?[0-9]+([.][0-9]+)?"'

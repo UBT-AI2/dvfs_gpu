@@ -9,7 +9,7 @@
       "min_mem_oc": "1",
       "min_graph_oc": "1",
       "max_mem_oc": "-1",
-      "max_graph_oc": "-1",
+      "max_graph_oc": "100",
       "worker_name": "DESKTOP-6817PNB_gpu0"
     },
     {
@@ -17,7 +17,7 @@
       "min_mem_oc": "1",
       "min_graph_oc": "1",
       "max_mem_oc": "-1",
-      "max_graph_oc": "-1",
+      "max_graph_oc": "100",
       "worker_name": "DESKTOP-6817PNB_gpu1"
     },
     {
@@ -25,7 +25,7 @@
       "min_mem_oc": "1",
       "min_graph_oc": "1",
       "max_mem_oc": "-1",
-      "max_graph_oc": "-1",
+      "max_graph_oc": "100",
       "worker_name": "DESKTOP-6817PNB_gpu2"
     },
     {
@@ -33,7 +33,7 @@
       "min_mem_oc": "1",
       "min_graph_oc": "1",
       "max_mem_oc": "-1",
-      "max_graph_oc": "-1",
+      "max_graph_oc": "100",
       "worker_name": "DESKTOP-6817PNB_gpu3"
     }
   ],
@@ -67,6 +67,16 @@
                 "mem_step": "500",
                 "graph_idx_step": "25"
             }
-        }
+        },
+		"LUX": {
+			"wallet_address": "LUM85Kvt2Ex4sdCbLxJZUmWiP7akPHNTsW",
+			"opt_method_params": {
+				"method": "NM",
+				"min_hashrate": "-1",
+				"max_iterations": "8",
+				"mem_step": "500",
+				"graph_idx_step": "25"
+			}
+		}
     }
 }

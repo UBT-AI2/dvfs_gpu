@@ -68,6 +68,16 @@
       "pool_approximated_earnings_json_path": "data.hour.coins",
       "pool_approximated_earnings_api_unit_factor_hashrate": "1",
       "pool_approximated_earnings_api_unit_factor_period": "1"
+    },
+	{
+      "currency_name": "LUX",
+      "bench_script_path": "..\/scripts\/run_benchmark_lux_ccminer.sh",
+      "mining_script_path": "..\/scripts\/start_mining_lux_ccminer.sh",
+      "pool_addresses": [
+        "omegapool.cc:8003"
+      ],
+      "whattomine_coin_id": "212",
+      "cryptocompare_fsym": "LUX"
     }
   ]
 }

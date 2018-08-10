@@ -4,7 +4,7 @@
       "currency_name": "ZEC",
       "bench_script_path": "..\/scripts\/run_benchmark_zec_ccminer.sh",
       "mining_script_path": "..\/scripts\/start_mining_zec_ccminer.sh",
-      "pool_address": [
+      "pool_addresses": [
         "eu1-zcash.flypool.org:13333"
       ],
       "whattomine_coin_id": "166",
@@ -17,7 +17,7 @@
       "currency_name": "LUX",
       "bench_script_path": "..\/scripts\/run_benchmark_lux_ccminer.sh",
       "mining_script_path": "..\/scripts\/start_mining_lux_ccminer.sh",
-      "pool_address": [
+      "pool_addresses": [
         "omegapool.cc:8003"
       ],
       "whattomine_coin_id": "212",
