@@ -84,7 +84,7 @@ namespace frequency_scaling {
             currency_type ct_zec("ZEC");
             ct_zec.bench_script_path_ = "../scripts/run_benchmark_zec_excavator.sh";
             ct_zec.mining_script_path_ = "../scripts/start_mining_zec_excavator.sh";
-            ct_zec.pool_addresses_ = {"zec-eu1.nanopool.org:6666"};
+            ct_zec.pool_addresses_ = {"zec-eu2.nanopool.org:6666"};
             ct_zec.whattomine_coin_id_ = 166;
             ct_zec.cryptocompare_fsym_ = "ZEC";
             ct_zec.pool_avg_hashrate_api_address_ = "https://api.nanopool.org/v1/zec/avghashratelimited/%s/%s/%s";
@@ -101,7 +101,7 @@ namespace frequency_scaling {
             currency_type ct_xmr("XMR");
             ct_xmr.bench_script_path_ = "../scripts/run_benchmark_xmr_xmrstak.sh";
             ct_xmr.mining_script_path_ = "../scripts/start_mining_xmr_xmrstak.sh";
-            ct_xmr.pool_addresses_ = {"xmr-eu1.nanopool.org:14433"};
+            ct_xmr.pool_addresses_ = {"xmr-eu2.nanopool.org:14444"};
             ct_xmr.whattomine_coin_id_ = 101;
             ct_xmr.cryptocompare_fsym_ = "XMR";
             ct_xmr.pool_avg_hashrate_api_address_ = "https://api.nanopool.org/v1/xmr/avghashratelimited/%s/%s/%s";

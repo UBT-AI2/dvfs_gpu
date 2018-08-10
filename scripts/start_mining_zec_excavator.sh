@@ -23,5 +23,5 @@ pool_list=($(echo ${pool_csv} | tr "," "\n"))
 pool_option_str=${pool_list[0]}
 
 echo -e "\n##########################\nSTARTED EXCAVATOR $(date +%Y-%m-%d_%H-%M-%S)\n##########################\n" >> ${LOGFILE}
-${MINER_BINARY} -a equihash -s ${pool_option_str} -u ${wallet_address}/${worker_name}/${email} \
+${MINER_BINARY} -a equihash -s ${pool_option_str} -u ${wallet_address}:x/${worker_name}/${email} \
 -p 0 -d 2 -cd $device_id_cuda 2>&1 | ./hash-log-excavator ${log_dir}/hash_log_ZEC_${device_id}.txt &>> ${LOGFILE}

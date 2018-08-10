@@ -32,7 +32,7 @@
       "bench_script_path": "..\/scripts\/run_benchmark_xmr_xmrstak.sh",
       "mining_script_path": "..\/scripts\/start_mining_xmr_xmrstak.sh",
       "pool_addresses": [
-        "xmr-eu1.nanopool.org:14433"
+        "xmr-eu2.nanopool.org:14444"
       ],
       "whattomine_coin_id": "101",
       "cryptocompare_fsym": "XMR",
@@ -53,7 +53,7 @@
       "bench_script_path": "..\/scripts\/run_benchmark_zec_excavator.sh",
       "mining_script_path": "..\/scripts\/start_mining_zec_excavator.sh",
       "pool_addresses": [
-        "zec-eu1.nanopool.org:6666"
+        "zec-eu2.nanopool.org:6666"
       ],
       "whattomine_coin_id": "166",
       "cryptocompare_fsym": "ZEC",
