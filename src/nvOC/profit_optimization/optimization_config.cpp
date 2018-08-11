@@ -142,6 +142,7 @@ namespace frequency_scaling {
         for (auto &dci : opt_config.dcis_) {
             pt::ptree pt_device;
             pt_device.put("index", dci.device_id_nvml_);
+            pt_device.put("name", nvmlGetDeviceName(dci.device_id_nvml_));
             pt_device.put("min_mem_oc", dci.min_mem_oc_);
             pt_device.put("min_graph_oc", dci.min_graph_oc_);
             pt_device.put("max_mem_oc", dci.max_mem_oc_);
@@ -182,16 +183,17 @@ namespace frequency_scaling {
         optimization_config opt_config;
         opt_config.energy_cost_kwh_ = root.get<double>("energy_cost");
         opt_config.monitoring_interval_sec_ = root.get<int>("monitoring_interval");
-        opt_config.online_bench_duration_sec_ = root.get<int>("online_bench_duration");
-        opt_config.miner_user_infos_.email_adress_ = root.get<std::string>("email");
+        opt_config.online_bench_duration_sec_ = root.get<int>("online_bench_duration",
+                                                              opt_config.online_bench_duration_sec_);
+        opt_config.miner_user_infos_.email_adress_ = root.get<std::string>("email", "");
         //read device infos
         for (const pt::ptree::value_type &array_elem : root.get_child("devices_to_use")) {
             const boost::property_tree::ptree &pt_device = array_elem.second;
             int device_id = pt_device.get<int>("index");
-            opt_config.dcis_.emplace_back(device_id, pt_device.get<int>("min_mem_oc"),
-                                          pt_device.get<int>("min_graph_oc"),
-                                          pt_device.get<int>("max_mem_oc"),
-                                          pt_device.get<int>("max_graph_oc"));
+            opt_config.dcis_.emplace_back(device_id, pt_device.get<int>("min_mem_oc", 1),
+                                          pt_device.get<int>("min_graph_oc", 1),
+                                          pt_device.get<int>("max_mem_oc", -1),
+                                          pt_device.get<int>("max_graph_oc", -1));
             opt_config.miner_user_infos_.worker_names_.emplace(device_id, pt_device.get<std::string>("worker_name"));
         }
         //read currencies to use
@@ -203,12 +205,15 @@ namespace frequency_scaling {
             const boost::property_tree::ptree &pt_currency = array_elem.second;
             const boost::property_tree::ptree &pt_opt_method_params = array_elem.second.get_child("opt_method_params");
             opt_config.miner_user_infos_.wallet_addresses_.emplace(ct, pt_currency.get<std::string>("wallet_address"));
-            opt_config.opt_method_params_.emplace(ct, optimization_method_params(
+            optimization_method_params opt_method_params(
                     string_to_opt_method(pt_opt_method_params.get<std::string>("method")),
-                    pt_opt_method_params.get<int>("max_iterations"),
-                    pt_opt_method_params.get<int>("mem_step"),
-                    pt_opt_method_params.get<int>("graph_idx_step"),
-                    pt_opt_method_params.get<int>("min_hashrate")));
+                    pt_opt_method_params.get<int>("min_hashrate"));
+            opt_method_params.max_iterations_ = pt_opt_method_params.get<int>("max_iterations",
+                                                                              opt_method_params.max_iterations_);
+            opt_method_params.mem_step_ = pt_opt_method_params.get<int>("mem_step", opt_method_params.mem_step_);
+            opt_method_params.max_iterations_ = pt_opt_method_params.get<int>("graph_idx_step",
+                                                                              opt_method_params.graph_idx_step_);
+            opt_config.opt_method_params_.emplace(ct, opt_method_params);
         }
         return opt_config;
     }

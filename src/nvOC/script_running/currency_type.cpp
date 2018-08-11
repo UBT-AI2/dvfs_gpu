@@ -10,8 +10,8 @@
 namespace frequency_scaling {
 
     currency_type::currency_type(const std::string &currency_name, bool use_ccminer) :
-    currency_name_(currency_name), use_ccminer_(use_ccminer) {
-        if(use_ccminer_){
+            currency_name_(currency_name), use_ccminer_(use_ccminer) {
+        if (use_ccminer_) {
             bench_script_path_ = "../scripts/run_benchmark_generic_ccminer.sh";
             mining_script_path_ = "../scripts/start_mining_generic_ccminer.sh";
         }
@@ -135,7 +135,7 @@ namespace frequency_scaling {
         {
             currency_type ct_lux("LUX", true);
             ct_lux.ccminer_algo_ = "phi2",
-            ct_lux.pool_addresses_ = {"omegapool.cc:8003", "yiimp.eu:8332"};
+                    ct_lux.pool_addresses_ = {"omegapool.cc:8003", "yiimp.eu:8332"};
             ct_lux.whattomine_coin_id_ = 212;
             ct_lux.cryptocompare_fsym_ = "LUX";
             res.emplace(ct_lux.currency_name_, ct_lux);
@@ -143,7 +143,7 @@ namespace frequency_scaling {
         {
             currency_type ct_btx("BTX", true);
             ct_btx.ccminer_algo_ = "bitcore",
-            ct_btx.pool_addresses_ = {"mine.zpool.ca:3556", "yiimp.eu:3566"};
+                    ct_btx.pool_addresses_ = {"mine.zpool.ca:3556", "yiimp.eu:3566"};
             ct_btx.whattomine_coin_id_ = 202;
             ct_btx.cryptocompare_fsym_ = "BTX";
             res.emplace(ct_btx.currency_name_, ct_btx);
@@ -151,7 +151,7 @@ namespace frequency_scaling {
         {
             currency_type ct_vtc("VTC", true);
             ct_vtc.ccminer_algo_ = "lyra2v2",
-            ct_vtc.pool_addresses_ = {"vtc.coinfoundry.org:3096", "yiimp.eu:4533"};
+                    ct_vtc.pool_addresses_ = {"vtc.coinfoundry.org:3096", "yiimp.eu:4533"};
             ct_vtc.whattomine_coin_id_ = 5;
             ct_vtc.cryptocompare_fsym_ = "VTC";
             res.emplace(ct_vtc.currency_name_, ct_vtc);
@@ -159,7 +159,7 @@ namespace frequency_scaling {
         {
             currency_type ct_rvn("RVN", true);
             ct_rvn.ccminer_algo_ = "x16r",
-            ct_rvn.pool_addresses_ = {"omegapool.cc:8006", "rvn.coinfoundry.org:3172", "yiimp.eu:3636"};
+                    ct_rvn.pool_addresses_ = {"omegapool.cc:8006", "rvn.coinfoundry.org:3172", "yiimp.eu:3636"};
             ct_rvn.whattomine_coin_id_ = 234;
             ct_rvn.cryptocompare_fsym_ = "RVN";
             res.emplace(ct_rvn.currency_name_, ct_rvn);
@@ -177,10 +177,10 @@ namespace frequency_scaling {
         for (const pt::ptree::value_type &array_elem : root.get_child("available_currencies")) {
             const boost::property_tree::ptree &pt_currency_type = array_elem.second;
             currency_type ct(pt_currency_type.get<std::string>("currency_name"),
-                    pt_currency_type.get<bool>("use_ccminer"));
-            if(ct.use_ccminer_) {
+                             pt_currency_type.get<bool>("use_ccminer"));
+            if (ct.use_ccminer_) {
                 ct.ccminer_algo_ = pt_currency_type.get<std::string>("ccminer_algo");
-            } else{
+            } else {
                 ct.bench_script_path_ = pt_currency_type.get<std::string>("bench_script_path");
                 ct.mining_script_path_ = pt_currency_type.get<std::string>("mining_script_path");
             }

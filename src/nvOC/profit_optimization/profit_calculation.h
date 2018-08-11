@@ -41,13 +41,14 @@ namespace frequency_scaling {
         struct device_stats {
             device_stats(const currency_type &ct, double earnings, double costs, double power, double hashrate);
 
+            bool operator<(const device_stats &other) const;
+
             currency_type ct_;
             double earnings_, costs_, profit_;
             double power_, hashrate_, energy_hash_;
         };
 
-        void update_device_stats(int device_id, const currency_type &ct, double earnings,
-                                 double costs, double power, double hashrate);
+        void update_device_stats(int device_id, const device_stats &stats);
 
         double get_global_earnings() const;
 

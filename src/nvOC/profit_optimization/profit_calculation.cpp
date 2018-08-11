@@ -41,11 +41,14 @@ namespace frequency_scaling {
                                                                                    hashrate_(hashrate),
                                                                                    energy_hash_(hashrate / power) {}
 
-    void best_profit_stats::update_device_stats(int device_id, const currency_type &ct, double earnings,
-                                                double costs, double power, double hashrate) {
+    bool best_profit_stats::device_stats::operator<(const best_profit_stats::device_stats &other) const {
+        return profit_ < other.profit_;
+    }
+
+    void best_profit_stats::update_device_stats(int device_id, const device_stats &stats) {
         std::lock_guard<std::mutex> lock(map_mutex_);
         stats_map_.erase(device_id);
-        stats_map_.emplace(device_id, device_stats(ct, earnings, costs, power, hashrate));
+        stats_map_.emplace(device_id, stats);
     }
 
     double best_profit_stats::get_global_earnings() const {
@@ -106,9 +109,8 @@ namespace frequency_scaling {
     }
 
 
-    void
-    profit_calculator::recalculate_best_currency() {
-        double best_profit = std::numeric_limits<double>::lowest();
+    void profit_calculator::recalculate_best_currency() {
+        std::multiset<best_profit_stats::device_stats> device_stats;
         for (auto &elem : energy_hash_info_) {
             const currency_type &ct = elem.first;
             auto it_ci = currency_info_.find(ct);
@@ -119,28 +121,26 @@ namespace frequency_scaling {
             }
             const currency_info &ci = it_ci->second;
             double costs_per_hour = get_used_power(ct) * (power_cost_kwh_ / 1000.0);
-            double profit_per_hour = ci.approximated_earnings_eur_hour_ - costs_per_hour;
-            if (profit_per_hour > best_profit) {
-                best_profit = profit_per_hour;
-                //update global profit stats for this device
-                profit_calculator::best_profit_stats_global_.update_device_stats(dci_.device_id_nvml_, ct,
-                                                                                 ci.approximated_earnings_eur_hour_,
-                                                                                 costs_per_hour, get_used_power(ct),
-                                                                                 get_used_hashrate(ct));
-            }
-            //print stats
-            VLOG(0) << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
-                    "Profit calculation using: hashrate=" <<
-                    get_used_hashrate(ct) << ", power=" << get_used_power(ct) <<
-                    ", energy_hash=" << get_used_energy_hash(ct) <<
-                    ", stock_price=" << it_ci->second.cs_.stock_price_eur_
-                    << std::endl;
-            VLOG(0) << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
-                    "Calculated profit [eur/hour]: approximated earnings=" <<
-                    ci.approximated_earnings_eur_hour_ << ", energy_cost="
-                    << costs_per_hour << ", profit="
-                    << profit_per_hour << std::endl;
+            //store device stats for currency
+            device_stats.emplace(ct, ci.approximated_earnings_eur_hour_,
+                                 costs_per_hour, get_used_power(ct), get_used_hashrate(ct));
         }
+        //update global profit stats for this device
+        if (!device_stats.empty())
+            profit_calculator::best_profit_stats_global_.update_device_stats(dci_.device_id_nvml_,
+                                                                             *device_stats.rbegin());
+        //print local profit stats
+        for (auto it = device_stats.rbegin(); it != device_stats.rend(); ++it) {
+            int log_level = (it == device_stats.rbegin()) ? 0 : 1;
+            VLOG(log_level) << gpu_log_prefix(it->ct_, dci_.device_id_nvml_) <<
+                            "Profit calculation using: hashrate=" << get_used_hashrate(it->ct_) << ", power=" <<
+                            get_used_power(it->ct_) << ", energy_hash=" << get_used_energy_hash(it->ct_) <<
+                            ", stock_price=" << currency_info_.at(it->ct_).cs_.stock_price_eur_ << std::endl;
+            VLOG(log_level) << gpu_log_prefix(it->ct_, dci_.device_id_nvml_) <<
+                            "Calculated profit [eur/hour]: approximated earnings=" << it->earnings_ <<
+                            ", energy_cost=" << it->costs_ << ", profit=" << it->profit_ << std::endl;
+        }
+        //print global profit stats
         const best_profit_stats &bps = profit_calculator::best_profit_stats_global_;
         VLOG(0) << "Global profit stats [eur/hour]: approximated earnings=" <<
                 bps.get_global_earnings() << ", energy_cost=" << bps.get_global_costs() <<
@@ -162,14 +162,14 @@ namespace frequency_scaling {
                         approximated_earnings = get_approximated_earnings_per_hour(ct, used_hashrate);
                     } catch (const network_error &err) {
                         //fallback
-                        VLOG(1) << "Nanopool approximated earnings API call failed: " << err.what() <<
-                                ". Using fallback..." << std::endl;
+                        LOG(WARNING) << "Approximated earnings API call failed: " << err.what() <<
+                                     ". Using fallback..." << std::endl;
                         approximated_earnings = cs.calc_approximated_earnings_eur_hour(used_hashrate);
                     }
                 }
                 currency_info_.erase(ct);
                 currency_info_.emplace(ct, currency_info(ct, approximated_earnings, used_hashrate, cs));
-                VLOG(0) << gpu_log_prefix(ct, dci_.device_id_nvml_) << "Update currency info using hashrate "
+                VLOG(1) << gpu_log_prefix(ct, dci_.device_id_nvml_) << "Update currency info using hashrate "
                         << used_hashrate << std::endl;
             } catch (const network_error &err) {
                 LOG(ERROR) << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
@@ -214,7 +214,7 @@ namespace frequency_scaling {
                               (last_period_ms / (double) total_period_ms) * last_hashrate;
         energy_hash_info_.at(current_mined_ct).optimal_configuration_profit_.update_hashrate(new_hashrate,
                                                                                              total_period_ms);
-        VLOG(0) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+        VLOG(1) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                 "Updated avg profit hashrate: " << new_hashrate << std::endl;
         return true;
     }
@@ -237,7 +237,7 @@ namespace frequency_scaling {
         double new_power = (cur_period_ms / (double) total_period_ms) * cur_power +
                            (last_period_ms / (double) total_period_ms) * last_power;
         energy_hash_info_.at(current_mined_ct).optimal_configuration_profit_.update_power(new_power, total_period_ms);
-        VLOG(0) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+        VLOG(1) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                 "Update profit power: " << new_power << std::endl;
         return true;
     }
@@ -253,7 +253,7 @@ namespace frequency_scaling {
             ehi.optimal_configuration_profit_.update_hashrate(new_config_online.hashrate_, 0);
         if (ehi.optimal_configuration_profit_.power_measure_dur_ms_ <= 0)
             ehi.optimal_configuration_profit_.update_power(new_config_online.power_, 0);
-        VLOG(0) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+        VLOG(1) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                 "Update opt_config_online" << std::endl;
     }
 
@@ -340,6 +340,16 @@ namespace frequency_scaling {
                 std::chrono::system_clock::now().time_since_epoch()).count();
         int period_ms = system_time_now_ms - system_time_start_ms_no_window;
         currency_mining_timespans_.at(ct).emplace_back(system_time_start_ms_no_window, period_ms);
+        //mining duration stats
+        for (auto &elem : currency_mining_timespans_) {
+            int log_level = (elem.first == ct) ? 0 : 1;
+            int ct_total_dur = 0;
+            for (auto &dur : elem.second)
+                ct_total_dur += dur.second;
+            VLOG(log_level)
+            << gpu_log_prefix(elem.first, dci_.device_id_nvml_) << "Currency mining duration: period=" <<
+            period_ms / (3600 * 1000.0) << "h, total=" << ct_total_dur / (3600 * 1000.0) << "h" << std::endl;
+        }
     }
 
     const best_profit_stats &profit_calculator::get_best_profit_stats_global() {

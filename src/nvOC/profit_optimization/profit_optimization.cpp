@@ -283,6 +283,8 @@ namespace frequency_scaling {
                         << old_best_currency.currency_name_ << std::endl;
                 //start mining new best currency
                 start_mining_best_currency(profit_calc, user_infos);
+                VLOG(0) << gpu_log_prefix(device_id) << "Reoptimizing currency "
+                        << new_best_currency.currency_name_ << std::endl;
                 //reset timestamp
                 system_time_start_ms = system_time_start_ms_no_window = std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::system_clock::now().time_since_epoch()).count();

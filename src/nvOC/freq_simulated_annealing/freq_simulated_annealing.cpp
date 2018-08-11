@@ -44,46 +44,33 @@ namespace frequency_scaling {
         //
         std::default_random_engine eng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
         std::uniform_real_distribution<double> prob_check(0, 1);
-        std::uniform_real_distribution<double> distr_stepsize(1.0, 2.0);
-        double currentslope = 0, slopediff = 0;//corresponds to first/second derivative
-        int cur_mem_step = mem_step, cur_graph_idx_step = graph_idx_step;
+        std::uniform_real_distribution<double> distr_stepsize(0.33, 3.0);
         //
         double Tk = start_temperature;
         double c = 0.8;
+        int cancel_count = 0;
         for (int k = 1; k <= max_iterations; k++) {
-            if (slopediff > 0) {//slope increasing
-                cur_mem_step = std::lround(mem_step * distr_stepsize(eng));
-                cur_graph_idx_step = std::lround(graph_idx_step * distr_stepsize(eng));
-            } else if (slopediff < 0) { //slope decreasing
-                cur_mem_step = std::lround(mem_step / distr_stepsize(eng));
-                cur_graph_idx_step = std::lround(std::max(graph_idx_step / distr_stepsize(eng), 1.0));
-            }
-
+            int cur_mem_step = std::lround(mem_step * distr_stepsize(eng));
+            int cur_graph_idx_step = std::lround(std::max(graph_idx_step * distr_stepsize(eng), 1.0));
             const measurement &neighbor_node = freq_hill_climbing(benchmarkFunc, ct, dci, current_node, false, 1,
                                                                   cur_mem_step,
                                                                   cur_graph_idx_step,
                                                                   min_hashrate);
+
             if (neighbor_node.energy_hash_ > best_node.energy_hash_)
                 best_node = neighbor_node;
             //
-            measurement last_node = current_node;
             double ea = -current_node.energy_hash_;
             double eb = -neighbor_node.energy_hash_;
             //system can use higher energy configuration with probability dependent on temperature
             if (eb < ea || exp(-(eb - ea) / Tk) > prob_check(eng)) {
                 current_node = neighbor_node;
+                cancel_count = 0;
+            } else {
+                //termination criterium
+                if (++cancel_count > 1)
+                    break;
             }
-
-            //compute slope
-            int memDiff = current_node.mem_oc - last_node.mem_oc;
-            int graphDiff = dci.nvml_graph_clocks_[current_node.nvml_graph_clock_idx] -
-                            dci.nvml_graph_clocks_[last_node.nvml_graph_clock_idx];
-            double deltaX = std::sqrt(memDiff * memDiff + graphDiff * graphDiff);
-            double deltaY = current_node.energy_hash_ - last_node.energy_hash_;
-            double tmp_slope = (deltaX == 0) ? 0 : deltaY / deltaX;
-            slopediff = tmp_slope - currentslope;
-            currentslope = tmp_slope;
-
             //decrease temperature
             Tk = c * Tk;
         }

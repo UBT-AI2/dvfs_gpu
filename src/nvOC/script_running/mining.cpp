@@ -25,12 +25,12 @@ namespace frequency_scaling {
         pool_csv += ct.pool_addresses_.back();
         //start mining in background process
         char cmd[BUFFER_SIZE];
-        if(ct.use_ccminer_){
+        if (ct.use_ccminer_) {
             snprintf(cmd, BUFFER_SIZE, "bash %s %i %i %s %s %s %s %s %s %s",
                      ct.mining_script_path_.c_str(), dci.device_id_nvml_, dci.device_id_cuda_, wallet_addr.c_str(),
                      worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str(),
                      pool_csv.c_str(), ct.currency_name_.c_str(), ct.ccminer_algo_.c_str());
-        }else {
+        } else {
             snprintf(cmd, BUFFER_SIZE, "bash %s %i %i %s %s %s %s %s",
                      ct.mining_script_path_.c_str(), dci.device_id_nvml_, dci.device_id_cuda_, wallet_addr.c_str(),
                      worker_name.c_str(), user_info.email_adress_.c_str(), log_utils::get_logdir_name().c_str(),
@@ -81,7 +81,7 @@ namespace frequency_scaling {
             int nvml_graph_clock_idx) {
         int mem_clock = dci.nvapi_default_mem_clock_ + mem_oc;
         int graph_clock = dci.nvml_graph_clocks_[nvml_graph_clock_idx];
-        VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml_) <<
+        VLOG(1) << gpu_log_prefix(ct, dci.device_id_nvml_) <<
                 "Running online benchmark with clocks: mem:" << mem_clock << ",graph:" << graph_clock
                 << std::endl;
         //change graph and mem clocks and start mining

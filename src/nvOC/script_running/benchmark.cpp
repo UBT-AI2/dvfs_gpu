@@ -150,17 +150,17 @@ namespace frequency_scaling {
     static measurement run_benchmark_script(const currency_type &ct, const device_clock_info &dci,
                                             int graph_clock, int mem_clock) {
         {
-            VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml_) <<
+            VLOG(1) << gpu_log_prefix(ct, dci.device_id_nvml_) <<
                     "Running offline benchmark with clocks: mem=" << mem_clock << ",graph=" << graph_clock
                     << std::endl;
             //run benchmark script to get measurement
             char cmd[BUFFER_SIZE];
-            if(ct.use_ccminer_){
+            if (ct.use_ccminer_) {
                 snprintf(cmd, BUFFER_SIZE, "bash %s %i %i %i %i %s %s %s",
                          ct.bench_script_path_.c_str(), dci.device_id_nvml_, dci.device_id_cuda_,
                          mem_clock, graph_clock, log_utils::get_logdir_name().c_str(),
                          ct.currency_name_.c_str(), ct.ccminer_algo_.c_str());
-            }else {
+            } else {
                 snprintf(cmd, BUFFER_SIZE, "bash %s %i %i %i %i %s",
                          ct.bench_script_path_.c_str(), dci.device_id_nvml_, dci.device_id_cuda_,
                          mem_clock, graph_clock, log_utils::get_logdir_name().c_str());
