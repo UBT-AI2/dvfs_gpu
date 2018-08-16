@@ -44,8 +44,8 @@
         "method": "SA",
         "min_hashrate": "-1",
         "max_iterations": "6",
-        "mem_step": "300",
-        "graph_idx_step": "10"
+        "mem_step": "0.15",
+        "graph_idx_step": "0.15"
       }
     },
     "LUX": {
@@ -54,8 +54,8 @@
         "method": "NM",
         "min_hashrate": "-1",
         "max_iterations": "8",
-        "mem_step": "500",
-        "graph_idx_step": "25"
+        "mem_step": "0.15",
+        "graph_idx_step": "0.15"
       }
     }
   }

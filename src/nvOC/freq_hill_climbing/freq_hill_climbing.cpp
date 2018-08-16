@@ -280,11 +280,12 @@ namespace frequency_scaling {
                        const measurement &start_node, bool allow_start_node_result,
                        int max_iterations, double mem_step_pct, double graph_idx_step_pct, double min_hashrate,
                        exploration_type expl_type) {
-        int mem_step = mem_step_pct * (dci.max_mem_oc_ - dci.min_mem_oc_);
-        int graph_idx_step = graph_idx_step_pct * dci.nvml_graph_clocks_.size();
-        return freq_hill_climbing(benchmarkFunc, ct, dci, start_node, allow_start_node_result, max_iterations, mem_step,
-                                  graph_idx_step,
-                                  min_hashrate, expl_type);
+        int mem_step = std::lround(mem_step_pct * (dci.max_mem_oc_ - dci.min_mem_oc_));
+        int graph_idx_step = std::lround(std::max(graph_idx_step_pct * dci.nvml_graph_clocks_.size(), 1.0));
+        return __freq_hill_climbing(benchmarkFunc, ct, dci, start_node, allow_start_node_result, max_iterations,
+                                    mem_step,
+                                    graph_idx_step,
+                                    min_hashrate, expl_type);
     }
 
 

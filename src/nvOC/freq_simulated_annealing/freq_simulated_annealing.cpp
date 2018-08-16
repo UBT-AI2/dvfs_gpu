@@ -103,8 +103,8 @@ namespace frequency_scaling {
                              double graph_idx_step_pct,
                              double min_hashrate) {
         double start_temperature = guess_start_temperature(benchmarkFunc, ct, dci);
-        int mem_step = mem_step_pct * (dci.max_mem_oc_ - dci.min_mem_oc_);
-        int graph_idx_step = graph_idx_step_pct * dci.nvml_graph_clocks_.size();
+        int mem_step = std::lround(mem_step_pct * (dci.max_mem_oc_ - dci.min_mem_oc_));
+        int graph_idx_step = std::lround(std::max(graph_idx_step_pct * dci.nvml_graph_clocks_.size(), 1.0));
         return freq_simulated_annealing(benchmarkFunc, ct, dci, start_node, start_temperature,
                                         max_iterations, mem_step, graph_idx_step, min_hashrate);
     }

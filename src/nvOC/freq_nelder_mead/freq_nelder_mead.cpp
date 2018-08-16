@@ -176,8 +176,8 @@ namespace frequency_scaling {
                                  double min_hashrate) {
         int min_iterations = 1;
         double mem_scale = 1.5, graph_scale = 2.5;
-        int mem_step = mem_step_pct * (dci.max_mem_oc_ - dci.min_mem_oc_);
-        int graph_idx_step = graph_idx_step_pct * dci.nvml_graph_clocks_.size();
+        int mem_step = std::lround(mem_step_pct * (dci.max_mem_oc_ - dci.min_mem_oc_));
+        int graph_idx_step = std::lround(std::max(graph_idx_step_pct * dci.nvml_graph_clocks_.size(), 1.0));
         //
         if (dci.nvapi_supported_)
             return freq_nelder_mead2D(benchmarkFunc, ct, dci, start_node, min_iterations, max_iterations, mem_step,
