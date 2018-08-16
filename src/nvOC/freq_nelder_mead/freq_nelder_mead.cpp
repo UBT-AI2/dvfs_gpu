@@ -26,8 +26,7 @@ namespace frequency_scaling {
         init_guess(0) = start_node.nvml_graph_clock_idx / graph_idx_step;
 
         // function to optimize
-        measurement best_measurement;
-        best_measurement.energy_hash_ = std::numeric_limits<double>::lowest();
+        measurement best_measurement = start_node;
         int num_func_evals = 0;
 
         auto function = [&benchmarkFunc, ct, &dci, &best_measurement, mem_step, graph_idx_step,
@@ -40,7 +39,7 @@ namespace frequency_scaling {
                 return std::numeric_limits<double>::max();
             }
             //
-            const measurement &m = benchmarkFunc(ct, dci, 0, graph_idx);
+            const measurement &m = (num_func_evals == 1) ? best_measurement : benchmarkFunc(ct, dci, 0, graph_idx);
             if (m.hashrate_ < min_hashrate) {
                 if (num_func_evals == 1) {
                     //throw optimization_error("Minimum hashrate cannot be reached");
@@ -97,8 +96,7 @@ namespace frequency_scaling {
         init_guess(1) = start_node.nvml_graph_clock_idx / graph_idx_step;
 
         // function to optimize
-        measurement best_measurement;
-        best_measurement.energy_hash_ = std::numeric_limits<double>::lowest();
+        measurement best_measurement = start_node;
         int num_func_evals = 0;
 
         auto function = [&benchmarkFunc, ct, &dci, &best_measurement, mem_step, graph_idx_step,
@@ -113,7 +111,7 @@ namespace frequency_scaling {
                 return std::numeric_limits<double>::max();
             }
             //
-            const measurement &m = benchmarkFunc(ct, dci, mem_oc, graph_idx);
+            const measurement &m = (num_func_evals == 1) ? best_measurement : benchmarkFunc(ct, dci, mem_oc, graph_idx);
             if (m.hashrate_ < min_hashrate) {
                 if (num_func_evals == 1) {
                     //throw optimization_error("Minimum hashrate cannot be reached");
@@ -160,25 +158,26 @@ namespace frequency_scaling {
 
     measurement freq_nelder_mead(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
                                  int max_iterations,
-                                 int mem_step, int graph_idx_step,
-                                 double min_hashrate) {
+                                 double mem_step_pct, double graph_idx_step_pct,
+                                 double min_hashrate_pct) {
 
         //initial guess at maximum frequencies
-        measurement start_node;
-        start_node.mem_oc = dci.max_mem_oc_;
-        start_node.nvml_graph_clock_idx = 0;
-        return freq_nelder_mead(benchmarkFunc, ct, dci, start_node, max_iterations, mem_step,
-                                graph_idx_step,
+        const measurement &start_node = benchmarkFunc(ct, dci, dci.max_mem_oc_, 0);
+        double min_hashrate = min_hashrate_pct * start_node.hashrate_;
+        return freq_nelder_mead(benchmarkFunc, ct, dci, start_node, max_iterations, mem_step_pct,
+                                graph_idx_step_pct,
                                 min_hashrate);
     }
 
     measurement freq_nelder_mead(const benchmark_func &benchmarkFunc, currency_type ct, const device_clock_info &dci,
                                  const measurement &start_node,
                                  int max_iterations,
-                                 int mem_step, int graph_idx_step,
+                                 double mem_step_pct, double graph_idx_step_pct,
                                  double min_hashrate) {
         int min_iterations = 1;
         double mem_scale = 1.5, graph_scale = 2.5;
+        int mem_step = mem_step_pct * (dci.max_mem_oc_ - dci.min_mem_oc_);
+        int graph_idx_step = graph_idx_step_pct * dci.nvml_graph_clocks_.size();
         //
         if (dci.nvapi_supported_)
             return freq_nelder_mead2D(benchmarkFunc, ct, dci, start_node, min_iterations, max_iterations, mem_step,
@@ -189,13 +188,12 @@ namespace frequency_scaling {
                                       graph_idx_step,
                                       min_hashrate, mem_scale, graph_scale);
         else {
-            measurement current_node = benchmarkFunc(ct, dci, start_node.mem_oc, start_node.nvml_graph_clock_idx);
-            if (current_node.hashrate_ < min_hashrate) {
+            if (start_node.hashrate_ < min_hashrate) {
                 //throw optimization_error("Minimum hashrate cannot be reached");
                 LOG(ERROR) << "start_node does not have minimum hashrate (" <<
-                           current_node.hashrate_ << " < " << min_hashrate << ")" << std::endl;
+                           start_node.hashrate_ << " < " << min_hashrate << ")" << std::endl;
             }
-            return current_node;
+            return start_node;
         }
     }
 

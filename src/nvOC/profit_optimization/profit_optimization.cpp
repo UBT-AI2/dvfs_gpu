@@ -90,52 +90,43 @@ namespace frequency_scaling {
         }
         //
         try {
-            int online_div = 2;
+
+            int online_div = (bi.offline_) ? 1 : 2;
+            const measurement &start_node = (bi.offline_) ? bi.bf_(ct, dci, dci.max_mem_oc_, 0) :
+                                            bi.bf_(ct, dci, bi.start_values_.at(ct).mem_oc,
+                                                   bi.start_values_.at(ct).nvml_graph_clock_idx);
+            double min_hashrate = -1.0;
+            if (opt_params_ct.min_hashrate_pct > 0)
+                min_hashrate = (start_node.nvml_graph_clock_idx != 0 || start_node.mem_oc != dci.max_mem_oc_) ?
+                               opt_params_ct.min_hashrate_pct * bi.bf_(ct, dci, dci.max_mem_oc_, 0).hashrate_ :
+                               opt_params_ct.min_hashrate_pct * start_node.hashrate_;
+
             //
             measurement optimal_config;
             switch (opt_params_ct.method_) {
                 case optimization_method::NELDER_MEAD:
-                    if (bi.offline_)
-                        optimal_config = freq_nelder_mead(bi.bf_, ct, dci,
-                                                          opt_params_ct.max_iterations_, opt_params_ct.mem_step_,
-                                                          opt_params_ct.graph_idx_step_,
-                                                          opt_params_ct.min_hashrate_);
-                    else
-                        optimal_config = freq_nelder_mead(bi.bf_, ct, dci,
-                                                          bi.start_values_.at(ct),
-                                                          opt_params_ct.max_iterations_ / online_div,
-                                                          opt_params_ct.mem_step_ / online_div,
-                                                          opt_params_ct.graph_idx_step_ / online_div,
-                                                          opt_params_ct.min_hashrate_);
+                    optimal_config = freq_nelder_mead(bi.bf_, ct, dci,
+                                                      start_node,
+                                                      opt_params_ct.max_iterations_ / online_div,
+                                                      opt_params_ct.mem_step_pct_ / online_div,
+                                                      opt_params_ct.graph_idx_step_pct_ / online_div,
+                                                      min_hashrate);
                     break;
                 case optimization_method::HILL_CLIMBING:
-                    if (bi.offline_)
-                        optimal_config = freq_hill_climbing(bi.bf_, ct, dci,
-                                                            opt_params_ct.max_iterations_, opt_params_ct.mem_step_,
-                                                            opt_params_ct.graph_idx_step_,
-                                                            opt_params_ct.min_hashrate_);
-                    else
-                        optimal_config = freq_hill_climbing(bi.bf_, ct, dci,
-                                                            bi.start_values_.at(ct), true,
-                                                            opt_params_ct.max_iterations_ / online_div,
-                                                            opt_params_ct.mem_step_ / online_div,
-                                                            opt_params_ct.graph_idx_step_ / online_div,
-                                                            opt_params_ct.min_hashrate_);
+                    optimal_config = freq_hill_climbing(bi.bf_, ct, dci,
+                                                        start_node, true,
+                                                        opt_params_ct.max_iterations_ / online_div,
+                                                        opt_params_ct.mem_step_pct_ / online_div,
+                                                        opt_params_ct.graph_idx_step_pct_ / online_div,
+                                                        min_hashrate);
                     break;
                 case optimization_method::SIMULATED_ANNEALING:
-                    if (bi.offline_)
-                        optimal_config = freq_simulated_annealing(bi.bf_, ct, dci,
-                                                                  opt_params_ct.max_iterations_,
-                                                                  opt_params_ct.mem_step_,
-                                                                  opt_params_ct.graph_idx_step_,
-                                                                  opt_params_ct.min_hashrate_);
-                    else
-                        optimal_config = freq_simulated_annealing(bi.bf_, ct, dci,
-                                                                  bi.start_values_.at(ct),
-                                                                  opt_params_ct.max_iterations_ / online_div,
-                                                                  opt_params_ct.mem_step_ / online_div,
-                                                                  opt_params_ct.graph_idx_step_ / online_div,
-                                                                  opt_params_ct.min_hashrate_);
+                    optimal_config = freq_simulated_annealing(bi.bf_, ct, dci,
+                                                              start_node,
+                                                              opt_params_ct.max_iterations_ / online_div,
+                                                              opt_params_ct.mem_step_pct_ / online_div,
+                                                              opt_params_ct.graph_idx_step_pct_ / online_div,
+                                                              min_hashrate);
                     break;
                 default:
                     THROW_RUNTIME_ERROR("Invalid enum value");

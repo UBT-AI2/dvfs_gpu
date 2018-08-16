@@ -15,13 +15,14 @@ namespace frequency_scaling {
 
 
     struct optimization_method_params {
-        optimization_method_params(optimization_method method, int min_hashrate);
+        optimization_method_params(optimization_method method, double min_hashrate_pct);
 
         optimization_method_params(optimization_method method, int max_iterations,
-                                   int mem_step, int graph_idx_step, int min_hashrate);
+                                   double mem_step_pct, double graph_idx_step_pct, double min_hashrate_pct);
 
         optimization_method method_;
-        int max_iterations_, mem_step_, graph_idx_step_, min_hashrate_;
+        int max_iterations_;
+        double mem_step_pct_, graph_idx_step_pct_, min_hashrate_pct;
     };
 
 

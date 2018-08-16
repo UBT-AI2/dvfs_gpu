@@ -27,34 +27,36 @@
 
 namespace frequency_scaling {
 
-    optimization_method_params::optimization_method_params(optimization_method method, int min_hashrate) :
-            method_(method), min_hashrate_(min_hashrate) {
+    optimization_method_params::optimization_method_params(optimization_method method, double min_hashrate_pct) :
+            method_(method), min_hashrate_pct(min_hashrate_pct) {
         switch (method) {
             case optimization_method::NELDER_MEAD:
                 max_iterations_ = 8;
-                mem_step_ = 500;
-                graph_idx_step_ = 25;
+                mem_step_pct_ = 0.15;
+                graph_idx_step_pct_ = 0.15;
                 break;
             case optimization_method::HILL_CLIMBING:
             case optimization_method::SIMULATED_ANNEALING:
                 max_iterations_ = 6;
-                mem_step_ = 300;
-                graph_idx_step_ = 10;
+                mem_step_pct_ = 0.15;
+                graph_idx_step_pct_ = 0.15;
                 break;
             default:
                 THROW_RUNTIME_ERROR("Invalid enum value");
         }
     }
 
-    optimization_method_params::optimization_method_params(optimization_method method, int max_iterations, int mem_step,
-                                                           int graph_idx_step, int min_hashrate) : method_(method),
-                                                                                                   max_iterations_(
-                                                                                                           max_iterations),
-                                                                                                   mem_step_(mem_step),
-                                                                                                   graph_idx_step_(
-                                                                                                           graph_idx_step),
-                                                                                                   min_hashrate_(
-                                                                                                           min_hashrate) {}
+    optimization_method_params::optimization_method_params(optimization_method method, int max_iterations,
+                                                           double mem_step_pct,
+                                                           double graph_idx_step_pct, double min_hashrate_pct)
+            : method_(method),
+              max_iterations_(
+                      max_iterations),
+              mem_step_pct_(mem_step_pct),
+              graph_idx_step_pct_(
+                      graph_idx_step_pct),
+              min_hashrate_pct(
+                      min_hashrate_pct) {}
 
 
     static std::string getworker_name(int device_id) {
@@ -164,10 +166,10 @@ namespace frequency_scaling {
             pt::ptree pt_opt_method_params;
             pt_currency.put("wallet_address", elem.second);
             pt_opt_method_params.put("method", enum_to_string(opt_params.method_));
-            pt_opt_method_params.put("min_hashrate", opt_params.min_hashrate_);
+            pt_opt_method_params.put("min_hashrate", opt_params.min_hashrate_pct);
             pt_opt_method_params.put("max_iterations", opt_params.max_iterations_);
-            pt_opt_method_params.put("mem_step", opt_params.mem_step_);
-            pt_opt_method_params.put("graph_idx_step", opt_params.graph_idx_step_);
+            pt_opt_method_params.put("mem_step", opt_params.mem_step_pct_);
+            pt_opt_method_params.put("graph_idx_step", opt_params.graph_idx_step_pct_);
             pt_currency.add_child("opt_method_params", pt_opt_method_params);
             currencies_to_use.push_back(std::make_pair(ct.currency_name_, pt_currency));
         }
@@ -207,12 +209,13 @@ namespace frequency_scaling {
             opt_config.miner_user_infos_.wallet_addresses_.emplace(ct, pt_currency.get<std::string>("wallet_address"));
             optimization_method_params opt_method_params(
                     string_to_opt_method(pt_opt_method_params.get<std::string>("method")),
-                    pt_opt_method_params.get<int>("min_hashrate"));
+                    pt_opt_method_params.get<double>("min_hashrate"));
             opt_method_params.max_iterations_ = pt_opt_method_params.get<int>("max_iterations",
                                                                               opt_method_params.max_iterations_);
-            opt_method_params.mem_step_ = pt_opt_method_params.get<int>("mem_step", opt_method_params.mem_step_);
-            opt_method_params.max_iterations_ = pt_opt_method_params.get<int>("graph_idx_step",
-                                                                              opt_method_params.graph_idx_step_);
+            opt_method_params.mem_step_pct_ = pt_opt_method_params.get<double>("mem_step",
+                                                                               opt_method_params.mem_step_pct_);
+            opt_method_params.graph_idx_step_pct_ = pt_opt_method_params.get<double>("graph_idx_step",
+                                                                                     opt_method_params.graph_idx_step_pct_);
             opt_config.opt_method_params_.emplace(ct, opt_method_params);
         }
         return opt_config;

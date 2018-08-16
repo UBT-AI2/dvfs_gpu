@@ -14,27 +14,31 @@ function save_call_command {
 }
 
 function optimization_test {
-	for CURRENCY in XMR ETH ZEC;
+	for CURRENCY in XMR ETH ZEC VTC RVN BTX LUX;
 	do
-		save_call_command ./freq_simulated_annealing.exe $CONFIG_JSON $CURRENCY $DEVICE_ID 6 300 10
+		save_call_command ./freq_simulated_annealing.exe $CONFIG_JSON $CURRENCY $DEVICE_ID 5 0.15 0.15
+		mv offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}_SA.dat
 		sleep 60
-		save_call_command ./freq_hill_climbing.exe $CONFIG_JSON $CURRENCY $DEVICE_ID 6 300 10
+		save_call_command ./freq_hill_climbing.exe $CONFIG_JSON $CURRENCY $DEVICE_ID 5 0.15 0.15
+		mv offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}_HC.dat
 		sleep 60
-		save_call_command ./freq_nelder_mead.exe $CONFIG_JSON $CURRENCY $DEVICE_ID 8 400 15
+		save_call_command ./freq_nelder_mead.exe $CONFIG_JSON $CURRENCY $DEVICE_ID 8 0.15 0.15
+		mv offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}_NM.dat
 		sleep 60
 	done
 }
 
 function optimization_min_hashrate_test {
-	declare -A HASHRATE_MAP=( [eth]=34000000 [zec]=520 [xmr]=800 )
-	for CURRENCY in XMR ETH ZEC;
+	for CURRENCY in XMR ETH ZEC VTC RVN BTX LUX;
 	do
-		local min_hashrate=${HASHRATE_MAP[$CURRENCY]}
-		save_call_command ./freq_simulated_annealing.exe $CONFIG_JSON $CURRENCY $DEVICE_ID 6 300 10 $min_hashrate
+		save_call_command ./freq_simulated_annealing.exe $CONFIG_JSON $CURRENCY $DEVICE_ID 5 0.15 0.15 0.85
+		mv offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}_SA_mh.dat
 		sleep 60
-		save_call_command ./freq_hill_climbing.exe $CONFIG_JSON $CURRENCY $DEVICE_ID 6 300 10 $min_hashrate
+		save_call_command ./freq_hill_climbing.exe $CONFIG_JSON $CURRENCY $DEVICE_ID 5 0.15 0.15 0.85
+		mv offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}_HC_mh.dat
 		sleep 60
-		save_call_command ./freq_nelder_mead.exe $CONFIG_JSON $CURRENCY $DEVICE_ID 8 400 15 $min_hashrate
+		save_call_command ./freq_nelder_mead.exe $CONFIG_JSON $CURRENCY $DEVICE_ID 8 0.15 0.15 0.85
+		mv offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}_NM_mh.dat
 		sleep 60
 	done
 }

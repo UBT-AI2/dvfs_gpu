@@ -32,30 +32,34 @@ namespace frequency_scaling {
                              const measurement &start_node,
                              double start_temperature, int max_iterations,
                              int mem_step, int graph_idx_step, double min_hashrate) {
-        measurement current_node = benchmarkFunc(ct, dci, start_node.mem_oc, start_node.nvml_graph_clock_idx);
-        if (current_node.hashrate_ < min_hashrate) {
+        if (start_node.hashrate_ < min_hashrate) {
             //throw optimization_error("Minimum hashrate cannot be reached");
             LOG(ERROR) << "start_node does not have minimum hashrate (" <<
-                       current_node.hashrate_ << " < " << min_hashrate << ")" << std::endl;
+                       start_node.hashrate_ << " < " << min_hashrate << ")" << std::endl;
         }
         if (!dci.nvml_supported_ && !dci.nvapi_supported_)
-            return current_node;
+            return start_node;
+
+        measurement current_node = start_node;
         measurement best_node = current_node;
         //
         std::default_random_engine eng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
         std::uniform_real_distribution<double> prob_check(0, 1);
-        std::uniform_real_distribution<double> distr_stepsize(0.33, 3.0);
+        std::uniform_real_distribution<double> distr_graph_stepsize(0.33 * graph_idx_step, 3.0 * graph_idx_step);
+        std::uniform_real_distribution<double> distr_mem_stepsize(0.33 * mem_step, 3.0 * mem_step);
         //
         double Tk = start_temperature;
         double c = 0.8;
         int cancel_count = 0;
-        for (int k = 1; k <= max_iterations; k++) {
-            int cur_mem_step = std::lround(mem_step * distr_stepsize(eng));
-            int cur_graph_idx_step = std::lround(std::max(graph_idx_step * distr_stepsize(eng), 1.0));
+        for (int i = 0; i < max_iterations; i++) {
+            int cur_mem_step = std::lround(distr_mem_stepsize(eng));
+            int cur_graph_idx_step = std::lround(std::max(distr_graph_stepsize(eng), 1.0));
             const measurement &neighbor_node = freq_hill_climbing(benchmarkFunc, ct, dci, current_node, false, 1,
                                                                   cur_mem_step,
                                                                   cur_graph_idx_step,
-                                                                  min_hashrate);
+                                                                  min_hashrate,
+                                                                  (i % 2) ? exploration_type::NEIGHBORHOOD_4_STRAIGHT
+                                                                          : exploration_type::NEIGHBORHOOD_4_DIAGONAL);
 
             if (neighbor_node.energy_hash_ > best_node.energy_hash_)
                 best_node = neighbor_node;
@@ -68,9 +72,9 @@ namespace frequency_scaling {
                 cancel_count = 0;
             } else {
                 //termination criterium
-                if (++cancel_count > 1)
-                    break;
+                if (++cancel_count > 1);
             }
+            VLOG(0) << cancel_count << std::endl;
             //decrease temperature
             Tk = c * Tk;
         }
@@ -83,21 +87,24 @@ namespace frequency_scaling {
 
     measurement
     freq_simulated_annealing(const benchmark_func &benchmarkFunc, const currency_type &ct, const device_clock_info &dci,
-                             int max_iterations, int mem_step, int graph_idx_step, double min_hashrate) {
+                             int max_iterations, double mem_step_pct, double graph_idx_step_pct,
+                             double min_hashrate_pct) {
         //initial guess at maximum frequencies
-        measurement start_node;
-        start_node.mem_oc = dci.max_mem_oc_;
-        start_node.nvml_graph_clock_idx = 0;
+        const measurement &start_node = benchmarkFunc(ct, dci, dci.max_mem_oc_, 0);
+        double min_hashrate = min_hashrate_pct * start_node.hashrate_;
         return freq_simulated_annealing(benchmarkFunc, ct, dci, start_node,
-                                        max_iterations, mem_step, graph_idx_step, min_hashrate);
+                                        max_iterations, mem_step_pct, graph_idx_step_pct, min_hashrate);
     }
 
 
     measurement
     freq_simulated_annealing(const benchmark_func &benchmarkFunc, const currency_type &ct, const device_clock_info &dci,
-                             const measurement &start_node, int max_iterations, int mem_step, int graph_idx_step,
+                             const measurement &start_node, int max_iterations, double mem_step_pct,
+                             double graph_idx_step_pct,
                              double min_hashrate) {
         double start_temperature = guess_start_temperature(benchmarkFunc, ct, dci);
+        int mem_step = mem_step_pct * (dci.max_mem_oc_ - dci.min_mem_oc_);
+        int graph_idx_step = graph_idx_step_pct * dci.nvml_graph_clocks_.size();
         return freq_simulated_annealing(benchmarkFunc, ct, dci, start_node, start_temperature,
                                         max_iterations, mem_step, graph_idx_step, min_hashrate);
     }
