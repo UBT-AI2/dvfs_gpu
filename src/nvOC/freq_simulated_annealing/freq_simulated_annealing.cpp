@@ -54,12 +54,12 @@ namespace frequency_scaling {
         for (int i = 0; i < max_iterations; i++) {
             int cur_mem_step = std::lround(distr_mem_stepsize(eng));
             int cur_graph_idx_step = std::lround(std::max(distr_graph_stepsize(eng), 1.0));
-            const measurement &neighbor_node = freq_hill_climbing(benchmarkFunc, ct, dci, current_node, false, 1,
-                                                                  cur_mem_step,
-                                                                  cur_graph_idx_step,
-                                                                  min_hashrate,
-                                                                  (i % 2) ? exploration_type::NEIGHBORHOOD_4_STRAIGHT
-                                                                          : exploration_type::NEIGHBORHOOD_4_DIAGONAL);
+            const measurement &neighbor_node = __freq_hill_climbing(benchmarkFunc, ct, dci, current_node, false, 1,
+                                                                    cur_mem_step,
+                                                                    cur_graph_idx_step,
+                                                                    min_hashrate,
+                                                                    (i % 2) ? exploration_type::NEIGHBORHOOD_4_STRAIGHT
+                                                                            : exploration_type::NEIGHBORHOOD_4_DIAGONAL);
 
             if (neighbor_node.energy_hash_ > best_node.energy_hash_)
                 best_node = neighbor_node;

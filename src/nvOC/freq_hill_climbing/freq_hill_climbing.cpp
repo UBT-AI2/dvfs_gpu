@@ -180,11 +180,11 @@ namespace frequency_scaling {
         return neighbor_nodes;
     }
 
-    static measurement
-    freq_hill_climbing(const benchmark_func &benchmarkFunc, const currency_type &ct, const device_clock_info &dci,
-                       const measurement &start_node, bool allow_start_node_result,
-                       int max_iterations, int mem_step, int graph_idx_step, double min_hashrate,
-                       exploration_type expl_type) {
+    measurement
+    __freq_hill_climbing(const benchmark_func &benchmarkFunc, const currency_type &ct, const device_clock_info &dci,
+                         const measurement &start_node, bool allow_start_node_result,
+                         int max_iterations, int mem_step, int graph_idx_step, double min_hashrate,
+                         exploration_type expl_type) {
         if (start_node.hashrate_ < min_hashrate) {
             //throw optimization_error("Minimum hashrate cannot be reached");
             LOG(ERROR) << "start_node does not have minimum hashrate (" <<
