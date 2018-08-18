@@ -56,11 +56,11 @@ function exhaustive_test {
 }
 
 pushd $BIN_DIR
-for id in 1 2 0;
+for id in 0;
 do
 	optimization_test $id
 	optimization_min_hashrate_test $id 0.85
 done
-	exhaustive_test 1
+	#exhaustive_test 1
 popd
 

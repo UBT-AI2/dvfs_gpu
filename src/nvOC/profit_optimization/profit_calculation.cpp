@@ -201,7 +201,7 @@ namespace frequency_scaling {
                     cur_hashrate += elem.second;
                     counter++;
                 }
-            cur_hashrate /= counter;
+            cur_hashrate = (counter == 0) ? 0 : cur_hashrate/counter;
         } else {
             cur_hashrate = energy_hash_info_.at(current_mined_ct).optimal_configuration_online_.hashrate_;
         }

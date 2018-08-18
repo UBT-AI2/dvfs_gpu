@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
             write_currency_config("currency_config_default.json", available_currencies);
         }
         //init logging stuff
-        log_utils::init_logging("profit-optimization-logs", "glog-profit-optimization-", 0, argv[0]);
+        log_utils::init_logging("profit-optimization-logs", "glog-profit-optimization-", 1, argv[0]);
         //init apis
         nvapiInit();
         nvmlInit_();

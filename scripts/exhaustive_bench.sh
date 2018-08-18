@@ -14,7 +14,7 @@ function save_call_command {
 }
 
 function exhaustive_test {
-	for CURRENCY in XMR ETH ZEC;
+	for CURRENCY in XMR;
 	do
 		save_call_command ./freq_exhaustive.exe $CONFIG_JSON ${CURRENCY} ${DEVICE_ID}
 		sleep 60

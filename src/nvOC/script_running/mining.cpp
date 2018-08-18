@@ -71,7 +71,7 @@ namespace frequency_scaling {
                 LOG(ERROR) << "Failed to parse hashrate logfile entry: " << ex.what() << std::endl;
             }
         }
-        return res / count;
+        return (count == 0) ? 0 : res / count;
     }
 
     static measurement run_benchmark_mining_online(

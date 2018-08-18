@@ -115,14 +115,14 @@ namespace frequency_scaling {
 
     measurement::measurement(int mem_clock, int graph_clock, double power, double hashrate) :
             mem_clock_(mem_clock), graph_clock_(graph_clock), power_(power),
-            hashrate_(hashrate), energy_hash_(hashrate / power),
+            hashrate_(hashrate), energy_hash_((power == 0) ? std::numeric_limits<double>::lowest() : hashrate / power),
             nvml_graph_clock_idx(-1), mem_oc(0), graph_oc(0) {}
 
 
     void measurement::update_power(double power, int power_measure_dur_ms) {
         power_ = power;
         power_measure_dur_ms_ = power_measure_dur_ms;
-        energy_hash_ = hashrate_ / power;
+		energy_hash_ = (power == 0) ? std::numeric_limits<double>::lowest() : hashrate_ / power;
     }
 
     void measurement::update_hashrate(double hashrate, int hashrate_measure_dur_ms) {
@@ -249,7 +249,7 @@ namespace frequency_scaling {
                 LOG(ERROR) << "Failed to parse power logfile entry: " << ex.what() << std::endl;
             }
         }
-        return res / count;
+        return (count == 0) ? 0 : res / count;
     }
 
     void change_gpu_clocks(const device_clock_info &dci,
