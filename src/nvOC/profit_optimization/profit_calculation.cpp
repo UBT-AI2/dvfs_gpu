@@ -343,12 +343,13 @@ namespace frequency_scaling {
         //mining duration stats
         for (auto &elem : currency_mining_timespans_) {
             int log_level = (elem.first == ct) ? 0 : 1;
+			int ct_period_dur = (!elem.second.empty()) ? elem.second.back().second : 0;
             int ct_total_dur = 0;
             for (auto &dur : elem.second)
                 ct_total_dur += dur.second;
             VLOG(log_level)
-            << gpu_log_prefix(elem.first, dci_.device_id_nvml_) << "Currency mining duration: period=" <<
-            period_ms / (3600 * 1000.0) << "h, total=" << ct_total_dur / (3600 * 1000.0) << "h" << std::endl;
+            << gpu_log_prefix(elem.first, dci_.device_id_nvml_) << "Currency mining duration: last_period=" <<
+			ct_period_dur / (3600 * 1000.0) << "h, total=" << ct_total_dur / (3600 * 1000.0) << "h" << std::endl;
         }
     }
 

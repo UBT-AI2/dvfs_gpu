@@ -50,8 +50,8 @@ namespace frequency_scaling {
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
         curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &elapsed);
         curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &url);
-        VLOG(1) << "Network request URL : " << url << std::endl;
-        VLOG(1) << "Network request elapsed time: " << elapsed << std::endl;
+        VLOG(2) << "Network request URL : " << url << std::endl;
+        VLOG(2) << "Network request elapsed time: " << elapsed << std::endl;
 
         curl_easy_cleanup(curl);
 

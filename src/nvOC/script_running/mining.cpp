@@ -82,7 +82,7 @@ namespace frequency_scaling {
         int mem_clock = dci.nvapi_default_mem_clock_ + mem_oc;
         int graph_clock = dci.nvml_graph_clocks_[nvml_graph_clock_idx];
         VLOG(1) << gpu_log_prefix(ct, dci.device_id_nvml_) <<
-                "Running online benchmark with clocks: mem:" << mem_clock << ",graph:" << graph_clock
+                "Running online benchmark with clocks: mem=" << mem_clock << ",graph=" << graph_clock
                 << std::endl;
         //change graph and mem clocks and start mining
         change_gpu_clocks(dci, mem_oc, nvml_graph_clock_idx);
