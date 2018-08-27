@@ -61,7 +61,7 @@ namespace frequency_scaling {
         const device_stats &get_device_stats(int device_id) const;
 
     private:
-        mutable std::mutex map_mutex_;
+        mutable std::mutex map_mutex_, log_mutex_;
         std::map<int, device_stats> stats_map_;
     };
 

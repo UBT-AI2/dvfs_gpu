@@ -70,4 +70,12 @@ namespace frequency_scaling {
         return "online_bench_result_gpu" + std::to_string(device_id_nvml) + "_" + ct.currency_name_ + ".dat";
     }
 
+	std::string log_utils::get_local_profit_stats_filename(const currency_type &ct, int device_id_nvml) {
+		return "profit_stats_local_gpu" + std::to_string(device_id_nvml) + "_" + ct.currency_name_ + ".dat";
+	}
+
+	std::string log_utils::get_global_profit_stats_filename() {
+		return "profit_stats_global.dat";
+	}
+
 }
