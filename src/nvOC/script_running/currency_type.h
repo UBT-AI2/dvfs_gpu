@@ -31,6 +31,7 @@ namespace frequency_scaling {
         std::string ccminer_algo_;//specify if ccminer
         std::string bench_script_path_, mining_script_path_;//specify if not ccminer
         std::vector<std::string> pool_addresses_;
+        std::string pool_pass_ = "x";
         int whattomine_coin_id_;
         std::string cryptocompare_fsym_;
         //optional api options

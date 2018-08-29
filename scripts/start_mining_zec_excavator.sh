@@ -7,6 +7,7 @@ worker_name=$4
 email=$5
 log_dir=$6
 pool_csv=$7
+pool_pass=$8
 if [[ "$OSTYPE" == "msys" ]]
 then
 #MINGW
@@ -23,5 +24,5 @@ pool_list=($(echo ${pool_csv} | tr "," "\n"))
 pool_option_str=${pool_list[0]}
 
 echo -e "\n##########################\nSTARTED EXCAVATOR $(date +%Y-%m-%d_%H-%M-%S)\n##########################\n" >> ${LOGFILE}
-${MINER_BINARY} -a equihash -s ${pool_option_str} -u ${wallet_address}/${worker_name}/${email}:x \
+${MINER_BINARY} -a equihash -s ${pool_option_str} -u ${wallet_address}/${worker_name}/${email}:${pool_pass} \
 -p 0 -d 2 -cd $device_id_cuda 2>&1 | ./hash-log-excavator ${log_dir}/hash_log_ZEC_${device_id}.txt &>> ${LOGFILE}

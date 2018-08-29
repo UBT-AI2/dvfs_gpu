@@ -29,7 +29,7 @@ function ccminer_start_mining {
     pool_list=($(echo ${pool_csv} | tr "," "\n"))
     for pool in "${pool_list[@]}"
     do
-        pool_option_str="${pool_option_str} -a ${algo} -o stratum+tcp://${pool} -u ${wallet_address}.${worker_name} -p x"
+        pool_option_str="${pool_option_str} -a ${algo} -o stratum+tcp://${pool} -u ${wallet_address}.${worker_name} -p ${pool_pass}"
     done
 
     echo -e "\n##########################\nSTARTED CCMINER-${currency} $(date +%Y-%m-%d_%H-%M-%S)\n##########################\n" >> ${LOGFILE}

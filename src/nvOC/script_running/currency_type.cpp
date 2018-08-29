@@ -96,7 +96,10 @@ namespace frequency_scaling {
             currency_type ct_zec("ZEC", false);
             ct_zec.bench_script_path_ = "../scripts/run_benchmark_zec_excavator.sh";
             ct_zec.mining_script_path_ = "../scripts/start_mining_zec_excavator.sh";
-            ct_zec.pool_addresses_ = {"zec-eu2.nanopool.org:6666"};
+            ct_zec.pool_addresses_ = {"zec-eu1.nanopool.org:6666", "zec-eu2.nanopool.org:6666",
+                                      "zec-au1.nanopool.org:6666", "zec-jp1.nanopool.org:6666",
+                                      "zec-us-west1.nanopool.org:6666", "zec-us-east1.nanopool.org:6666",
+                                      "zec-asia1.nanopool.org:6666"};
             ct_zec.whattomine_coin_id_ = 166;
             ct_zec.cryptocompare_fsym_ = "ZEC";
             ct_zec.pool_avg_hashrate_api_address_ = "https://api.nanopool.org/v1/zec/avghashrateworkers/%s/%s";
@@ -128,7 +131,10 @@ namespace frequency_scaling {
             currency_type ct_xmr("XMR", false);
             ct_xmr.bench_script_path_ = "../scripts/run_benchmark_xmr_xmrstak.sh";
             ct_xmr.mining_script_path_ = "../scripts/start_mining_xmr_xmrstak.sh";
-            ct_xmr.pool_addresses_ = {"xmr-eu2.nanopool.org:14444"};
+            ct_xmr.pool_addresses_ = {"xmr-eu1.nanopool.org:14444", "xmr-eu2.nanopool.org:14444",
+                                      "xmr-au1.nanopool.org:14444", "xmr-jp1.nanopool.org:14444",
+                                      "xmr-us-west1.nanopool.org:14444", "xmr-us-east1.nanopool.org:14444",
+                                      "xmr-asia1.nanopool.org:14444"};
             ct_xmr.whattomine_coin_id_ = 101;
             ct_xmr.cryptocompare_fsym_ = "XMR";
             ct_xmr.pool_avg_hashrate_api_address_ = "https://api.nanopool.org/v1/xmr/avghashrateworkers/%s/%s";
@@ -146,33 +152,57 @@ namespace frequency_scaling {
         {
             currency_type ct_lux("LUX", true);
             ct_lux.ccminer_algo_ = "phi2";
-            ct_lux.pool_addresses_ = {"omegapool.cc:8003", "yiimp.eu:8332"};
+            ct_lux.pool_addresses_ = {"phi2.mine.zergpool.com:8332"};
+            ct_lux.pool_pass_ = "c=LUX,mc=LUX";
             ct_lux.whattomine_coin_id_ = 212;
             ct_lux.cryptocompare_fsym_ = "LUX";
+            ct_lux.pool_current_hashrate_api_address_ = "http://api.zergpool.com:8080/api/walletEx?address=%s";
+            ct_lux.pool_current_hashrate_json_path_worker_array_ = "miners";
+            ct_lux.pool_current_hashrate_json_path_worker_name_ = "ID";
+            ct_lux.pool_current_hashrate_json_path_hashrate_ = "accepted";
+            ct_lux.pool_current_hashrate_api_unit_factor_hashrate_ = 1;
             res.emplace(ct_lux.currency_name_, ct_lux);
         }
         {
             currency_type ct_btx("BTX", true);
             ct_btx.ccminer_algo_ = "bitcore";
-            ct_btx.pool_addresses_ = {"yiimp.eu:3566", "mine.zpool.ca:3556"};
+            ct_btx.pool_addresses_ = {"bitcore.mine.zergpool.com:3556"};
+            ct_btx.pool_pass_ = "c=BTX,mc=BTX";
             ct_btx.whattomine_coin_id_ = 202;
             ct_btx.cryptocompare_fsym_ = "BTX";
+            ct_btx.pool_current_hashrate_api_address_ = "http://api.zergpool.com:8080/api/walletEx?address=%s";
+            ct_btx.pool_current_hashrate_json_path_worker_array_ = "miners";
+            ct_btx.pool_current_hashrate_json_path_worker_name_ = "ID";
+            ct_btx.pool_current_hashrate_json_path_hashrate_ = "accepted";
+            ct_btx.pool_current_hashrate_api_unit_factor_hashrate_ = 1;
             res.emplace(ct_btx.currency_name_, ct_btx);
         }
         {
             currency_type ct_vtc("VTC", true);
             ct_vtc.ccminer_algo_ = "lyra2v2";
-            ct_vtc.pool_addresses_ = {"vtc.coinfoundry.org:3096", "yiimp.eu:4533"};
+            ct_vtc.pool_addresses_ = {"lyra2v2.mine.zergpool.com:4533"};
+            ct_vtc.pool_pass_ = "c=VTC,mc=VTC";
             ct_vtc.whattomine_coin_id_ = 5;
             ct_vtc.cryptocompare_fsym_ = "VTC";
+            ct_vtc.pool_current_hashrate_api_address_ = "http://api.zergpool.com:8080/api/walletEx?address=%s";
+            ct_vtc.pool_current_hashrate_json_path_worker_array_ = "miners";
+            ct_vtc.pool_current_hashrate_json_path_worker_name_ = "ID";
+            ct_vtc.pool_current_hashrate_json_path_hashrate_ = "accepted";
+            ct_vtc.pool_current_hashrate_api_unit_factor_hashrate_ = 1;
             res.emplace(ct_vtc.currency_name_, ct_vtc);
         }
         {
             currency_type ct_rvn("RVN", true);
             ct_rvn.ccminer_algo_ = "x16r";
-            ct_rvn.pool_addresses_ = {"omegapool.cc:8006", "rvn.coinfoundry.org:3172", "yiimp.eu:3636"};
+            ct_rvn.pool_addresses_ = {"x16r.mine.zergpool.com:3636"};
+            ct_rvn.pool_pass_ = "c=RVN,mc=RVN";
             ct_rvn.whattomine_coin_id_ = 234;
             ct_rvn.cryptocompare_fsym_ = "RVN";
+            ct_rvn.pool_current_hashrate_api_address_ = "http://api.zergpool.com:8080/api/walletEx?address=%s";
+            ct_rvn.pool_current_hashrate_json_path_worker_array_ = "miners";
+            ct_rvn.pool_current_hashrate_json_path_worker_name_ = "ID";
+            ct_rvn.pool_current_hashrate_json_path_hashrate_ = "accepted";
+            ct_rvn.pool_current_hashrate_api_unit_factor_hashrate_ = 1;
             res.emplace(ct_rvn.currency_name_, ct_rvn);
         }
         return res;
@@ -198,6 +228,7 @@ namespace frequency_scaling {
             for (const pt::ptree::value_type &pt_pool : pt_currency_type.get_child("pool_addresses")) {
                 ct.pool_addresses_.emplace_back(pt_pool.second.data());
             }
+            ct.pool_pass_ = pt_currency_type.get<std::string>("pool_pass", "x");
             if (ct.pool_addresses_.empty())
                 THROW_RUNTIME_ERROR("Currency config " + filename + " : No pool specified for " + ct.currency_name_);
             ct.whattomine_coin_id_ = pt_currency_type.get<int>("whattomine_coin_id");
@@ -258,6 +289,7 @@ namespace frequency_scaling {
                 pt_pool_array.push_back(std::make_pair("", pt_pool));
             }
             pt_currency_type.add_child("pool_addresses", pt_pool_array);
+            pt_currency_type.put("pool_pass", ct.pool_pass_);
             pt_currency_type.put("whattomine_coin_id", ct.whattomine_coin_id_);
             //optional fields
             pt_currency_type.put("cryptocompare_fsym", ct.cryptocompare_fsym_);
