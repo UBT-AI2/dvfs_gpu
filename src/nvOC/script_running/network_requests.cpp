@@ -106,30 +106,45 @@ namespace frequency_scaling {
 
     static double __get_avg_worker_hashrate(const currency_type &ct, const std::string &wallet_address,
                                             const std::string &worker_name, int period_ms) {
+        namespace pt = boost::property_tree;
         char api_address[BUFFER_SIZE];
         snprintf(api_address, BUFFER_SIZE, ct.pool_avg_hashrate_api_address_.c_str(),
-                 wallet_address.c_str(), worker_name.c_str(),
+                 wallet_address.c_str(),
                  std::to_string(period_ms / ct.pool_avg_hashrate_api_unit_factor_period_).c_str());
         const std::string &json_response = curl_https_get(api_address);
         //
         std::istringstream is(json_response);
-        boost::property_tree::ptree root;
-        boost::property_tree::json_parser::read_json(is, root);
-        return root.get<double>(ct.pool_avg_hashrate_json_path_) * ct.pool_avg_hashrate_api_unit_factor_hashrate_;
+        pt::ptree root;
+        pt::json_parser::read_json(is, root);
+        for (const pt::ptree::value_type &elem : root.get_child(ct.pool_avg_hashrate_json_path_worker_array_)) {
+            const pt::ptree &pt_worker = elem.second;
+            if (pt_worker.get<std::string>(ct.pool_avg_hashrate_json_path_worker_name_).find(worker_name) !=
+                std::string::npos)
+                return pt_worker.get<double>(ct.pool_avg_hashrate_json_path_hashrate_) *
+                       ct.pool_avg_hashrate_api_unit_factor_hashrate_;
+        }
+        return 0;
     };
 
     static double __get_current_worker_hashrate(const currency_type &ct, const std::string &wallet_address,
                                                 const std::string &worker_name) {
+        namespace pt = boost::property_tree;
         char api_address[BUFFER_SIZE];
         snprintf(api_address, BUFFER_SIZE, ct.pool_current_hashrate_api_address_.c_str(),
-                 wallet_address.c_str(), worker_name.c_str());
+                 wallet_address.c_str());
         const std::string &json_response = curl_https_get(api_address);
         //
         std::istringstream is(json_response);
-        boost::property_tree::ptree root;
-        boost::property_tree::json_parser::read_json(is, root);
-        return root.get<double>(ct.pool_current_hashrate_json_path_) *
-               ct.pool_current_hashrate_api_unit_factor_hashrate_;
+        pt::ptree root;
+        pt::json_parser::read_json(is, root);
+        for (const pt::ptree::value_type &elem : root.get_child(ct.pool_current_hashrate_json_path_worker_array_)) {
+            const pt::ptree &pt_worker = elem.second;
+            if (pt_worker.get<std::string>(ct.pool_current_hashrate_json_path_worker_name_).find(worker_name) !=
+                std::string::npos)
+                return pt_worker.get<double>(ct.pool_current_hashrate_json_path_hashrate_) *
+                       ct.pool_current_hashrate_api_unit_factor_hashrate_;
+        }
+        return 0;
     };
 
     static currency_stats __get_currency_stats(const currency_type &ct) {

@@ -35,18 +35,23 @@ namespace frequency_scaling {
         std::string cryptocompare_fsym_;
         //optional api options
         //#########################################################################
-        //printf format string: wallet_address, worker_name
-        std::string pool_current_hashrate_api_address_, pool_current_hashrate_json_path_;
+        //printf format string: wallet_address
+        std::string pool_current_hashrate_api_address_;
+        std::string pool_current_hashrate_json_path_worker_array_, pool_current_hashrate_json_path_worker_name_;
+        std::string pool_current_hashrate_json_path_hashrate_;
         //target unit H/s
         double pool_current_hashrate_api_unit_factor_hashrate_ = -1;
         //#########################################################################
-        //printf format string: wallet_address, worker_name, period
-        std::string pool_avg_hashrate_api_address_, pool_avg_hashrate_json_path_;
+        //printf format string: wallet_address, period
+        std::string pool_avg_hashrate_api_address_;
+        std::string pool_avg_hashrate_json_path_worker_array_, pool_avg_hashrate_json_path_worker_name_;
+        std::string pool_avg_hashrate_json_path_hashrate_;
         //target unit H/s | target unit ms
         double pool_avg_hashrate_api_unit_factor_hashrate_ = -1, pool_avg_hashrate_api_unit_factor_period_ = -1;
         //#########################################################################
-        //printf format string: hashrate | ptree path
-        std::string pool_approximated_earnings_api_address_, pool_approximated_earnings_json_path_;
+        //printf format string: hashrate
+        std::string pool_approximated_earnings_api_address_;
+        std::string pool_approximated_earnings_json_path_;
         //target unit H/s | target unit hours
         double pool_approximated_earnings_api_unit_factor_hashrate_ = -1, pool_approximated_earnings_api_unit_factor_period_ = -1;
     };

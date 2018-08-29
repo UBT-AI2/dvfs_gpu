@@ -122,7 +122,7 @@ namespace frequency_scaling {
     void measurement::update_power(double power, int power_measure_dur_ms) {
         power_ = power;
         power_measure_dur_ms_ = power_measure_dur_ms;
-		energy_hash_ = (power == 0) ? std::numeric_limits<double>::lowest() : hashrate_ / power;
+        energy_hash_ = (power == 0) ? std::numeric_limits<double>::lowest() : hashrate_ / power;
     }
 
     void measurement::update_hashrate(double hashrate, int hashrate_measure_dur_ms) {

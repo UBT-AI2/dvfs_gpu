@@ -48,27 +48,27 @@ namespace frequency_scaling {
     }
 
     void best_profit_stats::update_device_stats(int device_id, const device_stats &stats) {
-		{
-			std::lock_guard<std::mutex> lock(map_mutex_);
-			stats_map_.erase(device_id);
-			stats_map_.emplace(device_id, stats);
-		}
-		//print and log global profit stats
-		{
-			VLOG(0) << "Global profit stats [eur/hour]: approximated earnings=" <<
-				get_global_earnings() << ", energy_cost=" << get_global_costs() <<
-				" (" << get_global_power() << "W), profit=" << get_global_profit() << std::endl;
-			std::lock_guard<std::mutex> lock(log_mutex_);
-			std::string filename = log_utils::get_logdir_name() + "/" +
-				log_utils::get_global_profit_stats_filename();
-			std::ofstream logfile(filename, std::ofstream::app);
-			if (!logfile)
-				THROW_IO_ERROR("Cannot open " + filename);
-			long long int log_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-				std::chrono::system_clock::now().time_since_epoch()).count();
-			logfile << log_timestamp << "," << get_global_earnings() << "," << get_global_costs() <<
-				"," << get_global_power() << "," << get_global_profit() << std::endl;
-		}
+        {
+            std::lock_guard<std::mutex> lock(map_mutex_);
+            stats_map_.erase(device_id);
+            stats_map_.emplace(device_id, stats);
+        }
+        //print and log global profit stats
+        {
+            VLOG(0) << "Global profit stats [eur/hour]: approximated earnings=" <<
+                    get_global_earnings() << ", energy_cost=" << get_global_costs() <<
+                    " (" << get_global_power() << "W), profit=" << get_global_profit() << std::endl;
+            std::lock_guard<std::mutex> lock(log_mutex_);
+            std::string filename = log_utils::get_logdir_name() + "/" +
+                                   log_utils::get_global_profit_stats_filename();
+            std::ofstream logfile(filename, std::ofstream::app);
+            if (!logfile)
+                THROW_IO_ERROR("Cannot open " + filename);
+            long long int log_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now().time_since_epoch()).count();
+            logfile << log_timestamp << "," << get_global_earnings() << "," << get_global_costs() <<
+                    "," << get_global_power() << "," << get_global_profit() << std::endl;
+        }
     }
 
     double best_profit_stats::get_global_earnings() const {
@@ -150,8 +150,8 @@ namespace frequency_scaling {
             profit_calculator::best_profit_stats_global_.update_device_stats(dci_.device_id_nvml_,
                                                                              *device_stats.rbegin());
         //print and log local profit stats
-		long long int log_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-			std::chrono::system_clock::now().time_since_epoch()).count();
+        long long int log_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
         for (auto it = device_stats.rbegin(); it != device_stats.rend(); ++it) {
             int log_level = (it == device_stats.rbegin()) ? 0 : 1;
             VLOG(log_level) << gpu_log_prefix(it->ct_, dci_.device_id_nvml_) <<
@@ -161,16 +161,16 @@ namespace frequency_scaling {
             VLOG(log_level) << gpu_log_prefix(it->ct_, dci_.device_id_nvml_) <<
                             "Calculated profit [eur/hour]: approximated earnings=" << it->earnings_ <<
                             ", energy_cost=" << it->costs_ << ", profit=" << it->profit_ << std::endl;
-			//
-			std::string filename = log_utils::get_logdir_name() + "/" +
-				log_utils::get_local_profit_stats_filename(it->ct_, dci_.device_id_nvml_);
-			std::ofstream logfile(filename, std::ofstream::app);
-			if (!logfile)
-				THROW_IO_ERROR("Cannot open " + filename);
-			logfile << log_timestamp << "," << get_used_hashrate(it->ct_) << "," <<
-				get_used_power(it->ct_) << "," << get_used_energy_hash(it->ct_) <<
-				"," << currency_info_.at(it->ct_).cs_.stock_price_eur_ << "," << it->earnings_ <<
-				"," << it->costs_ << "," << it->profit_ << std::endl;
+            //
+            std::string filename = log_utils::get_logdir_name() + "/" +
+                                   log_utils::get_local_profit_stats_filename(it->ct_, dci_.device_id_nvml_);
+            std::ofstream logfile(filename, std::ofstream::app);
+            if (!logfile)
+                THROW_IO_ERROR("Cannot open " + filename);
+            logfile << log_timestamp << "," << get_used_hashrate(it->ct_) << "," <<
+                    get_used_power(it->ct_) << "," << get_used_energy_hash(it->ct_) <<
+                    "," << currency_info_.at(it->ct_).cs_.stock_price_eur_ << "," << it->earnings_ <<
+                    "," << it->costs_ << "," << it->profit_ << std::endl;
         }
     }
 
@@ -227,7 +227,7 @@ namespace frequency_scaling {
                     cur_hashrate += elem.second;
                     counter++;
                 }
-            cur_hashrate = (counter == 0) ? 0 : cur_hashrate/counter;
+            cur_hashrate = (counter == 0) ? 0 : cur_hashrate / counter;
         } else {
             cur_hashrate = energy_hash_info_.at(current_mined_ct).optimal_configuration_online_.hashrate_;
         }
@@ -369,13 +369,13 @@ namespace frequency_scaling {
         //mining duration stats
         for (auto &elem : currency_mining_timespans_) {
             int log_level = (elem.first == ct) ? 0 : 1;
-			int ct_period_dur = (!elem.second.empty()) ? elem.second.back().second : 0;
+            int ct_period_dur = (!elem.second.empty()) ? elem.second.back().second : 0;
             int ct_total_dur = 0;
             for (auto &dur : elem.second)
                 ct_total_dur += dur.second;
             VLOG(log_level)
             << gpu_log_prefix(elem.first, dci_.device_id_nvml_) << "Currency mining duration: last_period=" <<
-			ct_period_dur / (3600 * 1000.0) << "h, total=" << ct_total_dur / (3600 * 1000.0) << "h" << std::endl;
+            ct_period_dur / (3600 * 1000.0) << "h, total=" << ct_total_dur / (3600 * 1000.0) << "h" << std::endl;
         }
     }
 

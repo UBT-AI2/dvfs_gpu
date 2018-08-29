@@ -301,7 +301,7 @@ namespace frequency_scaling {
             }
         }
         //stop mining and power monitoring
-		profit_calc.save_current_period(profit_calc.getBest_currency_(), system_time_start_ms_no_window);
+        profit_calc.save_current_period(profit_calc.getBest_currency_(), system_time_start_ms_no_window);
         stop_mining_script(device_id);
         if (pm_started)
             stop_power_monitoring_script(device_id);
