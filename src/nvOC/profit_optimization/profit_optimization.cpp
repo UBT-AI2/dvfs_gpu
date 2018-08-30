@@ -334,7 +334,7 @@ namespace frequency_scaling {
     static std::map<int, std::set<currency_type>>
     find_optimization_gpu_distr(const std::list<gpu_group> &equal_gpus,
                                 const std::set<currency_type> &currencies,
-                                const std::map<int, std::map<currency_type, energy_hash_info>> &opt_results) {
+                                const std::map<int, device_opt_result> &opt_results) {
         std::map<int, std::set<currency_type>> res;
         for (auto &eq_vec : equal_gpus)
             for (auto &device_id_nvml : eq_vec.members_)
@@ -345,7 +345,10 @@ namespace frequency_scaling {
             for (auto &ct : currencies) {
                 for (int i = next_insert_idx; i < eg.members_.size(); i++) {
                     int gpu = eg.members_.at(i).first;
-                    if (opt_results.count(gpu) && opt_results.at(gpu).count(ct))
+                    //skip iff entry in opt_results for gpu and currency is available
+                    // and gpu was not exchanged with gpu of different type
+                    if (opt_results.count(gpu) && opt_results.at(gpu).device_name_ == nvmlGetDeviceName(gpu) &&
+                        opt_results.at(gpu).currency_ehi_.count(ct))
                         continue;
                     res.at(gpu).insert(ct);
                     next_insert_idx = (i + 1) % eg.members_.size();
@@ -358,15 +361,15 @@ namespace frequency_scaling {
 
 
     static void
-    complete_optimization_results(std::map<int, std::map<currency_type, energy_hash_info>> &optimization_results,
+    complete_optimization_results(std::map<int, device_opt_result> &optimization_results,
                                   const gpu_group &eq_vec) {
         for (int i = 0; i < eq_vec.members_.size(); i++) {
-            std::map<currency_type, energy_hash_info> &cur_or = optimization_results.at(eq_vec.members_[i].first);
+            std::map<currency_type, energy_hash_info> &cur_or = optimization_results.at(eq_vec.members_[i].first).currency_ehi_;
             for (int j = 0; j < eq_vec.members_.size(); j++) {
                 if (i == j)
                     continue;
                 const std::map<currency_type, energy_hash_info> &other_or = optimization_results.at(
-                        eq_vec.members_[j].first);
+                        eq_vec.members_[j].first).currency_ehi_;
                 for (auto &elem : other_or)
                     cur_or.emplace(elem.first, elem.second);
             }
@@ -376,10 +379,10 @@ namespace frequency_scaling {
     static void gpu_thread_func(const optimization_config &opt_config,
                                 const device_clock_info &gpu_dci,
                                 const std::set<currency_type> &gpu_optimization_work,
-                                std::map<int, std::map<currency_type, energy_hash_info>> &opt_results,
+                                std::map<int, device_opt_result> &opt_results,
                                 gpu_group &group, std::mutex &all_mutex, std::condition_variable &cond_var,
                                 const std::atomic_bool &terminate,
-                                std::promise<std::pair<int, std::map<currency_type, energy_hash_info>>> &&p) {
+                                std::promise<std::pair<int, device_opt_result>> &&p) {
         try {
             if (gpu_optimization_work.empty()) {
                 VLOG(0) << gpu_log_prefix(gpu_dci.device_id_nvml_) << "Skipping optimization phase..." << std::endl;
@@ -413,7 +416,8 @@ namespace frequency_scaling {
                 }
                 {
                     std::lock_guard<std::mutex> lock_all(all_mutex);
-                    opt_results.emplace(gpu_dci.device_id_nvml_, ehi);
+                    opt_results.emplace(gpu_dci.device_id_nvml_,
+                            device_opt_result(gpu_dci.device_id_nvml_, nvmlGetDeviceName(gpu_dci.device_id_nvml_), ehi));
                 }
                 VLOG(0) << gpu_log_prefix(gpu_dci.device_id_nvml_) << "Finished optimization phase..." << std::endl;
                 {
@@ -463,7 +467,7 @@ namespace frequency_scaling {
             std::map<currency_type, energy_hash_info> gpu_opt_res;
             {
                 std::lock_guard<std::mutex> lock_all(all_mutex);
-                gpu_opt_res = opt_results.at(gpu_dci.device_id_nvml_);
+                gpu_opt_res = opt_results.at(gpu_dci.device_id_nvml_).currency_ehi_;
             }
             //create profit calculator for gpu and start monitoring
             profit_calculator pc(gpu_dci, gpu_opt_res, opt_config.energy_cost_kwh_);
@@ -473,7 +477,8 @@ namespace frequency_scaling {
                                     opt_config.online_bench_duration_sec_ * 1000,
                                     all_mutex, cond_var, terminate);
             //set return value
-            p.set_value(std::make_pair(gpu_dci.device_id_nvml_, pc.getEnergy_hash_info_()));
+            p.set_value(std::make_pair(gpu_dci.device_id_nvml_,
+                    device_opt_result(gpu_dci.device_id_nvml_, nvmlGetDeviceName(gpu_dci.device_id_nvml_), pc.getEnergy_hash_info_())));
         }
         catch (const std::exception &ex) {
             //Unhandled exception. Dont stop mining!!!
@@ -484,14 +489,14 @@ namespace frequency_scaling {
     }
 
     void mine_most_profitable_currency(const optimization_config &opt_config,
-                                       const std::map<int, std::map<currency_type, energy_hash_info>> &opt_results_in) {
+                                       const std::map<int, device_opt_result> &opt_results_in) {
         //check for equal gpus and extract currencies according opt_config
         std::list<gpu_group> &&equal_gpus = find_equal_gpus(opt_config.dcis_);
         std::set<currency_type> currencies;
         for (auto &ui : opt_config.miner_user_infos_.wallet_addresses_)
             currencies.insert(ui.first);
         //remove gpus/currencies that are not in opt_config from available opt_results
-        std::map<int, std::map<currency_type, energy_hash_info>> opt_results_optphase(opt_results_in.begin(),
+        std::map<int, device_opt_result> opt_results_optphase(opt_results_in.begin(),
                                                                                       opt_results_in.end());
         for (auto it = opt_results_optphase.begin(); it != opt_results_optphase.end();) {
             bool gpu_found = false;
@@ -504,9 +509,9 @@ namespace frequency_scaling {
                 it = opt_results_optphase.erase(it);
                 continue;
             }
-            for (auto it_inner = it->second.begin(); it_inner != it->second.end();) {
+            for (auto it_inner = it->second.currency_ehi_.begin(); it_inner != it->second.currency_ehi_.end();) {
                 if (!currencies.count(it_inner->first))
-                    it_inner = it->second.erase(it_inner);
+                    it_inner = it->second.currency_ehi_.erase(it_inner);
                 else
                     ++it_inner;
             }
@@ -517,12 +522,12 @@ namespace frequency_scaling {
                 find_optimization_gpu_distr(equal_gpus, currencies, opt_results_optphase);
         //start optimization and monitoring on each gpu
         std::vector<std::thread> threads;
-        std::vector<std::future<std::pair<int, std::map<currency_type, energy_hash_info>>>> futures;
+        std::vector<std::future<std::pair<int, device_opt_result>>> futures;
         std::mutex mutex;
         std::condition_variable cond_var;
         std::atomic_bool terminate = ATOMIC_VAR_INIT(false);
         for (const device_clock_info &gpu_dci : opt_config.dcis_) {
-            std::promise<std::pair<int, std::map<currency_type, energy_hash_info>>> promise;
+            std::promise<std::pair<int, device_opt_result>> promise;
             futures.push_back(promise.get_future());
             //find group to which gpu belongs
             auto it = equal_gpus.begin();
@@ -549,7 +554,7 @@ namespace frequency_scaling {
             t.join();
 
         //get updated optimization results
-        std::map<int, std::map<currency_type, energy_hash_info>> opt_results_monitoringphase(
+        std::map<int, device_opt_result> opt_results_monitoringphase(
                 opt_results_optphase.begin(),
                 opt_results_optphase.end());
         for (int i = 0; i < futures.size(); i++) {
@@ -580,14 +585,15 @@ namespace frequency_scaling {
     }
 
     void save_optimization_result(const std::string &filename,
-                                  const std::map<int, std::map<currency_type, energy_hash_info>> &opt_results) {
+                                  const std::map<int, device_opt_result> &opt_results) {
         namespace pt = boost::property_tree;
         pt::ptree root;
         //write devices
         for (auto &device : opt_results) {
             pt::ptree pt_currencies;
+            pt_currencies.put("device_name", nvmlGetDeviceName(device.first));
             //write currency
-            for (auto &currency : device.second) {
+            for (auto &currency : device.second.currency_ehi_) {
                 pt::ptree pt_config_type;
                 std::vector<std::pair<std::string, measurement>> config_type_vec =
                         {std::make_pair("offline", currency.second.optimal_configuration_offline_),
@@ -620,18 +626,22 @@ namespace frequency_scaling {
     }
 
 
-    std::map<int, std::map<currency_type, energy_hash_info>> load_optimization_result(const std::string &filename,
+    std::map<int, device_opt_result> load_optimization_result(const std::string &filename,
                                                                                       const std::map<std::string, currency_type> &available_currencies) {
-        std::map<int, std::map<currency_type, energy_hash_info>> opt_results;
+        std::map<int, device_opt_result> opt_results;
         namespace pt = boost::property_tree;
         pt::ptree root;
         pt::read_json(filename, root);
         //read device infos
         for (const pt::ptree::value_type &array_elem : root) {
             const boost::property_tree::ptree &pt_device = array_elem.second;
+            int device_id = std::stoi(array_elem.first);
+            const std::string& device_name = pt_device.get<std::string>("device_name");
             std::map<currency_type, energy_hash_info> opt_res_device;
             //read currencies
             for (const pt::ptree::value_type &array_elem2 : pt_device) {
+                if(!available_currencies.count(array_elem2.first))
+                    continue;
                 const currency_type &ct = available_currencies.at(array_elem2.first);
                 std::vector<std::pair<std::string, pt::ptree>> pt_config_type_vec =
                         {std::make_pair("offline", array_elem2.second.get_child("offline")),
@@ -658,7 +668,8 @@ namespace frequency_scaling {
                                                         opt_config_map.at("online"), opt_config_map.at("profit")));
             }
             //
-            opt_results.emplace(std::stoi(array_elem.first), opt_res_device);
+            opt_results.emplace(device_id, device_opt_result(device_id,
+                    device_name, opt_res_device));
         }
         return opt_results;
     }

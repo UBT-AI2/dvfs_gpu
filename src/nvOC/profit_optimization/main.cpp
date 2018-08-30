@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
         const optimization_config &opt_config = (cmd_args.count("--user_config")) ? parse_config_json(
                 cmd_args.at("--user_config"), available_currencies) : get_config_user_dialog(available_currencies);
         if (cmd_args.count("--opt_result")) {
-            const std::map<int, std::map<currency_type, energy_hash_info>> &opt_result =
+            const std::map<int, device_opt_result> &opt_result =
                     load_optimization_result(cmd_args.at("--opt_result"), available_currencies);
             mine_most_profitable_currency(opt_config, opt_result);
         } else {
