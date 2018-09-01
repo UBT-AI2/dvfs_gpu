@@ -9,7 +9,7 @@ log_dir=$6
 pool_csv=$7
 pool_pass=$8
 currency_name=$9
-algo=$10
+algo=${10}
 #################################################################################
 
 source $(dirname $(readlink -f $0))/ccminer_generic.sh

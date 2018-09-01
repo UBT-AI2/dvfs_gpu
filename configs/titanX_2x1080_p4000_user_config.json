@@ -7,7 +7,7 @@
     {
       "index": "0",
       "min_mem_oc": "1",
-      "min_graph_oc": "1",
+      "min_graph_oc": "-1200",
       "max_mem_oc": "-1",
       "max_graph_oc": "100",
       "worker_name": "DESKTOP-6817PNB_gpu0"
@@ -89,7 +89,7 @@
       }
     },
     "VTC": {
-      "wallet_address": "vtc1q68qeddute9uhkmdjf05c04vkd4aurj8f0mdp8r",
+      "wallet_address": "VpGMpfWuQxR4rWJp3i8Qc7wqwf4yLQtdLd",
       "opt_method_params": {
         "method": "NM",
         "min_hashrate": "-1",
