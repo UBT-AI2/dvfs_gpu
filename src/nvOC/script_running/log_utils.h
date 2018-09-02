@@ -25,9 +25,11 @@ namespace frequency_scaling {
 
         static std::string get_online_bench_filename(const currency_type &ct, int device_id_nvml);
 
-        static std::string get_local_profit_stats_filename(const currency_type &ct, int device_id_nvml);
+        static std::string get_profit_stats_filename(const currency_type &ct, int device_id_nvml);
 
-        static std::string get_global_profit_stats_filename();
+        static std::string get_profit_stats_filename(int device_id_nvml);
+
+        static std::string get_profit_stats_filename();
 
     private:
         static std::string logdir_name_;

@@ -143,7 +143,7 @@ namespace frequency_scaling {
                 stop_power_monitoring_script(dci.device_id_nvml_);
             return std::make_pair(true, optimal_config);
         }
-        catch (const optimization_error &err) {
+        catch (const custom_error &err) {
             LOG(ERROR) << gpu_log_prefix(ct, dci.device_id_nvml_) << "Optimization failed: " << err.what()
                        << std::endl;
             if (mining_started)
@@ -261,7 +261,7 @@ namespace frequency_scaling {
             if (profit_calc.update_opt_config_profit_hashrate(old_best_currency, user_infos, system_time_start_ms))
                 profit_calc.update_power_consumption(old_best_currency, system_time_start_ms);
             //update approximated earnings based on current power,hashrate and stock price
-            profit_calc.update_currency_info_nanopool();
+            profit_calc.update_currency_info();
             // recalc and check for new best currency
             profit_calc.recalculate_best_currency();
             const currency_type &new_best_currency = profit_calc.getBest_currency_();
@@ -364,7 +364,8 @@ namespace frequency_scaling {
     complete_optimization_results(std::map<int, device_opt_result> &optimization_results,
                                   const gpu_group &eq_vec) {
         for (int i = 0; i < eq_vec.members_.size(); i++) {
-            std::map<currency_type, energy_hash_info> &cur_or = optimization_results.at(eq_vec.members_[i].first).currency_ehi_;
+            std::map<currency_type, energy_hash_info> &cur_or = optimization_results.at(
+                    eq_vec.members_[i].first).currency_ehi_;
             for (int j = 0; j < eq_vec.members_.size(); j++) {
                 if (i == j)
                     continue;
@@ -417,7 +418,8 @@ namespace frequency_scaling {
                 {
                     std::lock_guard<std::mutex> lock_all(all_mutex);
                     opt_results.emplace(gpu_dci.device_id_nvml_,
-                            device_opt_result(gpu_dci.device_id_nvml_, nvmlGetDeviceName(gpu_dci.device_id_nvml_), ehi));
+                                        device_opt_result(gpu_dci.device_id_nvml_,
+                                                          nvmlGetDeviceName(gpu_dci.device_id_nvml_), ehi));
                 }
                 VLOG(0) << gpu_log_prefix(gpu_dci.device_id_nvml_) << "Finished optimization phase..." << std::endl;
                 {
@@ -478,7 +480,9 @@ namespace frequency_scaling {
                                     all_mutex, cond_var, terminate);
             //set return value
             p.set_value(std::make_pair(gpu_dci.device_id_nvml_,
-                    device_opt_result(gpu_dci.device_id_nvml_, nvmlGetDeviceName(gpu_dci.device_id_nvml_), pc.getEnergy_hash_info_())));
+                                       device_opt_result(gpu_dci.device_id_nvml_,
+                                                         nvmlGetDeviceName(gpu_dci.device_id_nvml_),
+                                                         pc.getEnergy_hash_info_())));
         }
         catch (const std::exception &ex) {
             //Unhandled exception. Dont stop mining!!!
@@ -497,7 +501,7 @@ namespace frequency_scaling {
             currencies.insert(ui.first);
         //remove gpus/currencies that are not in opt_config from available opt_results
         std::map<int, device_opt_result> opt_results_optphase(opt_results_in.begin(),
-                                                                                      opt_results_in.end());
+                                                              opt_results_in.end());
         for (auto it = opt_results_optphase.begin(); it != opt_results_optphase.end();) {
             bool gpu_found = false;
             for (auto &elem : opt_config.dcis_)
@@ -590,8 +594,9 @@ namespace frequency_scaling {
         pt::ptree root;
         //write devices
         for (auto &device : opt_results) {
+            pt::ptree pt_device;
+            pt_device.put("device_name", nvmlGetDeviceName(device.first));
             pt::ptree pt_currencies;
-            pt_currencies.put("device_name", nvmlGetDeviceName(device.first));
             //write currency
             for (auto &currency : device.second.currency_ehi_) {
                 pt::ptree pt_config_type;
@@ -620,14 +625,15 @@ namespace frequency_scaling {
                 pt_currencies.add_child(currency.first.currency_name_, pt_config_type);
             }
             //
-            root.add_child(std::to_string(device.first), pt_currencies);
+            pt_device.add_child("currency_opt_result", pt_currencies);
+            root.add_child(std::to_string(device.first), pt_device);
         }
         pt::write_json(filename, root);
     }
 
 
     std::map<int, device_opt_result> load_optimization_result(const std::string &filename,
-                                                                                      const std::map<std::string, currency_type> &available_currencies) {
+                                                              const std::map<std::string, currency_type> &available_currencies) {
         std::map<int, device_opt_result> opt_results;
         namespace pt = boost::property_tree;
         pt::ptree root;
@@ -636,12 +642,10 @@ namespace frequency_scaling {
         for (const pt::ptree::value_type &array_elem : root) {
             const boost::property_tree::ptree &pt_device = array_elem.second;
             int device_id = std::stoi(array_elem.first);
-            const std::string& device_name = pt_device.get<std::string>("device_name");
+            const std::string &device_name = pt_device.get<std::string>("device_name");
             std::map<currency_type, energy_hash_info> opt_res_device;
             //read currencies
-            for (const pt::ptree::value_type &array_elem2 : pt_device) {
-                if(!available_currencies.count(array_elem2.first))
-                    continue;
+            for (const pt::ptree::value_type &array_elem2 : pt_device.get_child("currency_opt_result")) {
                 const currency_type &ct = available_currencies.at(array_elem2.first);
                 std::vector<std::pair<std::string, pt::ptree>> pt_config_type_vec =
                         {std::make_pair("offline", array_elem2.second.get_child("offline")),
@@ -669,7 +673,7 @@ namespace frequency_scaling {
             }
             //
             opt_results.emplace(device_id, device_opt_result(device_id,
-                    device_name, opt_res_device));
+                                                             device_name, opt_res_device));
         }
         return opt_results;
     }

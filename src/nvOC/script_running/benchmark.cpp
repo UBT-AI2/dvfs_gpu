@@ -22,9 +22,10 @@ namespace frequency_scaling {
 
     device_clock_info::device_clock_info(int device_id_nvml, int min_mem_oc,
                                          int min_graph_oc, int max_mem_oc,
-                                         int max_graph_oc) : device_id_nvml_(device_id_nvml), min_mem_oc_(min_mem_oc),
-                                                             min_graph_oc_(min_graph_oc), max_mem_oc_(max_mem_oc),
-                                                             max_graph_oc_(max_graph_oc) {
+                                         int max_graph_oc) : device_id_nvml_(device_id_nvml),
+                                                             device_name_(nvmlGetDeviceName(device_id_nvml)),
+                                                             min_mem_oc_(min_mem_oc), min_graph_oc_(min_graph_oc),
+                                                             max_mem_oc_(max_mem_oc), max_graph_oc_(max_graph_oc) {
         nvml_supported_ = nvmlCheckOCSupport(device_id_nvml);
         device_id_nvapi_ = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id_nvml));
         nvapi_supported_ = (device_id_nvapi_ < 0) ? false : nvapiCheckSupport(device_id_nvapi_);

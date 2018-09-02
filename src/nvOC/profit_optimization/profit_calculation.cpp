@@ -35,37 +35,94 @@ namespace frequency_scaling {
             optimal_configuration_profit) {}
 
 
-    best_profit_stats::device_stats::device_stats(const currency_type &ct, double earnings, double costs,
-                                                  double power, double hashrate) : ct_(ct), earnings_(earnings),
+    best_profit_stats::device_stats::device_stats(const currency_type &ct, int ct_mem_clock, int ct_graph_clock,
+                                                  long long int system_time_ms, double stock_price_eur, double earnings,
+                                                  double costs,
+                                                  double power, double hashrate) : ct_(ct), ct_mem_clock_(ct_mem_clock),
+                                                                                   ct_graph_clock_(ct_graph_clock),
+                                                                                   system_time_ms_(system_time_ms),
+                                                                                   stock_price_eur_(stock_price_eur),
+                                                                                   earnings_(
+                                                                                           earnings),
                                                                                    costs_(costs),
-                                                                                   profit_(earnings - costs),
+                                                                                   profit_(earnings -
+                                                                                           costs),
                                                                                    power_(power),
-                                                                                   hashrate_(hashrate),
-                                                                                   energy_hash_(hashrate / power) {}
+                                                                                   hashrate_(
+                                                                                           hashrate),
+                                                                                   energy_hash_(
+                                                                                           hashrate /
+                                                                                           power) {}
 
     bool best_profit_stats::device_stats::operator<(const best_profit_stats::device_stats &other) const {
         return profit_ < other.profit_;
     }
 
-    void best_profit_stats::update_device_stats(int device_id, const device_stats &stats) {
+    void
+    best_profit_stats::update_device_stats(int device_id,
+                                           const std::multiset<best_profit_stats::device_stats> &device_currency_stats) {
+        //TODO handle empty device_stats (blacklist, what to mine then)
+        if (device_currency_stats.empty())
+            return;
         {
             std::lock_guard<std::mutex> lock(map_mutex_);
-            stats_map_.erase(device_id);
-            stats_map_.emplace(device_id, stats);
+            if (!stats_map_.count(device_id))
+                stats_map_.emplace(device_id, std::vector<std::multiset<best_profit_stats::device_stats>>());
+            stats_map_.at(device_id).emplace_back(device_currency_stats);
         }
-        //print and log global profit stats
+        const best_profit_stats::device_stats device_best_currency_stats = *device_currency_stats.rbegin();
+        long long int log_timestamp = device_currency_stats.rbegin()->system_time_ms_;
+        std::lock_guard<std::mutex> lock(logfile_mutex_);
+        //print and log device local profit stats for each currency sorted by profit descending
+        for (auto it = device_currency_stats.rbegin(); it != device_currency_stats.rend(); ++it) {
+            VLOG(1) << gpu_log_prefix(it->ct_, device_id) << "Profit calculation using: hashrate=" <<
+                    it->hashrate_ << ", power=" << it->power_ << ", energy_hash=" << it->energy_hash_ <<
+                    ", stock_price=" << it->stock_price_eur_ << std::endl;
+            VLOG(1)
+            << gpu_log_prefix(it->ct_, device_id) << "Calculated profit [eur/hour]: approximated earnings=" <<
+            it->earnings_ << ", energy_cost=" << it->costs_ << ", profit=" << it->profit_ << std::endl;
+            //
+            std::string filename = log_utils::get_logdir_name() + "/" +
+                                   log_utils::get_profit_stats_filename(it->ct_, device_id);
+            std::ofstream logfile(filename, std::ofstream::app);
+            if (!logfile)
+                THROW_IO_ERROR("Cannot open " + filename);
+            logfile << log_timestamp << "," << it->hashrate_ << "," << it->power_ << "," << it->energy_hash_ <<
+                    "," << it->stock_price_eur_ << "," << it->earnings_ << "," << it->costs_ << "," << it->profit_
+                    << "," << it->ct_mem_clock_ << "," << it->ct_graph_clock_ << std::endl;
+        }
+        //print and log best device local profit stats
+        {
+            VLOG(0)
+            << gpu_log_prefix(device_id) << "Local profit stats [eur/hour]: currency="
+            << device_best_currency_stats.ct_.currency_name_ << ", approximated earnings=" <<
+            device_best_currency_stats.earnings_ << ", energy_cost=" << device_best_currency_stats.costs_ <<
+            " (" << device_best_currency_stats.power_ << "W), profit=" << device_best_currency_stats.profit_
+            << std::endl;
+            std::string filename = log_utils::get_logdir_name() + "/" +
+                                   log_utils::get_profit_stats_filename(device_id);
+            std::ofstream logfile(filename, std::ofstream::app);
+            if (!logfile)
+                THROW_IO_ERROR("Cannot open " + filename);
+            logfile << log_timestamp << "," << device_best_currency_stats.ct_.currency_name_ << ","
+                    << device_best_currency_stats.hashrate_
+                    << "," << device_best_currency_stats.power_ << "," << device_best_currency_stats.energy_hash_
+                    << "," << device_best_currency_stats.stock_price_eur_ << "," <<
+                    device_best_currency_stats.earnings_ << "," << device_best_currency_stats.costs_ << ","
+                    << device_best_currency_stats.profit_
+                    << "," << device_best_currency_stats.ct_mem_clock_ << ","
+                    << device_best_currency_stats.ct_graph_clock_ << std::endl;
+        }
+        //print and log best global profit stats
         {
             VLOG(0) << "Global profit stats [eur/hour]: approximated earnings=" <<
                     get_global_earnings() << ", energy_cost=" << get_global_costs() <<
                     " (" << get_global_power() << "W), profit=" << get_global_profit() << std::endl;
-            std::lock_guard<std::mutex> lock(log_mutex_);
             std::string filename = log_utils::get_logdir_name() + "/" +
-                                   log_utils::get_global_profit_stats_filename();
+                                   log_utils::get_profit_stats_filename();
             std::ofstream logfile(filename, std::ofstream::app);
             if (!logfile)
                 THROW_IO_ERROR("Cannot open " + filename);
-            long long int log_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::system_clock::now().time_since_epoch()).count();
             logfile << log_timestamp << "," << get_global_earnings() << "," << get_global_costs() <<
                     "," << get_global_power() << "," << get_global_profit() << std::endl;
         }
@@ -75,39 +132,43 @@ namespace frequency_scaling {
         std::lock_guard<std::mutex> lock(map_mutex_);
         double sum = 0;
         for (auto &elem : stats_map_)
-            sum += elem.second.earnings_;
+            sum += elem.second.back().rbegin()->earnings_;
         return sum;
     }
+
 
     double best_profit_stats::get_global_costs() const {
         std::lock_guard<std::mutex> lock(map_mutex_);
         double sum = 0;
         for (auto &elem : stats_map_)
-            sum += elem.second.costs_;
+            sum += elem.second.back().rbegin()->costs_;
         return sum;
     }
+
 
     double best_profit_stats::get_global_profit() const {
         std::lock_guard<std::mutex> lock(map_mutex_);
         double sum = 0;
         for (auto &elem : stats_map_)
-            sum += elem.second.profit_;
+            sum += elem.second.back().rbegin()->profit_;
         return sum;
     }
+
 
     double best_profit_stats::get_global_power() const {
         std::lock_guard<std::mutex> lock(map_mutex_);
         double sum = 0;
         for (auto &elem : stats_map_)
-            sum += elem.second.power_;
+            sum += elem.second.back().rbegin()->power_;
         return sum;
     }
+
 
     const best_profit_stats::device_stats &best_profit_stats::get_device_stats(int device_id) const {
         std::lock_guard<std::mutex> lock(map_mutex_);
         if (!stats_map_.count(device_id))
             THROW_RUNTIME_ERROR("No profit stats available for GPU " + std::to_string(device_id));
-        return stats_map_.at(device_id);
+        return *stats_map_.at(device_id).back().rbegin();
     }
 
 
@@ -124,15 +185,24 @@ namespace frequency_scaling {
             currency_mining_timespans_.emplace(ehi.first, std::vector<std::pair<long long int, int>>());
             timespan_current_pool_hashrates_.emplace(ehi.first, std::vector<std::pair<long long int, double>>());
         }
-        update_currency_info_nanopool();
+        //calculate initial profit stats
+        update_currency_info();
         recalculate_best_currency();
     }
 
 
     void profit_calculator::recalculate_best_currency() {
         std::multiset<best_profit_stats::device_stats> device_stats;
+        long long int log_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
         for (auto &elem : energy_hash_info_) {
             const currency_type &ct = elem.first;
+            if (currency_blacklist_.count(ct)) {
+                LOG(WARNING) << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
+                             "Skipping profit calculation: Currency on blacklist (probably pool or miner down)"
+                             << std::endl;
+                continue;
+            }
             auto it_ci = currency_info_.find(ct);
             if (it_ci == currency_info_.end()) {
                 LOG(WARNING) << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
@@ -141,40 +211,18 @@ namespace frequency_scaling {
             }
             const currency_info &ci = it_ci->second;
             double costs_per_hour = get_used_power(ct) * (power_cost_kwh_ / 1000.0);
+            int ct_mem_clock = energy_hash_info_.at(ct).optimal_configuration_profit_.mem_clock_;
+            int ct_graph_clock = energy_hash_info_.at(ct).optimal_configuration_profit_.graph_clock_;
             //store device stats for currency
-            device_stats.emplace(ct, ci.approximated_earnings_eur_hour_,
-                                 costs_per_hour, get_used_power(ct), get_used_hashrate(ct));
+            device_stats.emplace(ct, ct_mem_clock, ct_graph_clock, log_timestamp, ci.cs_.stock_price_eur_,
+                                 ci.approximated_earnings_eur_hour_, costs_per_hour, get_used_power(ct),
+                                 get_used_hashrate(ct));
         }
-        //update global profit stats for this device
-        if (!device_stats.empty())
-            profit_calculator::best_profit_stats_global_.update_device_stats(dci_.device_id_nvml_,
-                                                                             *device_stats.rbegin());
-        //print and log local profit stats
-        long long int log_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::system_clock::now().time_since_epoch()).count();
-        for (auto it = device_stats.rbegin(); it != device_stats.rend(); ++it) {
-            int log_level = (it == device_stats.rbegin()) ? 0 : 1;
-            VLOG(log_level) << gpu_log_prefix(it->ct_, dci_.device_id_nvml_) <<
-                            "Profit calculation using: hashrate=" << get_used_hashrate(it->ct_) << ", power=" <<
-                            get_used_power(it->ct_) << ", energy_hash=" << get_used_energy_hash(it->ct_) <<
-                            ", stock_price=" << currency_info_.at(it->ct_).cs_.stock_price_eur_ << std::endl;
-            VLOG(log_level) << gpu_log_prefix(it->ct_, dci_.device_id_nvml_) <<
-                            "Calculated profit [eur/hour]: approximated earnings=" << it->earnings_ <<
-                            ", energy_cost=" << it->costs_ << ", profit=" << it->profit_ << std::endl;
-            //
-            std::string filename = log_utils::get_logdir_name() + "/" +
-                                   log_utils::get_local_profit_stats_filename(it->ct_, dci_.device_id_nvml_);
-            std::ofstream logfile(filename, std::ofstream::app);
-            if (!logfile)
-                THROW_IO_ERROR("Cannot open " + filename);
-            logfile << log_timestamp << "," << get_used_hashrate(it->ct_) << "," <<
-                    get_used_power(it->ct_) << "," << get_used_energy_hash(it->ct_) <<
-                    "," << currency_info_.at(it->ct_).cs_.stock_price_eur_ << "," << it->earnings_ <<
-                    "," << it->costs_ << "," << it->profit_ << std::endl;
-        }
+        //update profit stats for this device
+        profit_calculator::best_profit_stats_global_.update_device_stats(dci_.device_id_nvml_, device_stats);
     }
 
-    void profit_calculator::update_currency_info_nanopool() {
+    void profit_calculator::update_currency_info() {
         for (auto &elem : energy_hash_info_) {
             const currency_type &ct = elem.first;
             try {
@@ -212,24 +260,31 @@ namespace frequency_scaling {
         int period_ms = system_time_now_ms - system_time_start_ms;
         double cur_hashrate = 0;
         if (current_mined_ct.has_avg_hashrate_api()) {
-            const std::pair<bool, double> &res = get_avg_pool_hashrate(current_mined_ct, user_info, period_ms);
-            if (!res.first)
-                return false;
-            cur_hashrate = res.second;
+            cur_hashrate = __get_avg_pool_hashrate(current_mined_ct, user_info, period_ms);
         } else if (current_mined_ct.has_current_hashrate_api()) {
-            const std::pair<bool, double> &res = get_current_pool_hashrate(current_mined_ct, user_info, period_ms);
-            if (!res.first)
-                return false;
-            timespan_current_pool_hashrates_.at(current_mined_ct).emplace_back(system_time_now_ms, res.second);
-            int counter = 0;
-            for (auto &elem : timespan_current_pool_hashrates_.at(current_mined_ct))
-                if (elem.first >= system_time_start_ms) {
-                    cur_hashrate += elem.second;
-                    counter++;
-                }
-            cur_hashrate = (counter == 0) ? 0 : cur_hashrate / counter;
+            cur_hashrate = __get_current_pool_hashrate(current_mined_ct, user_info, period_ms);
+            if (cur_hashrate > 0) {
+                timespan_current_pool_hashrates_.at(current_mined_ct).emplace_back(system_time_now_ms, cur_hashrate);
+                int counter = 0;
+                cur_hashrate = 0;
+                for (auto &elem : timespan_current_pool_hashrates_.at(current_mined_ct))
+                    if (elem.first >= system_time_start_ms) {
+                        cur_hashrate += elem.second;
+                        counter++;
+                    }
+                cur_hashrate = (counter == 0) ? 0 : cur_hashrate / counter;
+            }
         } else {
-            cur_hashrate = energy_hash_info_.at(current_mined_ct).optimal_configuration_online_.hashrate_;
+            cur_hashrate = __get_avg_hashrate_online_log(current_mined_ct, dci_.device_id_nvml_,
+                                                         system_time_start_ms, system_time_now_ms);
+        }
+        //
+        if (cur_hashrate <= 0) {//non-critical eg not mined long enough
+            if (cur_hashrate < 0) //critical
+                currency_blacklist_.emplace(current_mined_ct);
+            return false;
+        } else {
+            currency_blacklist_.erase(current_mined_ct);
         }
         //update hashrate
         double last_hashrate = last_profit_measurements_.at(current_mined_ct).hashrate_;
@@ -383,13 +438,13 @@ namespace frequency_scaling {
         return profit_calculator::best_profit_stats_global_;
     }
 
-    std::pair<bool, double> profit_calculator::get_avg_pool_hashrate(const currency_type &current_mined_ct,
-                                                                     const miner_user_info &user_info,
-                                                                     int period_ms) const {
+    double profit_calculator::__get_avg_pool_hashrate(const currency_type &current_mined_ct,
+                                                      const miner_user_info &user_info,
+                                                      int period_ms) const {
         try {
             //update with pool hashrates only if currency is mined >= 1h
             if (!current_mined_ct.has_avg_hashrate_api() || period_ms < current_mined_ct.avg_hashrate_min_period_ms())
-                return std::make_pair(false, 0);
+                return 0;
             const std::string &worker = user_info.worker_names_.at(dci_.device_id_nvml_);
             double avg_hashrate = get_avg_worker_hashrate(current_mined_ct,
                                                           user_info.wallet_addresses_.at(current_mined_ct),
@@ -398,24 +453,24 @@ namespace frequency_scaling {
                 LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                            "Failed to get avg profit hashrate: Worker "
                            << worker << " not available" << std::endl;
-                return std::make_pair(false, 0);
+                return -1;
             }
-            return std::make_pair(true, avg_hashrate);
+            return avg_hashrate;
         } catch (const network_error &err) {
             LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                        "Failed to get avg profit hashrate: " << err.what() << std::endl;
-            return std::make_pair(false, 0);
+            return -1;
         }
     }
 
-    std::pair<bool, double> profit_calculator::get_current_pool_hashrate(const currency_type &current_mined_ct,
-                                                                         const miner_user_info &user_info,
-                                                                         int period_ms) const {
+    double profit_calculator::__get_current_pool_hashrate(const currency_type &current_mined_ct,
+                                                          const miner_user_info &user_info,
+                                                          int period_ms) const {
         try {
             //update with pool hashrates only if currency is mined >= 1h
             if (!current_mined_ct.has_current_hashrate_api() ||
                 period_ms < current_mined_ct.current_hashrate_min_period_ms())
-                return std::make_pair(false, 0);
+                return 0;
             const std::string &worker = user_info.worker_names_.at(dci_.device_id_nvml_);
             double current_hashrate = get_current_worker_hashrate(current_mined_ct,
                                                                   user_info.wallet_addresses_.at(current_mined_ct),
@@ -424,14 +479,27 @@ namespace frequency_scaling {
                 LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                            "Failed to get current profit hashrate: Worker "
                            << worker << " not available" << std::endl;
-                return std::make_pair(false, 0);
+                return -1;
             }
-            return std::make_pair(true, current_hashrate);
+            return current_hashrate;
         } catch (const network_error &err) {
             LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                        "Failed to get current profit hashrate: " << err.what() << std::endl;
-            return std::make_pair(false, 0);
+            return -1;
         }
+    }
+
+    double profit_calculator::__get_avg_hashrate_online_log(const currency_type &current_mined_ct,
+                                                            int device_id, long long int system_time_start_ms,
+                                                            long long int system_time_end_ms) const {
+        double avg_hashrate = get_avg_hashrate_online_log(current_mined_ct, dci_.device_id_nvml_,
+                                                          system_time_start_ms, system_time_end_ms);
+        if (avg_hashrate <= 0 || !std::isfinite(avg_hashrate)) {
+            LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+                       "Failed to get online log hashrate" << std::endl;
+            return -1;
+        }
+        return avg_hashrate;
     }
 
 }

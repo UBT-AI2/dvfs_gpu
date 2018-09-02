@@ -39,16 +39,20 @@ namespace frequency_scaling {
     class best_profit_stats {
     public:
         struct device_stats {
-            device_stats(const currency_type &ct, double earnings, double costs, double power, double hashrate);
+            device_stats(const currency_type &ct, int ct_mem_clock, int ct_graph_clock, long long int system_time_ms,
+                         double stock_price_eur, double earnings, double costs, double power, double hashrate);
 
             bool operator<(const device_stats &other) const;
 
             currency_type ct_;
+            int ct_mem_clock_, ct_graph_clock_;
+            long long int system_time_ms_;
+            double stock_price_eur_;
             double earnings_, costs_, profit_;
             double power_, hashrate_, energy_hash_;
         };
 
-        void update_device_stats(int device_id, const device_stats &stats);
+        void update_device_stats(int device_id, const std::multiset<device_stats> &device_currency_stats);
 
         double get_global_earnings() const;
 
@@ -61,8 +65,8 @@ namespace frequency_scaling {
         const device_stats &get_device_stats(int device_id) const;
 
     private:
-        mutable std::mutex map_mutex_, log_mutex_;
-        std::map<int, device_stats> stats_map_;
+        mutable std::mutex map_mutex_, logfile_mutex_;
+        std::map<int, std::vector<std::multiset<device_stats>>> stats_map_;
     };
 
     class profit_calculator {
@@ -73,7 +77,7 @@ namespace frequency_scaling {
 
         void recalculate_best_currency();
 
-        void update_currency_info_nanopool();
+        void update_currency_info();
 
         bool update_opt_config_profit_hashrate(const currency_type &current_mined_ct,
                                                const miner_user_info &user_info, long long int system_time_start_ms);
@@ -114,11 +118,15 @@ namespace frequency_scaling {
         static const best_profit_stats &get_best_profit_stats_global();
 
     private:
-        std::pair<bool, double> get_avg_pool_hashrate(const currency_type &current_mined_ct,
-                                                      const miner_user_info &user_info, int period_ms) const;
+        double __get_avg_pool_hashrate(const currency_type &current_mined_ct,
+                                       const miner_user_info &user_info, int period_ms) const;
 
-        std::pair<bool, double> get_current_pool_hashrate(const currency_type &current_mined_ct,
-                                                          const miner_user_info &user_info, int period_ms) const;
+        double __get_current_pool_hashrate(const currency_type &current_mined_ct,
+                                           const miner_user_info &user_info, int period_ms) const;
+
+        double __get_avg_hashrate_online_log(const currency_type &current_mined_ct,
+                                             int device_id, long long int system_time_start_ms,
+                                             long long int system_time_end_ms) const;
 
     public:
         const int window_dur_ms_ = 6 * 3600 * 1000;
@@ -130,6 +138,7 @@ namespace frequency_scaling {
         double power_cost_kwh_;
         std::map<currency_type, std::vector<std::pair<long long int, int>>> currency_mining_timespans_;
         std::map<currency_type, std::vector<std::pair<long long int, double>>> timespan_current_pool_hashrates_;
+        std::set<currency_type> currency_blacklist_;
         static best_profit_stats best_profit_stats_global_;
     };
 

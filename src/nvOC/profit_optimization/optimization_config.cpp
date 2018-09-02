@@ -192,17 +192,33 @@ namespace frequency_scaling {
         for (const pt::ptree::value_type &array_elem : root.get_child("devices_to_use")) {
             const boost::property_tree::ptree &pt_device = array_elem.second;
             int device_id = pt_device.get<int>("index");
-            opt_config.dcis_.emplace_back(device_id, pt_device.get<int>("min_mem_oc", 1),
-                                          pt_device.get<int>("min_graph_oc", 1),
-                                          pt_device.get<int>("max_mem_oc", -1),
-                                          pt_device.get<int>("max_graph_oc", -1));
+            if (device_id >= nvmlGetNumDevices()) {
+                LOG(WARNING) << "Invalid opt_config: GPU " << device_id << " does not exist. Skipping GPU..."
+                             << std::endl;
+                continue;
+            }
+            if (pt_device.get<std::string>("name") == nvmlGetDeviceName(device_id)) {
+                opt_config.dcis_.emplace_back(device_id, pt_device.get<int>("min_mem_oc", 1),
+                                              pt_device.get<int>("min_graph_oc", 1),
+                                              pt_device.get<int>("max_mem_oc", -1),
+                                              pt_device.get<int>("max_graph_oc", -1));
+            } else {
+                LOG(WARNING) << "Invalid opt_config: GPU " << device_id
+                             << " has different type. Creating default dci..."
+                             << std::endl;
+                opt_config.dcis_.emplace_back(device_id);
+            }
             opt_config.miner_user_infos_.worker_names_.emplace(device_id, pt_device.get<std::string>("worker_name"));
         }
+        if (opt_config.dcis_.empty())
+            THROW_RUNTIME_ERROR("No device available");
         //read currencies to use
         for (const pt::ptree::value_type &array_elem : root.get_child("currencies_to_use")) {
-            if (!available_currencies.count(array_elem.first))
-                THROW_RUNTIME_ERROR(
-                        "Invalid opt_config: opt_config contains currency not available in currency config");
+            if (!available_currencies.count(array_elem.first)) {
+                LOG(WARNING) << "Invalid opt_config: Currency " + array_elem.first +
+                                " not available in currency config. Skipping currency..." << std::endl;
+                continue;
+            }
             const currency_type &ct = available_currencies.at(array_elem.first);
             const boost::property_tree::ptree &pt_currency = array_elem.second;
             const boost::property_tree::ptree &pt_opt_method_params = array_elem.second.get_child("opt_method_params");
@@ -218,6 +234,8 @@ namespace frequency_scaling {
                                                                                      opt_method_params.graph_idx_step_pct_);
             opt_config.opt_method_params_.emplace(ct, opt_method_params);
         }
+        if (opt_config.miner_user_infos_.wallet_addresses_.empty())
+            THROW_RUNTIME_ERROR("No currency available");
         return opt_config;
     }
 
