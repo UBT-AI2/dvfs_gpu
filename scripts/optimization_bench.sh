@@ -47,7 +47,7 @@ function optimization_min_hashrate_test {
 
 function exhaustive_test {
 	local DEVICE_ID=$1
-	for CURRENCY in LUX;
+	for CURRENCY in VTC RVN BTX;
 	do
 		save_call_command ./freq_exhaustive.exe $CONFIG_JSON $CURRENCY $DEVICE_ID
 		mv offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat exhaustive_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat
@@ -56,11 +56,12 @@ function exhaustive_test {
 }
 
 pushd $BIN_DIR
-for id in 0;
-do
-	optimization_test $id
-	optimization_min_hashrate_test $id 0.85
-done
-	#exhaustive_test 1
+#for id in 0;
+#do
+	#optimization_test $id
+	#optimization_min_hashrate_test $id 0.85
+#done
+	exhaustive_test 0
+	exhaustive_test 2
 popd
 
