@@ -6,6 +6,7 @@
   "devices_to_use": [
     {
       "index": "0",
+      "name": "Quadro P4000",
       "min_mem_oc": "1",
       "min_graph_oc": "-1200",
       "max_mem_oc": "-1",
@@ -14,6 +15,7 @@
     },
     {
       "index": "1",
+      "name": "TITAN X (Pascal)",
       "min_mem_oc": "1",
       "min_graph_oc": "1",
       "max_mem_oc": "-1",
@@ -22,6 +24,7 @@
     },
     {
       "index": "2",
+      "name": "GeForce GTX 1080",
       "min_mem_oc": "1",
       "min_graph_oc": "1",
       "max_mem_oc": "-1",
@@ -30,6 +33,7 @@
     },
     {
       "index": "3",
+      "name": "GeForce GTX 1080",
       "min_mem_oc": "1",
       "min_graph_oc": "1",
       "max_mem_oc": "-1",
