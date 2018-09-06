@@ -21,6 +21,7 @@ function generic_bench {
     fi
 
     max_power=$(echo "${BENCH_POWERCMD}" | awk 'BEGIN{a=0}{if ($2>0+a) a=$2} END{print a}')
+    #avg_power=$(echo "${BENCH_POWERCMD}" | awk '{ if (NR > 0) {sum += $2; n++} } END { if (n > 0) {print sum / n} else 0 }')
     avg_hashrate=$(echo "${BENCH_LOGCMD}" | eval ${hashrate_extraction_cmd})
     hashes_per_joule=$(awk "BEGIN { print ${avg_hashrate} / ${max_power} }")
 

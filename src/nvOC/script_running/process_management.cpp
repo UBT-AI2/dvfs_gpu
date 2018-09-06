@@ -43,7 +43,8 @@ namespace frequency_scaling {
         //setup signal handler
         if ((signal(SIGINT, &sig_handler) == SIG_ERR) |
             (signal(SIGABRT, &sig_handler) == SIG_ERR) |
-            (signal(SIGTERM, &sig_handler) == SIG_ERR)) {
+            (signal(SIGTERM, &sig_handler) == SIG_ERR) |
+            (signal(SIGSEGV, &sig_handler) == SIG_ERR)) {
             LOG(ERROR) << "Failed to register signal handler" << std::endl;
             return false;
         }
