@@ -176,31 +176,33 @@
         },
         {
             "currency_name": "ZEC",
-            "use_ccminer": "false",
-            "ccminer_algo": "",
-            "bench_script_path": "..\/scripts\/run_benchmark_zec_excavator.sh",
-            "mining_script_path": "..\/scripts\/start_mining_zec_excavator.sh",
+            "use_ccminer": "true",
+            "ccminer_algo": "equihash",
+            "bench_script_path": "..\/scripts\/run_benchmark_generic_ccminer.sh",
+            "mining_script_path": "..\/scripts\/start_mining_generic_ccminer.sh",
             "pool_addresses": [
-                "zec-eu2.nanopool.org:6666"
+                "eu1-zcash.flypool.org:13333",
+                "us1-zcash.flypool.org:13333",
+                "asia1-zcash.flypool.org:13333"
             ],
             "pool_pass": "x",
             "whattomine_coin_id": "166",
             "cryptocompare_fsym": "ZEC",
-            "pool_avg_hashrate_api_address": "https:\/\/api.nanopool.org\/v1\/zec\/avghashrateworkers\/%s\/%s",
-            "pool_avg_hashrate_json_path_worker_array": "data",
-            "pool_avg_hashrate_json_path_worker_name": "worker",
-            "pool_avg_hashrate_json_path_hashrate": "hashrate",
-            "pool_avg_hashrate_api_unit_factor_hashrate": "1",
-            "pool_avg_hashrate_api_unit_factor_period": "3600000",
-            "pool_current_hashrate_api_address": "",
-            "pool_current_hashrate_json_path_worker_array": "",
-            "pool_current_hashrate_json_path_worker_name": "",
-            "pool_current_hashrate_json_path_hashrate": "",
-            "pool_current_hashrate_api_unit_factor_hashrate": "-1",
-            "pool_approximated_earnings_api_address": "https:\/\/api.nanopool.org\/v1\/zec\/approximated_earnings\/%s",
-            "pool_approximated_earnings_json_path": "data.hour.coins",
-            "pool_approximated_earnings_api_unit_factor_hashrate": "1",
-            "pool_approximated_earnings_api_unit_factor_period": "1"
+            "pool_avg_hashrate_api_address": "",
+            "pool_avg_hashrate_json_path_worker_array": "",
+            "pool_avg_hashrate_json_path_worker_name": "",
+            "pool_avg_hashrate_json_path_hashrate": "",
+            "pool_avg_hashrate_api_unit_factor_hashrate": "-1",
+            "pool_avg_hashrate_api_unit_factor_period": "-1",
+            "pool_current_hashrate_api_address": "https:\/\/api-zcash.flypool.org\/miner\/%s\/workers",
+            "pool_current_hashrate_json_path_worker_array": "data",
+            "pool_current_hashrate_json_path_worker_name": "worker",
+            "pool_current_hashrate_json_path_hashrate": "currentHashrate",
+            "pool_current_hashrate_api_unit_factor_hashrate": "1",
+            "pool_approximated_earnings_api_address": "",
+            "pool_approximated_earnings_json_path": "",
+            "pool_approximated_earnings_api_unit_factor_hashrate": "-1",
+            "pool_approximated_earnings_api_unit_factor_period": "-1"
         }
     ]
 }
