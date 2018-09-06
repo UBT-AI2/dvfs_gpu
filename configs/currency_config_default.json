@@ -153,13 +153,7 @@
             "bench_script_path": "..\/scripts\/run_benchmark_xmr_xmrstak.sh",
             "mining_script_path": "..\/scripts\/start_mining_xmr_xmrstak.sh",
             "pool_addresses": [
-                "xmr-eu1.nanopool.org:14444",
                 "xmr-eu2.nanopool.org:14444",
-                "xmr-au1.nanopool.org:14444",
-                "xmr-jp1.nanopool.org:14444",
-                "xmr-us-west1.nanopool.org:14444",
-                "xmr-us-east1.nanopool.org:14444",
-                "xmr-asia1.nanopool.org:14444"
             ],
             "pool_pass": "x",
             "whattomine_coin_id": "101",
@@ -187,13 +181,7 @@
             "bench_script_path": "..\/scripts\/run_benchmark_zec_excavator.sh",
             "mining_script_path": "..\/scripts\/start_mining_zec_excavator.sh",
             "pool_addresses": [
-                "zec-eu1.nanopool.org:6666",
-                "zec-eu2.nanopool.org:6666",
-                "zec-au1.nanopool.org:6666",
-                "zec-jp1.nanopool.org:6666",
-                "zec-us-west1.nanopool.org:6666",
-                "zec-us-east1.nanopool.org:6666",
-                "zec-asia1.nanopool.org:6666"
+                "zec-eu2.nanopool.org:6666"
             ],
             "pool_pass": "x",
             "whattomine_coin_id": "166",

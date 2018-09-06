@@ -103,17 +103,33 @@ namespace frequency_scaling {
         return res;
     }
 
-    std::vector<int> nvmlGetAvailableGraphClocks(int device_id, int mem_clock) {
+    std::vector<int> nvmlGetAvailableGraphClocks(int device_id) {
         nvmlDevice_t device;
         safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
         unsigned int num_graph_clocks = BUFFER_SIZE;
         unsigned int avail_graph_clocks[BUFFER_SIZE];
-        safeNVMLCall(nvmlDeviceGetSupportedGraphicsClocks(device, mem_clock,
+        safeNVMLCall(nvmlDeviceGetSupportedGraphicsClocks(device, nvmlGetDefaultMemClock(device_id),
                                                           &num_graph_clocks, avail_graph_clocks));
         std::vector<int> res;
         res.reserve(num_graph_clocks);
         for (int i = 0; i < num_graph_clocks; i++)
             res.push_back(avail_graph_clocks[i]);
+        return res;
+    }
+
+    int nvmlGetDefaultMemClock(int device_id){
+        nvmlDevice_t device;
+        safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
+        unsigned int res;
+        safeNVMLCall(nvmlDeviceGetMaxClockInfo(device, NVML_CLOCK_MEM, &res));
+        return res;
+    }
+
+    int nvmlGetDefaultGraphClock(int device_id){
+        nvmlDevice_t device;
+        safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
+        unsigned int res;
+        safeNVMLCall(nvmlDeviceGetMaxClockInfo(device, NVML_CLOCK_GRAPHICS, &res));
         return res;
     }
 

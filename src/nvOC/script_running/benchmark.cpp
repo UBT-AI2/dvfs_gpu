@@ -43,34 +43,32 @@ namespace frequency_scaling {
                 device_id_nvapi_ << ", CUDA-Id=" << device_id_cuda_ << std::endl;
         //set default min and max frequencies
         //##############################
+        //get default clocks from nvml (no oc support requiered)
+        nvapi_default_graph_clock_ = nvmlGetDefaultGraphClock(device_id_nvml_);
+        nvapi_default_mem_clock_ = nvmlGetDefaultMemClock(device_id_nvml_);
+        //
         if (nvml_supported_)
             nvml_register_gpu(device_id_nvml);
         if (nvapi_supported_) {
             nvapi_register_gpu(device_id_nvapi_);
             const nvapi_clock_info &nvapi_ci_mem = nvapiGetMemClockInfo(device_id_nvapi_);
-            nvapi_default_mem_clock_ = nvapi_ci_mem.current_freq_;
             if (min_mem_oc > 0)
                 min_mem_oc_ = nvapi_ci_mem.min_oc_;
             if (max_mem_oc < 0)
                 max_mem_oc_ = std::min(900, nvapi_ci_mem.max_oc_);
 
             const nvapi_clock_info &nvapi_ci_graph = nvapiGetGraphClockInfo(device_id_nvapi_);
-            nvapi_default_graph_clock_ = nvapi_ci_graph.current_freq_;
             if (min_graph_oc > 0)
                 min_graph_oc_ = nvapi_ci_graph.min_oc_;
             if (max_graph_oc < 0)
                 max_graph_oc_ = std::min(100, nvapi_ci_graph.max_oc_);
         } else {
             min_mem_oc_ = max_mem_oc_ = 0;
-            nvapi_default_mem_clock_ = nvmlGetAvailableMemClocks(device_id_nvml)[0];
-            const std::vector<int> &graph_clocks = nvmlGetAvailableGraphClocks(device_id_nvml,
-                                                                               nvapi_default_mem_clock_);
-            nvapi_default_graph_clock_ = graph_clocks[0];
             max_graph_oc_ = 0;
             if (!nvml_supported_)
                 min_graph_oc_ = 0;
             else if (min_graph_oc > 0)
-                min_graph_oc_ = graph_clocks.back() - nvapi_default_graph_clock_;
+                min_graph_oc_ = nvmlGetAvailableGraphClocks(device_id_nvml).back() - nvapi_default_graph_clock_;
         }
         if (min_mem_oc_ > max_mem_oc_)
             THROW_RUNTIME_ERROR("max_mem_oc >= min_mem_oc violated");
@@ -88,7 +86,7 @@ namespace frequency_scaling {
                     nvml_graph_clocks_.push_back(nvapi_default_graph_clock_ + graph_oc);
                 }
             }
-            for (int graph_clock : nvmlGetAvailableGraphClocks(device_id_nvml, nvml_mem_clocks_[0])) {
+            for (int graph_clock : nvmlGetAvailableGraphClocks(device_id_nvml)) {
                 int graph_oc = graph_clock - nvapi_default_graph_clock_;
                 if ((min_graph_oc <= 0 && graph_oc < min_graph_oc_) ||
                     (max_graph_oc >= 0 && graph_oc > max_graph_oc_))

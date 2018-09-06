@@ -17,17 +17,22 @@ TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 //https://1vwjbxf1wko0yhnr.wordpress.com/author/2pkaqwtuqm2q7djg/
 #include "nvapiOC.h"
 #include <string>
+#include <set>
 
 #ifdef _WIN32
-
-#include <set>
 #include <sstream>
-#include <glog/logging.h>
 #include <windows.h>
-#include "../common_header/constants.h"
+#else
+
+#include <stdio.h>
+#include <X11/Xlib.h>
+#include <NVCtrl.h>
+#include <NVCtrlLib.h>
 
 #endif
 
+#include <glog/logging.h>
+#include "../common_header/constants.h"
 #include "../common_header/exceptions.h"
 
 namespace frequency_scaling {
@@ -391,35 +396,211 @@ namespace frequency_scaling {
     }
 
 #else
+    static std::set<int> registered_gpus;
+    static Display *dpy = NULL;
+
+    static void __nvapiOC(int device_id_nvapi, int graphOCMHz, int memOCMHz);
+
+    static void safeXNVCTRLCall(Bool ret, const std::string &error_msg) {
+        if (!ret) {
+            THROW_NVAPI_ERROR(error_msg);
+        }
+    }
 
     void nvapiInit() {
+        VLOG(0) << "XNVCTRL initialization..." << std::endl;
+        //Open a display connection, and make sure the NV-CONTROL X
+        //extension is present on the screen we want to use.
+        char msg[BUFFER_SIZE];
+        Bool ret;
+        int major, minor;
+        dpy = XOpenDisplay(NULL);
+
+        if (!dpy) {
+            snprintf(msg, BUFFER_SIZE, "Cannot open display '%s'.\n", XDisplayName(NULL));
+            THROW_NVAPI_ERROR(msg);
+        }
+
+        ret = XNVCTRLQueryVersion(dpy, &major, &minor);
+        if (ret != True) {
+            snprintf(msg, BUFFER_SIZE, "The NV-CONTROL X extension does not exist on '%s'.\n", XDisplayName(NULL));
+            THROW_NVAPI_ERROR(msg);
+        }
+
+        snprintf(msg, BUFFER_SIZE, "XNVCTRL initialized. Using NV-CONTROL extension %d.%d on %s\n",
+                 major, minor, XDisplayName(NULL));
+        VLOG(0) << msg << std::endl;
     }
 
     bool nvapi_register_gpu(int device_id_nvapi) {
-        THROW_NVAPI_ERROR("NVAPI not available on this platform");
+        if (!nvapiCheckSupport(device_id_nvapi)) {
+            THROW_NVAPI_ERROR("XNVCTRL register failed. GPU " + std::to_string(device_id_nvapi) +
+                              " doesnt support OC");
+        }
+        auto res = registered_gpus.emplace(device_id_nvapi);
+        if (!res.second)
+            return false;
+        char *gpu_name;
+        safeXNVCTRLCall(XNVCTRLQueryTargetStringAttribute(dpy,
+                                                          NV_CTRL_TARGET_TYPE_GPU,
+                                                          device_id_nvapi, // target_id
+                                                          0, // display_mask
+                                                          NV_CTRL_STRING_PRODUCT_NAME,
+                                                          &gpu_name), "Failed to query gpu product name");
+        VLOG(0) << "Registered XNCTRL GPU " << device_id_nvapi << "(" << gpu_name << ")" << std::endl;
+        XFree(gpu_name);
+        return true;
     }
 
     void nvapiUnload(int restoreClocks) {
+        //unload should not throw
+        VLOG(0) << "XNVCTRL unload..." << std::endl;
+        if (restoreClocks) {
+            for (int gpu : registered_gpus) {
+                try {
+                    nvapiOC(gpu, 0, 0);
+                    VLOG(0) << "XNVCTRL restored clocks for device " << gpu << std::endl;
+                } catch (const nvapi_error &ex) {
+                    LOG(ERROR) << "XNVCTRL restore clocks failed for device " << gpu << std::endl;
+                }
+            }
+        }
+        XCloseDisplay(dpy);
     }
 
     bool nvapiCheckSupport(int device_id_nvapi) {
-        return false;
+        try {
+            __nvapiOC(device_id_nvapi, 0, 0);
+            return true;
+        } catch (const nvapi_error &err) {
+            return false;
+        }
     }
 
     int nvapiGetDeviceIndexByBusId(int busId) {
+        int num_gpus;
+        safeXNVCTRLCall(XNVCTRLQueryTargetCount(dpy, NV_CTRL_TARGET_TYPE_GPU, &num_gpus),
+                        "Failed to query number of gpus");
+        for (int gpu = 0; gpu < num_gpus; gpu++) {
+            int current_busid;
+            safeXNVCTRLCall(XNVCTRLQueryTargetAttribute(dpy,
+                                                        NV_CTRL_TARGET_TYPE_GPU,
+                                                        gpu, // target_id
+                                                        0, // display_mask
+                                                        NV_CTRL_PCI_BUS,
+                                                        &current_busid),
+                            "Failed to query bus id for GPU " + std::to_string(gpu));
+            if (current_busid == busId)
+                return gpu;
+        }
         return -1;
     }
 
     nvapi_clock_info nvapiGetMemClockInfo(int device_id_nvapi) {
-        THROW_NVAPI_ERROR("NVAPI not available on this platform");
+        nvapi_clock_info res;
+        NVCTRLAttributeValidValuesRec valid_values;
+        int current_clock_freqs, current_oc;
+        safeXNVCTRLCall(XNVCTRLQueryValidTargetAttributeValues(dpy,
+                                                               NV_CTRL_TARGET_TYPE_GPU,
+                                                               device_id_nvapi,
+                                                               3,//performance level
+                                                               NV_CTRL_GPU_MEM_TRANSFER_RATE_OFFSET,
+                                                               &valid_values),
+                        "Unable to query the valid range of values for "
+                        "NV_CTRL_GPU_MEM_TRANSFER_RATE_OFFSET on GPU " +
+                        std::to_string(device_id_nvapi));
+        safeXNVCTRLCall(XNVCTRLQueryTargetAttribute(dpy,
+                                                    NV_CTRL_TARGET_TYPE_GPU,
+                                                    device_id_nvapi,
+                                                    3,//performance level
+                                                    NV_CTRL_GPU_MEM_TRANSFER_RATE_OFFSET,
+                                                    &current_oc), "Unable to query the current value for "
+                                                                  "NV_CTRL_GPU_MEM_TRANSFER_RATE_OFFSET on GPU " +
+                                                                  std::to_string(device_id_nvapi));
+        safeXNVCTRLCall(XNVCTRLQueryTargetAttribute(dpy,
+                                                    NV_CTRL_TARGET_TYPE_GPU,
+                                                    device_id_nvapi,
+                                                    0,
+                                                    NV_CTRL_GPU_CURRENT_CLOCK_FREQS,
+                                                    &current_clock_freqs), "Unable to query the current value for "
+                                                                           "NV_CTRL_GPU_CURRENT_CLOCK_FREQS on GPU " +
+                                                                           std::to_string(device_id_nvapi));
+
+
+        res.min_oc_ = valid_values.u.range.min;
+        res.max_oc_ = valid_values.u.range.max;
+        res.current_oc_ = current_oc;
+        res.current_freq_ = (current_clock_freqs & 0xffff);
+        return res;
     }
 
     nvapi_clock_info nvapiGetGraphClockInfo(int device_id_nvapi) {
-        THROW_NVAPI_ERROR("NVAPI not available on this platform");
+        nvapi_clock_info res;
+        NVCTRLAttributeValidValuesRec valid_values;
+        int current_clock_freqs, current_oc;
+        safeXNVCTRLCall(XNVCTRLQueryValidTargetAttributeValues(dpy,
+                                                               NV_CTRL_TARGET_TYPE_GPU,
+                                                               device_id_nvapi,
+                                                               3,//performance level
+                                                               NV_CTRL_GPU_NVCLOCK_OFFSET,
+                                                               &valid_values),
+                        "Unable to query the valid range of values for "
+                        "NV_CTRL_GPU_NVCLOCK_OFFSET on GPU " +
+                        std::to_string(device_id_nvapi));
+        safeXNVCTRLCall(XNVCTRLQueryTargetAttribute(dpy,
+                                                    NV_CTRL_TARGET_TYPE_GPU,
+                                                    device_id_nvapi,
+                                                    3,//performance level
+                                                    NV_CTRL_GPU_NVCLOCK_OFFSET,
+                                                    &current_oc), "Unable to query the current value for "
+                                                                  "NV_CTRL_GPU_NVCLOCK_OFFSET on GPU " +
+                                                                  std::to_string(device_id_nvapi));
+        safeXNVCTRLCall(XNVCTRLQueryTargetAttribute(dpy,
+                                                    NV_CTRL_TARGET_TYPE_GPU,
+                                                    device_id_nvapi,
+                                                    0,
+                                                    NV_CTRL_GPU_CURRENT_CLOCK_FREQS,
+                                                    &current_clock_freqs), "Unable to query the current value for "
+                                                                           "NV_CTRL_GPU_CURRENT_CLOCK_FREQS on GPU " +
+                                                                           std::to_string(device_id_nvapi));
+
+
+        res.min_oc_ = valid_values.u.range.min;
+        res.max_oc_ = valid_values.u.range.max;
+        res.current_oc_ = current_oc;
+        res.current_freq_ = (current_clock_freqs >> 16);
+        return res;
     }
 
     void nvapiOC(int device_id_nvapi, int graphOCMHz, int memOCMHz) {
-        THROW_NVAPI_ERROR("NVAPI not available on this platform");
+
+        if (!registered_gpus.count(device_id_nvapi))
+            THROW_NVAPI_ERROR("GPU " + std::to_string(device_id_nvapi) + " not registered for OC");
+
+        __nvapiOC(device_id_nvapi, graphOCMHz, memOCMHz);
+    }
+
+    static void __nvapiOC(int device_id_nvapi, int graphOCMHz, int memOCMHz) {
+        //Set mem clock offset
+        safeXNVCTRLCall(XNVCTRLSetTargetAttributeAndGetStatus(dpy,
+                                                              NV_CTRL_TARGET_TYPE_GPU,
+                                                              device_id_nvapi,
+                                                              3,//performance level
+                                                              NV_CTRL_GPU_MEM_TRANSFER_RATE_OFFSET,
+                                                              memOCMHz),
+                        "Unable to set value " + std::to_string(memOCMHz) +
+                        " for NV_CTRL_GPU_MEM_TRANSFER_RATE_OFFSET on GPU " +
+                        std::to_string(device_id_nvapi));
+        //Set graph clock offset
+        safeXNVCTRLCall(XNVCTRLSetTargetAttributeAndGetStatus(dpy,
+                                                              NV_CTRL_TARGET_TYPE_GPU,
+                                                              device_id_nvapi,
+                                                              3,//performance level
+                                                              NV_CTRL_GPU_NVCLOCK_OFFSET,
+                                                              graphOCMHz),
+                        "Unable to set value " + std::to_string(graphOCMHz) +
+                        " for NV_CTRL_GPU_NVCLOCK_OFFSET on GPU " +
+                        std::to_string(device_id_nvapi));
     }
 
 #endif
