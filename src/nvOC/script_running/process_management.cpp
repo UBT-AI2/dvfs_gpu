@@ -164,9 +164,8 @@ namespace frequency_scaling {
                 process_management::start_process("kill -- -" + std::to_string(pid), false, true, pid);
             }
 #else
-            //use negative pid to kill child processes
-            //process_management::start_process("kill -- -" + std::to_string(pid), false, true, pid);
-            kill(-pid, SIGTERM);
+            //use pkill to kill child processes
+            process_management::start_process("pkill -P " + std::to_string(pid), false, true, pid);
 #endif
         }
         catch (const process_error &ex) {
