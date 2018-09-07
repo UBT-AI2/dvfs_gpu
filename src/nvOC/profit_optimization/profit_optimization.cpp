@@ -430,6 +430,7 @@ namespace frequency_scaling {
                             //exchange frequency configurations (equal gpus have same optimal frequency configurations)
                             std::lock_guard<std::mutex> lock_all(all_mutex);
                             complete_optimization_results(opt_results, group);
+                            save_optimization_result("opt_result_tmp.json", opt_results);
                         }
                         group.cond_var_.notify_all();
                     } else {
