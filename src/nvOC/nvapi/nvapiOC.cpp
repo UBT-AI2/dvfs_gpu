@@ -409,6 +409,9 @@ namespace frequency_scaling {
 
     void nvapiInit() {
         VLOG(0) << "XNVCTRL initialization..." << std::endl;
+        if(!XInitThreads()){
+            THROW_NVAPI_ERROR("XInitThreads failed");
+        }
         //Open a display connection, and make sure the NV-CONTROL X
         //extension is present on the screen we want to use.
         char msg[BUFFER_SIZE];

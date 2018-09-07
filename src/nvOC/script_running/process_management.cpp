@@ -161,10 +161,12 @@ namespace frequency_scaling {
             }
             catch (const process_error &ex) {
                 //programm may be running in git bash
-                process_management::start_process("kill " + std::to_string(pid), false, true, pid);
+                process_management::start_process("kill -- -" + std::to_string(pid), false, true, pid);
             }
 #else
-            process_management::start_process("kill " + std::to_string(pid), false, true, pid);
+            //use negative pid to kill child processes
+            //process_management::start_process("kill -- -" + std::to_string(pid), false, true, pid);
+            kill(-pid, SIGTERM);
 #endif
         }
         catch (const process_error &ex) {

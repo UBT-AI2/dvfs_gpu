@@ -29,7 +29,11 @@ int main(int argc, char **argv) {
             available_currencies = read_currency_config(cmd_args.at("--currency_config"));
         } else {
             available_currencies = create_default_currency_config();
+#ifdef _WIN32
             write_currency_config("currency_config_default.json", available_currencies);
+#else
+            write_currency_config("currency_config_default_linux.json", available_currencies);
+#endif
         }
         //init logging stuff
         log_utils::init_logging("profit-optimization-logs", "glog-profit-optimization-", 1, argv[0]);
