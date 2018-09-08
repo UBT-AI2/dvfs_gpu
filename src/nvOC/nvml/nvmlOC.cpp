@@ -117,7 +117,7 @@ namespace frequency_scaling {
         return res;
     }
 
-    int nvmlGetDefaultMemClock(int device_id){
+    int nvmlGetDefaultMemClock(int device_id) {
         nvmlDevice_t device;
         safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
         unsigned int res;
@@ -125,7 +125,7 @@ namespace frequency_scaling {
         return res;
     }
 
-    int nvmlGetDefaultGraphClock(int device_id){
+    int nvmlGetDefaultGraphClock(int device_id) {
         nvmlDevice_t device;
         safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
         unsigned int res;

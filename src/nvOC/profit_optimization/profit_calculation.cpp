@@ -82,11 +82,9 @@ namespace frequency_scaling {
             << gpu_log_prefix(it->ct_, device_id) << "Calculated profit [eur/hour]: approximated earnings=" <<
             it->earnings_ << ", energy_cost=" << it->costs_ << ", profit=" << it->profit_ << std::endl;
             //
-            std::string filename = log_utils::get_logdir_name() + "/" +
-                                   log_utils::get_profit_stats_filename(it->ct_, device_id);
-            std::ofstream logfile(filename, std::ofstream::app);
+            std::ofstream logfile(log_utils::get_profit_stats_filename(it->ct_, device_id), std::ofstream::app);
             if (!logfile)
-                THROW_IO_ERROR("Cannot open " + filename);
+                THROW_IO_ERROR("Cannot open " + log_utils::get_profit_stats_filename(it->ct_, device_id));
             logfile << log_timestamp << "," << it->hashrate_ << "," << it->power_ << "," << it->energy_hash_ <<
                     "," << it->stock_price_eur_ << "," << it->earnings_ << "," << it->costs_ << "," << it->profit_
                     << "," << it->ct_mem_clock_ << "," << it->ct_graph_clock_ << std::endl;
@@ -99,11 +97,10 @@ namespace frequency_scaling {
             device_best_currency_stats.earnings_ << ", energy_cost=" << device_best_currency_stats.costs_ <<
             " (" << device_best_currency_stats.power_ << "W), profit=" << device_best_currency_stats.profit_
             << std::endl;
-            std::string filename = log_utils::get_logdir_name() + "/" +
-                                   log_utils::get_profit_stats_filename(device_id);
-            std::ofstream logfile(filename, std::ofstream::app);
+            //
+            std::ofstream logfile(log_utils::get_profit_stats_filename(device_id), std::ofstream::app);
             if (!logfile)
-                THROW_IO_ERROR("Cannot open " + filename);
+                THROW_IO_ERROR("Cannot open " + log_utils::get_profit_stats_filename(device_id));
             logfile << log_timestamp << "," << device_best_currency_stats.ct_.currency_name_ << ","
                     << device_best_currency_stats.hashrate_
                     << "," << device_best_currency_stats.power_ << "," << device_best_currency_stats.energy_hash_
@@ -118,11 +115,10 @@ namespace frequency_scaling {
             VLOG(0) << "Global profit stats [eur/hour]: approximated earnings=" <<
                     get_global_earnings() << ", energy_cost=" << get_global_costs() <<
                     " (" << get_global_power() << "W), profit=" << get_global_profit() << std::endl;
-            std::string filename = log_utils::get_logdir_name() + "/" +
-                                   log_utils::get_profit_stats_filename();
-            std::ofstream logfile(filename, std::ofstream::app);
+            //
+            std::ofstream logfile(log_utils::get_profit_stats_filename(), std::ofstream::app);
             if (!logfile)
-                THROW_IO_ERROR("Cannot open " + filename);
+                THROW_IO_ERROR("Cannot open " + log_utils::get_profit_stats_filename());
             logfile << log_timestamp << "," << get_global_earnings() << "," << get_global_costs() <<
                     "," << get_global_power() << "," << get_global_profit() << std::endl;
         }

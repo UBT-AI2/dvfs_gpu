@@ -409,30 +409,20 @@ namespace frequency_scaling {
 
     void nvapiInit() {
         VLOG(0) << "XNVCTRL initialization..." << std::endl;
-        if(!XInitThreads()){
+        if (!XInitThreads()) {
             THROW_NVAPI_ERROR("XInitThreads failed");
         }
         //Open a display connection, and make sure the NV-CONTROL X
         //extension is present on the screen we want to use.
-        char msg[BUFFER_SIZE];
-        Bool ret;
         int major, minor;
         dpy = XOpenDisplay(NULL);
-
         if (!dpy) {
-            snprintf(msg, BUFFER_SIZE, "Cannot open display '%s'.\n", XDisplayName(NULL));
-            THROW_NVAPI_ERROR(msg);
+            THROW_NVAPI_ERROR("Cannot open display " + std::string(XDisplayName(NULL)));
         }
-
-        ret = XNVCTRLQueryVersion(dpy, &major, &minor);
-        if (ret != True) {
-            snprintf(msg, BUFFER_SIZE, "The NV-CONTROL X extension does not exist on '%s'.\n", XDisplayName(NULL));
-            THROW_NVAPI_ERROR(msg);
-        }
-
-        snprintf(msg, BUFFER_SIZE, "XNVCTRL initialized. Using NV-CONTROL extension %d.%d on %s\n",
-                 major, minor, XDisplayName(NULL));
-        VLOG(0) << msg << std::endl;
+        safeXNVCTRLCall(XNVCTRLQueryVersion(dpy, &major, &minor),
+                        "The NV-CONTROL X extension does not exist on display " + std::string(XDisplayName(NULL)));
+        VLOG(0) << "XNVCTRL initialized. Using NV-CONTROL extension "
+                << major << "." << minor << " on display " << XDisplayName(NULL) << std::endl;
     }
 
     bool nvapi_register_gpu(int device_id_nvapi) {

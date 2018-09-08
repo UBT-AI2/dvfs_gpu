@@ -19,6 +19,7 @@
 #include "../script_running/process_management.h"
 #include "../common_header/constants.h"
 #include "../common_header/exceptions.h"
+#include "../script_running/log_utils.h"
 #include "cli_utils.h"
 
 namespace frequency_scaling {
@@ -430,7 +431,9 @@ namespace frequency_scaling {
                             //exchange frequency configurations (equal gpus have same optimal frequency configurations)
                             std::lock_guard<std::mutex> lock_all(all_mutex);
                             complete_optimization_results(opt_results, group);
-                            save_optimization_result("opt_result_tmp.json", opt_results);
+                            //save intermediate result to logdir
+                            save_optimization_result(log_utils::get_autosave_opt_result_optphase_filename(),
+                                                     opt_results);
                         }
                         group.cond_var_.notify_all();
                     } else {
@@ -529,8 +532,10 @@ namespace frequency_scaling {
         std::vector<std::thread> threads;
         std::vector<std::future<std::pair<int, device_opt_result>>> futures;
         std::mutex mutex;
-        std::condition_variable cond_var;
-        std::atomic_bool terminate = ATOMIC_VAR_INIT(false);
+        extern std::condition_variable glob_cond_var;
+        extern std::atomic_bool glob_terminate;
+        std::condition_variable &cond_var = glob_cond_var;
+        std::atomic_bool &terminate = glob_terminate;
         for (const device_clock_info &gpu_dci : opt_config.dcis_) {
             std::promise<std::pair<int, device_opt_result>> promise;
             futures.push_back(promise.get_future());
@@ -586,7 +591,9 @@ namespace frequency_scaling {
             user_in = cli_get_string("Enter filename:", "[\\w-.]+");
             save_optimization_result(user_in, opt_results_monitoringphase);
         }
-
+        //always save to logdir
+        save_optimization_result(log_utils::get_autosave_opt_result_monitorphase_filename(),
+                                 opt_results_monitoringphase);
     }
 
     void save_optimization_result(const std::string &filename,

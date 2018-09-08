@@ -39,12 +39,12 @@ set(PROFIT_OPTIMIZATION_FILES
 #
 add_library(nvapiOC_lib
         ${NVAPI_FILES})
-if(NOT WIN32)
+if (NOT WIN32)
     target_link_libraries(nvapiOC_lib
             ${XNVCTRL_LIB_NAME}
             Xext
             X11)
-endif()
+endif ()
 add_executable(nvapiOC
         nvapi/main.cpp)
 target_link_libraries(nvapiOC

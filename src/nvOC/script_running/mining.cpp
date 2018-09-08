@@ -48,12 +48,9 @@ namespace frequency_scaling {
 
     double get_avg_hashrate_online_log(const currency_type &ct, int device_id, long long int system_timestamp_start_ms,
                                        long long int system_timestamp_end_ms) {
-
-        std::string filename = log_utils::get_logdir_name() + "/" +
-                               log_utils::get_hash_log_filename(ct, device_id);
-        std::ifstream file(filename);
+        std::ifstream file(log_utils::get_hash_log_filename(ct, device_id));
         if (!file)
-            THROW_IO_ERROR("Cannot open " + filename);
+            THROW_IO_ERROR("Cannot open " + log_utils::get_hash_log_filename(ct, device_id));
         file.exceptions(std::ifstream::badbit);
         std::string line;
         std::string::size_type sz = 0;
@@ -106,11 +103,9 @@ namespace frequency_scaling {
         m.mem_oc = mem_oc;
         m.graph_oc = graph_clock - dci.nvapi_default_graph_clock_;
         //
-        std::string filename = log_utils::get_logdir_name() + "/" +
-                               log_utils::get_online_bench_filename(ct, dci.device_id_nvml_);
-        std::ofstream logfile(filename, std::ofstream::app);
+        std::ofstream logfile(log_utils::get_online_bench_filename(ct, dci.device_id_nvml_), std::ofstream::app);
         if (!logfile)
-            THROW_IO_ERROR("Cannot open " + filename);
+            THROW_IO_ERROR("Cannot open " + log_utils::get_online_bench_filename(ct, dci.device_id_nvml_));
         logfile.exceptions(std::ifstream::badbit);
         logfile << m.mem_clock_ << "," << m.graph_clock_ << "," << m.power_ << "," << m.hashrate_
                 << "," << m.energy_hash_ << "," << m.hashrate_measure_dur_ms_ << "," << system_time_start_ms

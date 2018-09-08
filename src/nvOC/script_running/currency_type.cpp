@@ -6,6 +6,7 @@
 #include <boost/property_tree/json_parser.hpp>
 #include "../common_header/exceptions.h"
 #include "../nvml/nvmlOC.h"
+#include "log_utils.h"
 
 namespace frequency_scaling {
 
@@ -112,8 +113,8 @@ namespace frequency_scaling {
 #else
             currency_type ct_zec("ZEC", true);
             ct_zec.ccminer_algo_ = "equihash";
-            ct_zec.pool_addresses_ = { "eu1-zcash.flypool.org:13333", "us1-zcash.flypool.org:13333",
-                                              "asia1-zcash.flypool.org:13333" };
+            ct_zec.pool_addresses_ = {"eu1-zcash.flypool.org:13333", "us1-zcash.flypool.org:13333",
+                                      "asia1-zcash.flypool.org:13333"};
             ct_zec.whattomine_coin_id_ = 166;
             ct_zec.cryptocompare_fsym_ = "ZEC";
             ct_zec.pool_current_hashrate_api_address_ = "https://api-zcash.flypool.org/miner/%s/workers";
@@ -259,6 +260,8 @@ namespace frequency_scaling {
                     "pool_approximated_earnings_api_unit_factor_period", -1);
             currency_config.emplace(ct.currency_name_, ct);
         }
+        //write to logdir
+        write_currency_config(log_utils::get_autosave_currency_config_filename(), currency_config);
         return currency_config;
     }
 

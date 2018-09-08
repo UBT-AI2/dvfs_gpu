@@ -23,6 +23,7 @@
 #include "../common_header/exceptions.h"
 #include "../common_header/constants.h"
 #include "cli_utils.h"
+#include "../script_running/log_utils.h"
 
 
 namespace frequency_scaling {
@@ -128,6 +129,8 @@ namespace frequency_scaling {
             user_in = cli_get_string("Enter filename:", "[\\w-.]+");
             write_config_json(user_in, opt_config);
         }
+        //always save to logdir
+        write_config_json(log_utils::get_autosave_user_config_filename(), opt_config);
         return opt_config;
     }
 
@@ -236,6 +239,8 @@ namespace frequency_scaling {
         }
         if (opt_config.miner_user_infos_.wallet_addresses_.empty())
             THROW_RUNTIME_ERROR("No currency available");
+        //always save to logdir
+        write_config_json(log_utils::get_autosave_user_config_filename(), opt_config);
         return opt_config;
     }
 

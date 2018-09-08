@@ -171,11 +171,9 @@ namespace frequency_scaling {
         //get last measurement from data file
         std::vector<double> data;
         {
-            std::string filename = log_utils::get_logdir_name() + "/" +
-                                   log_utils::get_offline_bench_filename(ct, dci.device_id_nvml_);
-            std::ifstream file(filename, std::ios_base::ate);
+            std::ifstream file(log_utils::get_offline_bench_filename(ct, dci.device_id_nvml_), std::ios_base::ate);
             if (!file)
-                THROW_IO_ERROR("Cannot open " + filename);
+                THROW_IO_ERROR("Cannot open " + log_utils::get_offline_bench_filename(ct, dci.device_id_nvml_));
             file.exceptions(std::ifstream::badbit);
             int c = 0;
             int length = file.tellg();//Get file size
@@ -225,12 +223,9 @@ namespace frequency_scaling {
 
     double get_avg_power_usage(int device_id, long long int system_timestamp_start_ms,
                                long long int system_timestamp_end_ms) {
-
-        std::string filename = log_utils::get_logdir_name() + "/" +
-                               log_utils::get_power_log_filename(device_id);
-        std::ifstream file(filename);
+        std::ifstream file(log_utils::get_power_log_filename(device_id));
         if (!file)
-            THROW_IO_ERROR("Cannot open " + filename);
+            THROW_IO_ERROR("Cannot open " + log_utils::get_power_log_filename(device_id));
         file.exceptions(std::ifstream::badbit);
         std::string line;
         std::string::size_type sz = 0;

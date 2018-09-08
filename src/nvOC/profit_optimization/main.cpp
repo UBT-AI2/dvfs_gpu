@@ -23,20 +23,16 @@ int main(int argc, char **argv) {
                                                      << std::endl;
             return 1;
         }
+        //init logging stuff
+        log_utils::init_logging("profit-optimization-logs", "glog-profit-optimization-", 1, argv[0]);
         //read currency config if given, otherwise create default one
         std::map<std::string, currency_type> available_currencies;
         if (cmd_args.count("--currency_config")) {
             available_currencies = read_currency_config(cmd_args.at("--currency_config"));
         } else {
-            available_currencies = create_default_currency_config();
-#ifdef _WIN32
-            write_currency_config("currency_config_default.json", available_currencies);
-#else
-            write_currency_config("currency_config_default_linux.json", available_currencies);
-#endif
+            write_currency_config("currency_config_default.json", create_default_currency_config());
+            available_currencies = read_currency_config("currency_config_default.json");
         }
-        //init logging stuff
-        log_utils::init_logging("profit-optimization-logs", "glog-profit-optimization-", 1, argv[0]);
         //init apis
         nvapiInit();
         nvmlInit_();

@@ -4,6 +4,9 @@
 #include "process_management.h"
 
 #include <signal.h>
+#include <string.h>
+#include <condition_variable>
+#include <atomic>
 #include <glog/logging.h>
 
 #ifdef _WIN32
@@ -25,17 +28,27 @@
 
 namespace frequency_scaling {
 
+    std::condition_variable glob_cond_var;
+    std::atomic_bool glob_terminate = ATOMIC_VAR_INIT(false);
+
     std::vector<std::pair<int, bool>> process_management::all_processes_;
     std::mutex process_management::all_processes_mutex_;
     std::map<std::pair<int, process_type>, int> process_management::gpu_background_processes_;
     std::mutex process_management::gpu_background_processes_mutex_;
 
     static void sig_handler(int signo) {
-        LOG(ERROR) << "Catched signal " << signo << ". Perform cleanup..." << std::endl;
-        process_management::kill_all_processes(false);
-        nvapiUnload(1);
-        nvmlShutdown_(true);
-        exit(1);
+        LOG(ERROR) << "Catched signal " << strsignal(signo) << std::endl;
+        if (signo != SIGTERM) {
+            LOG(ERROR) << "Perform cleanup and exit..." << std::endl;
+            process_management::kill_all_processes(false);
+            nvapiUnload(1);
+            nvmlShutdown_(true);
+            exit(1);
+        } else {
+            LOG(ERROR) << "Wait for program to terminate normally..." << std::endl;
+            glob_terminate = true;
+            glob_cond_var.notify_all();
+        }
     }
 
 
