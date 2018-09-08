@@ -18,20 +18,22 @@ TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 #include "nvapiOC.h"
 #include <string>
 #include <set>
+#include <glog/logging.h>
 
 #ifdef _WIN32
-#include <sstream>
+
+#define WIN32_LEAN_AND_MEAN
+
 #include <windows.h>
+
 #else
 
-#include <stdio.h>
 #include <X11/Xlib.h>
 #include <NVCtrl.h>
 #include <NVCtrlLib.h>
 
 #endif
 
-#include <glog/logging.h>
 #include "../common_header/constants.h"
 #include "../common_header/exceptions.h"
 
@@ -178,6 +180,8 @@ namespace frequency_scaling {
 
     static std::set<int> registered_gpus;
 
+    static void __nvapiOC(int device_id_nvapi, int graphOCMHz, int memOCMHz);
+
     static void safeNVAPICall(int result) {
         if (result != 0) {
             std::string msg("NVAPI call failed: ");
@@ -194,22 +198,6 @@ namespace frequency_scaling {
             THROW_NVAPI_ERROR("Device with index " + std::to_string(device_id_nvapi) + " doesnt exist");
         }
     }
-
-    static int __nvapiCheckSupport(int device_id_nvapi) {
-        int *hdlGPU[64] = {0}, nGPU;
-        safeNVAPICall(NvEnumPhysicalGPUs(hdlGPU, &nGPU));
-        checkDeviceId(device_id_nvapi, nGPU);
-        NV_GPU_PERF_PSTATES20_INFO_V1 pset1 = {0};
-        pset1.version = NV_GPU_PERF_PSTATES20_INFO_VER;
-        pset1.numPstates = 1;
-        pset1.numClocks = 2;
-        pset1.pstates[0].clocks[0].domainId = NVAPI_GPU_PUBLIC_CLOCK_GRAPHICS;
-        pset1.pstates[0].clocks[0].freqDelta_kHz.value = 0;
-        pset1.pstates[0].clocks[1].domainId = NVAPI_GPU_PUBLIC_CLOCK_MEMORY;
-        pset1.pstates[0].clocks[1].freqDelta_kHz.value = 0;
-        return NvSetPstates(hdlGPU[device_id_nvapi], &pset1);
-    }
-
 
     void nvapiInit() {
         VLOG(0) << "NVAPI initialization..." << std::endl;
@@ -237,65 +225,46 @@ namespace frequency_scaling {
     }
 
     bool nvapi_register_gpu(int device_id_nvapi) {
-        int check_ret = __nvapiCheckSupport(device_id_nvapi);
-        if (check_ret != 0) {
-            char msg_buf[BUFFER_SIZE];
-            NvAPI_GetErrorMessage(check_ret, msg_buf);
+        int *hdlGPU[64] = {0}, nGPU;
+        safeNVAPICall(NvEnumPhysicalGPUs(hdlGPU, &nGPU));
+        checkDeviceId(device_id_nvapi, nGPU);
+        if (!nvapiCheckSupport(device_id_nvapi)) {
             THROW_NVAPI_ERROR("NVAPI register failed. GPU " + std::to_string(device_id_nvapi) +
-                              " doesnt support OC: " + std::string(msg_buf));
+                              " doesnt support OC");
         }
         auto res = registered_gpus.emplace(device_id_nvapi);
         if (!res.second)
             return false;
-
-        int nGPU = 0, systype = 0, memsize = 0, memtype = 0, busId = 0;
-        int *hdlGPU[64] = {0};
+        //reset clocks
+        nvapiOC(device_id_nvapi, 0, 0);
+        //print gpu info
+        int memsize = 0, memtype = 0, busId = 0;
         char sysname[64] = {0}, biosname[64] = {0};
-        safeNVAPICall(NvEnumPhysicalGPUs(hdlGPU, &nGPU));
+        safeNVAPICall(NvGetName(hdlGPU[device_id_nvapi], sysname));
+        safeNVAPICall(NvGetMemSize(hdlGPU[device_id_nvapi], &memsize));
+        safeNVAPICall(NvGetMemType(hdlGPU[device_id_nvapi], &memtype));
+        safeNVAPICall(NvGetBiosName(hdlGPU[device_id_nvapi], biosname));
+        safeNVAPICall(NvAPI_GetBusId(hdlGPU[device_id_nvapi], &busId));
 
-        int idxGPU = device_id_nvapi;
-        safeNVAPICall(NvGetSysType(hdlGPU[idxGPU], &systype));
-        safeNVAPICall(NvGetName(hdlGPU[idxGPU], sysname));
-        safeNVAPICall(NvGetMemSize(hdlGPU[idxGPU], &memsize));
-        safeNVAPICall(NvGetMemType(hdlGPU[idxGPU], &memtype));
-        safeNVAPICall(NvGetBiosName(hdlGPU[idxGPU], biosname));
-        safeNVAPICall(NvAPI_GetBusId(hdlGPU[idxGPU], &busId));
-
-        std::ostringstream ss;
-        ss << "Registered NVAPI GPU " << idxGPU;
-        switch (systype) {
-            case 1:
-                ss << ", Type: Laptop";
-                break;
-            case 2:
-                ss << ", Type: Desktop";
-                break;
-            default:
-                ss << ", Type: Unknown";
-                break;
-        }
-        ss << ", Name: " << sysname;
-        ss << ", VRAM: " << (memsize / 1024) << "MB GDDR" << ((memtype <= 7) ? 3 : 5);
-        ss << ", BIOS: " << biosname << std::endl;
-        VLOG(0) << ss.str() << std::flush;
-        //
-        nvapiOC(idxGPU, 0, 0);
+        VLOG(0) << "Registered NVAPI GPU " << device_id_nvapi << ", Name: " << sysname <<
+                ", VRAM: " << (memsize / 1024) << "MB GDDR" << ((memtype <= 7) ? 3 : 5) <<
+                ", BIOS: " << biosname << ", BUS: " << busId << std::endl;
         return true;
     }
 
     void nvapiUnload(int restoreClocks) {
         //unload should not throw
-        try {
-            VLOG(0) << "NVAPI unload..." << std::endl;
-            if (restoreClocks) {
-                for (int idxGPU : registered_gpus) {
+        VLOG(0) << "NVAPI unload..." << std::endl;
+        if (restoreClocks) {
+            for (int idxGPU : registered_gpus) {
+                try {
                     nvapiOC(idxGPU, 0, 0);
                     VLOG(0) << "NVAPI restored clocks for GPU " << idxGPU << std::endl;
                 }
+                catch (const nvapi_error &ex) {
+                    LOG(ERROR) << "NVAPI failed to restore clocks for GPU " << idxGPU << std::endl;
+                }
             }
-        }
-        catch (const nvapi_error &ex) {
-            LOG(ERROR) << "NVAPI restore clocks failed" << std::endl;
         }
         //
         try {
@@ -307,7 +276,12 @@ namespace frequency_scaling {
     }
 
     bool nvapiCheckSupport(int device_id_nvapi) {
-        return __nvapiCheckSupport(device_id_nvapi) == 0;
+        try {
+            __nvapiOC(device_id_nvapi, 0, 0);
+            return true;
+        } catch (const nvapi_error &err) {
+            return false;
+        }
     }
 
     int nvapiGetDeviceIndexByBusId(int busId) {
@@ -353,12 +327,15 @@ namespace frequency_scaling {
     }
 
     void nvapiOC(int device_id_nvapi, int graphOCMHz, int memOCMHz) {
+        if (!registered_gpus.count(device_id_nvapi))
+            THROW_NVAPI_ERROR("GPU " + std::to_string(device_id_nvapi) + " not registered for OC");
+        __nvapiOC(device_id_nvapi, graphOCMHz, memOCMHz);
+    }
+
+    static void __nvapiOC(int device_id_nvapi, int graphOCMHz, int memOCMHz) {
         int *hdlGPU[64] = {0}, nGPU;
         safeNVAPICall(NvEnumPhysicalGPUs(hdlGPU, &nGPU));
         checkDeviceId(device_id_nvapi, nGPU);
-
-        if (!registered_gpus.count(device_id_nvapi))
-            THROW_NVAPI_ERROR("GPU " + std::to_string(device_id_nvapi) + " not registered for OC");
 
         //int memtype = 0;
         //safeNVAPICall(NvGetMemType(hdlGPU[idxGPU], &memtype));
@@ -433,6 +410,9 @@ namespace frequency_scaling {
         auto res = registered_gpus.emplace(device_id_nvapi);
         if (!res.second)
             return false;
+        //reset clocks
+        nvapiOC(device_id_nvapi, 0, 0);
+        //print gpu info
         char *gpu_name;
         safeXNVCTRLCall(XNVCTRLQueryTargetStringAttribute(dpy,
                                                           NV_CTRL_TARGET_TYPE_GPU,
@@ -452,9 +432,9 @@ namespace frequency_scaling {
             for (int gpu : registered_gpus) {
                 try {
                     nvapiOC(gpu, 0, 0);
-                    VLOG(0) << "XNVCTRL restored clocks for device " << gpu << std::endl;
+                    VLOG(0) << "XNVCTRL restored clocks for GPU " << gpu << std::endl;
                 } catch (const nvapi_error &ex) {
-                    LOG(ERROR) << "XNVCTRL restore clocks failed for device " << gpu << std::endl;
+                    LOG(ERROR) << "XNVCTRL failed to restore clocks for GPU " << gpu << std::endl;
                 }
             }
         }

@@ -41,7 +41,7 @@ namespace frequency_scaling {
 
     private:
         static int start_process(const std::string &cmd, bool background,
-                                 bool is_kill, int pid_to_kill, bool is_bash_cmd = true);
+                                 bool is_kill);
 
         static void remove_pid(int pid);
 

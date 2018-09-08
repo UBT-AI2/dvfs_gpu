@@ -4,12 +4,12 @@
 #include "process_management.h"
 
 #include <signal.h>
-#include <string.h>
 #include <condition_variable>
 #include <atomic>
 #include <glog/logging.h>
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
 
 #include <windows.h>
 #include <psapi.h>
@@ -26,6 +26,7 @@
 #include "../common_header/exceptions.h"
 #include "../common_header/constants.h"
 
+
 namespace frequency_scaling {
 
     std::condition_variable glob_cond_var;
@@ -37,7 +38,7 @@ namespace frequency_scaling {
     std::mutex process_management::gpu_background_processes_mutex_;
 
     static void sig_handler(int signo) {
-        LOG(ERROR) << "Catched signal " << strsignal(signo) << std::endl;
+        LOG(ERROR) << "Catched signal " << signo << std::endl;
         if (signo != SIGTERM) {
             LOG(ERROR) << "Perform cleanup and exit..." << std::endl;
             process_management::kill_all_processes(false);
@@ -168,17 +169,11 @@ namespace frequency_scaling {
     void process_management::kill_process(int pid) {
         try {
 #ifdef _WIN32
-            try {
-                process_management::start_process("taskkill /f /t /pid " + std::to_string(pid),
-                                                  false, true, pid, false);
-            }
-            catch (const process_error &ex) {
-                //programm may be running in git bash
-                process_management::start_process("kill -- -" + std::to_string(pid), false, true, pid);
-            }
+            //use taskkill to kill process and its childprocesses
+            process_management::start_process("taskkill //f //t //pid " + std::to_string(pid), false, true);
 #else
-            //use pkill to kill child processes
-            process_management::start_process("pkill -P " + std::to_string(pid), false, true, pid);
+            //use pkill to kill process and its childprocesses
+            process_management::start_process("pkill -P " + std::to_string(pid), false, true);
 #endif
         }
         catch (const process_error &ex) {
@@ -189,15 +184,15 @@ namespace frequency_scaling {
     }
 
     int process_management::start_process(const std::string &cmd, bool background) {
-        return process_management::start_process(cmd, background, false, -1);
+        return process_management::start_process(cmd, background, false);
     }
 
     int process_management::start_process(const std::string &cmd, bool background,
-                                          bool is_kill, int pid_to_kill, bool is_bash_cmd) {
+                                          bool is_kill) {
 #ifdef _WIN32
         STARTUPINFO startup_info = {sizeof(startup_info)};
         PROCESS_INFORMATION pi;
-        std::string full_cmd = (is_bash_cmd) ? "bash -c '" + cmd + "'" : cmd;
+        std::string full_cmd = "bash -c '" + cmd + "'";
 
         if (CreateProcess(NULL,
                           &full_cmd[0],

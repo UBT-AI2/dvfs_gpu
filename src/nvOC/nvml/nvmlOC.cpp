@@ -39,34 +39,34 @@ namespace frequency_scaling {
         auto res = registered_gpus.emplace(device_id);
         if (!res.second)
             return false;
-
+        //reset clocks
         nvmlDevice_t device;
-        char name[BUFFER_SIZE];
-        nvmlPciInfo_t pci;
-        // Query for device handle to perform operations on a device
         safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
-        safeNVMLCall(nvmlDeviceGetName(device, name, BUFFER_SIZE));
-        // pci.busId is very useful to know which device physically you're talking to
-        // Using PCI identifier you can also match nvmlDevice handle to CUDA device.
-        safeNVMLCall(nvmlDeviceGetPciInfo(device, &pci));
-        VLOG(0) << "Registered NVML GPU " << device_id << ": " << name << " [" << pci.busId << "]" << std::endl;
-
         //enable persistence mode
         //safeNVMLCall(nvmlDeviceSetPersistenceMode(device, 1));
         //disable auto boosting of clocks (for hardware < pascal)
         //safeNVMLCall(nvmlDeviceSetDefaultAutoBoostedClocksEnabled(device, 0, 0));
         //safeNVMLCall(nvmlDeviceSetAutoBoostedClocksEnabled(device, 0));
-
         safeNVMLCall(nvmlDeviceResetApplicationsClocks(device));
+
+        //print gpu info
+        char name[BUFFER_SIZE];
+        nvmlPciInfo_t pci;
+        // Query for device handle to perform operations on a device
+        safeNVMLCall(nvmlDeviceGetName(device, name, BUFFER_SIZE));
+        // pci.busId is very useful to know which device physically you're talking to
+        // Using PCI identifier you can also match nvmlDevice handle to CUDA device.
+        safeNVMLCall(nvmlDeviceGetPciInfo(device, &pci));
+        VLOG(0) << "Registered NVML GPU " << device_id << ": " << name << " [" << pci.busId << "]" << std::endl;
         return true;
     }
 
     void nvmlShutdown_(bool restoreClocks) {
         //shutdown should never throw
-        try {
-            VLOG(0) << "NVML shutdown..." << std::endl;
-            if (restoreClocks) {
-                for (int device_id : registered_gpus) {
+        VLOG(0) << "NVML shutdown..." << std::endl;
+        if (restoreClocks) {
+            for (int device_id : registered_gpus) {
+                try {
                     nvmlDevice_t device;
                     // Query for device handle to perform operations on a device
                     safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
@@ -74,11 +74,12 @@ namespace frequency_scaling {
                     VLOG(0) << "NVML restored clocks for GPU " << device_id << std::endl;
                     //safeNVMLCall(nvmlDeviceSetDefaultAutoBoostedClocksEnabled(device, 1, 0));
                     //safeNVMLCall(nvmlDeviceSetAutoBoostedClocksEnabled(device, 1));
+                } catch (const nvml_error &ex) {
+                    LOG(ERROR) << "NVML failed to restore clocks for GPU " << device_id << std::endl;
                 }
             }
-        } catch (const nvml_error &ex) {
-            LOG(ERROR) << "NVML restore clocks failed" << std::endl;
         }
+
         try {
             safeNVMLCall(nvmlShutdown());
         } catch (const nvml_error &ex) {
