@@ -1,5 +1,4 @@
 #include "freq_hill_climbing.h"
-
 #include <random>
 #include <chrono>
 #include <glog/logging.h>

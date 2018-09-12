@@ -2,7 +2,6 @@
 // Created by Alex on 12.05.2018.
 //
 #include "benchmark.h"
-
 #include <string.h>
 #include <cmath>
 #include <fstream>
@@ -29,10 +28,12 @@ namespace frequency_scaling {
         nvml_supported_ = nvmlCheckOCSupport(device_id_nvml);
         device_id_nvapi_ = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id_nvml));
         nvapi_supported_ = (device_id_nvapi_ < 0) ? false : nvapiCheckSupport(device_id_nvapi_);
-        VLOG(0) << gpu_log_prefix(device_id_nvml) << "NVAPI support: " << ((nvapi_supported_) ? "Yes. " : "No. ") <<
-                "NVML support: " << ((nvml_supported_) ? "Yes" : "No. ") << std::endl;
+        VLOG(0)
+        << log_utils::gpu_log_prefix(device_id_nvml) << "NVAPI support: " << ((nvapi_supported_) ? "Yes. " : "No. ") <<
+        "NVML support: " << ((nvml_supported_) ? "Yes" : "No. ") << std::endl;
         LOG_IF(WARNING, !nvapi_supported_ && !nvml_supported_)
-        << gpu_log_prefix(device_id_nvml) << "NVML and NVAPI not supported: Frequency optimization not possible"
+        << log_utils::gpu_log_prefix(device_id_nvml)
+        << "NVML and NVAPI not supported: Frequency optimization not possible"
         << std::endl;
         CUresult res = cuDeviceGetByPCIBusId(&device_id_cuda_, nvmlGetBusIdString(device_id_nvml).c_str());
         if (res == CUDA_ERROR_NOT_INITIALIZED) {
@@ -114,7 +115,8 @@ namespace frequency_scaling {
 
     measurement::measurement(int mem_clock, int graph_clock, double power, double hashrate) :
             mem_clock_(mem_clock), graph_clock_(graph_clock), power_(power),
-            hashrate_(hashrate), energy_hash_((power == 0) ? std::numeric_limits<double>::lowest() : hashrate / power),
+            hashrate_(hashrate),
+            energy_hash_((power == 0) ? std::numeric_limits<double>::lowest() : hashrate / power),
             nvml_graph_clock_idx(-1), mem_oc(0), graph_oc(0) {}
 
 
@@ -146,12 +148,22 @@ namespace frequency_scaling {
         return true;
     }
 
+
     static measurement run_benchmark_script(const currency_type &ct, const device_clock_info &dci,
                                             int graph_clock, int mem_clock) {
         {
-            VLOG(1) << gpu_log_prefix(ct, dci.device_id_nvml_) <<
+            VLOG(1) << log_utils::gpu_log_prefix(ct, dci.device_id_nvml_) <<
                     "Running offline benchmark with clocks: mem=" << mem_clock << ",graph=" << graph_clock
                     << std::endl;
+            if (!log_utils::check_file_existance(
+                    log_utils::get_offline_bench_filename(ct, dci.device_id_nvml_))) {
+                std::ofstream logfile(log_utils::get_offline_bench_filename(ct, dci.device_id_nvml_));
+                if (!logfile)
+                    THROW_IO_ERROR(
+                            "Cannot open " + log_utils::get_offline_bench_filename(ct, dci.device_id_nvml_));
+                logfile << "#mem_clock,graph_clock,power,hashrate,energy_hash,bench_duration,timestamp"
+                        << std::endl;
+            }
             //run benchmark script to get measurement
             char cmd[BUFFER_SIZE];
             if (ct.use_ccminer_) {
@@ -171,7 +183,8 @@ namespace frequency_scaling {
         //get last measurement from data file
         std::vector<double> data;
         {
-            std::ifstream file(log_utils::get_offline_bench_filename(ct, dci.device_id_nvml_), std::ios_base::ate);
+            std::ifstream file(log_utils::get_offline_bench_filename(ct, dci.device_id_nvml_),
+                               std::ios_base::ate);
             if (!file)
                 THROW_IO_ERROR("Cannot open " + log_utils::get_offline_bench_filename(ct, dci.device_id_nvml_));
             file.exceptions(std::ifstream::badbit);
@@ -195,8 +208,9 @@ namespace frequency_scaling {
         }
         //
         if (data.size() < 6) {
-            LOG(ERROR) << gpu_log_prefix(ct, dci.device_id_nvml_) <<
-                       "Offline benchmark with clocks : mem=" << mem_clock << ",graph=" << graph_clock << " failed"
+            LOG(ERROR) << log_utils::gpu_log_prefix(ct, dci.device_id_nvml_) <<
+                       "Offline benchmark with clocks : mem=" << mem_clock << ",graph=" << graph_clock
+                       << " failed"
                        << std::endl;
             //return invalid measurement
             return measurement(mem_clock, graph_clock, 0, 0);
@@ -264,7 +278,8 @@ namespace frequency_scaling {
             nvmlOC(dci.device_id_nvml_, graph_clock, dci.nvml_mem_clocks_[0]);
         } else {
             if (mem_oc != 0 || nvml_graph_clock_idx != 0)
-                THROW_RUNTIME_ERROR("mem_oc != 0 or graph_clock_idx != 0 although nvapi and nvml not supported");
+                THROW_RUNTIME_ERROR(
+                        "mem_oc != 0 or graph_clock_idx != 0 although nvapi and nvml not supported");
         }
     }
 
@@ -282,5 +297,4 @@ namespace frequency_scaling {
         m.graph_oc = graph_clock - dci.nvapi_default_graph_clock_;
         return m;
     }
-
 }

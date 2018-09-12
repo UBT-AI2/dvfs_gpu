@@ -2,9 +2,9 @@
 // Created by Alex on 16.06.2018.
 //
 #include "cli_utils.h"
-
 #include <limits>
 #include <regex>
+#include <glog/logging.h>
 #include "../common_header/fullexpr_accum.h"
 
 
@@ -12,14 +12,14 @@ namespace frequency_scaling {
 
     std::string cli_get_string(const std::string &user_msg,
                                const std::string &regex_to_match) {
-        full_expression_accumulator<>(std::cout) << user_msg << std::endl;
+        fullexpr_accum<>(std::cout) << user_msg << std::endl;
         std::string str;
         while (std::cin >> str) {
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             if (std::regex_match(str, std::regex(regex_to_match)))
                 return str;
-            full_expression_accumulator<>(std::cout) << "Invalid input. Try again." << std::endl;
-            full_expression_accumulator<>(std::cout) << user_msg << std::endl;
+            fullexpr_accum<>(std::cout) << "Invalid input. Try again." << std::endl;
+            fullexpr_accum<>(std::cout) << user_msg << std::endl;
         }
         return "";
     }
@@ -44,6 +44,14 @@ namespace frequency_scaling {
                 } else {
                     res.emplace(arg.substr(0, pos), "");
                 }
+            } else if (std::regex_match(arg, std::regex("-[\\w-]+"))) {
+                if (i + 1 < argc && !std::regex_match(argv[i + 1], std::regex("-[\\w-]+(=[\\w-./]+)?")))
+                    res.emplace(arg, argv[++i]);
+                else
+                    res.emplace(arg, "");
+            } else {
+                LOG(ERROR) << "Cmd parsing: Argument " <<
+                           arg << " not recognized" << std::endl;
             }
         }
         return res;

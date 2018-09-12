@@ -7,7 +7,7 @@
 namespace frequency_scaling {
 
     struct device_clock_info {
-        device_clock_info(int device_id_nvml);
+        explicit device_clock_info(int device_id_nvml);
 
         device_clock_info(int device_id_nvml, int min_mem_oc, int min_graph_oc,
                           int max_mem_oc, int max_graph_oc);
@@ -43,6 +43,7 @@ namespace frequency_scaling {
 
     typedef std::function<measurement(const currency_type &, const device_clock_info &, int, int)> benchmark_func;
 
+
     bool start_power_monitoring_script(int device_id, int interval_sleep_ms = 200);
 
     bool stop_power_monitoring_script(int device_id);
@@ -56,5 +57,6 @@ namespace frequency_scaling {
     measurement
     run_benchmark_mining_offline(const currency_type &ct, const device_clock_info &dci, int mem_oc,
                                  int nvml_graph_clock_idx);
+
 
 }

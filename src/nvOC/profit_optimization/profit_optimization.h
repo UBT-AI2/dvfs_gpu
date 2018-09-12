@@ -3,8 +3,8 @@
 #include <string>
 #include "../script_running/benchmark.h"
 #include "../script_running/mining.h"
+#include "../script_running/optimization_config.h"
 #include "profit_calculation.h"
-#include "optimization_config.h"
 
 namespace frequency_scaling {
 

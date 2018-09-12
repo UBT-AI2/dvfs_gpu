@@ -2,7 +2,6 @@
 // Created by alex on 30.05.18.
 //
 #include "process_management.h"
-
 #include <signal.h>
 #include <condition_variable>
 #include <atomic>
@@ -218,7 +217,8 @@ namespace frequency_scaling {
                 if (exit_code != 0) {
                     CloseHandle(pi.hThread);
                     CloseHandle(pi.hProcess);
-                    THROW_PROCESS_ERROR("Process " + cmd + " returned invalid exit code: " + std::to_string(exit_code));
+                    THROW_PROCESS_ERROR(
+                            "Process " + cmd + " returned invalid exit code: " + std::to_string(exit_code));
                 }
             }
             //CloseHandle(pi.hThread);

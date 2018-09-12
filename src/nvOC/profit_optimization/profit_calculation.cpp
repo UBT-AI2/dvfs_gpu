@@ -1,5 +1,4 @@
 #include "profit_calculation.h"
-
 #include <cmath>
 #include <limits>
 #include <chrono>
@@ -75,16 +74,23 @@ namespace frequency_scaling {
         std::lock_guard<std::mutex> lock(logfile_mutex_);
         //print and log device local profit stats for each currency sorted by profit descending
         for (auto it = device_currency_stats.rbegin(); it != device_currency_stats.rend(); ++it) {
-            VLOG(1) << gpu_log_prefix(it->ct_, device_id) << "Profit calculation using: hashrate=" <<
+            VLOG(1) << log_utils::gpu_log_prefix(it->ct_, device_id) << "Profit calculation using: hashrate=" <<
                     it->hashrate_ << ", power=" << it->power_ << ", energy_hash=" << it->energy_hash_ <<
                     ", stock_price=" << it->stock_price_eur_ << std::endl;
             VLOG(1)
-            << gpu_log_prefix(it->ct_, device_id) << "Calculated profit [eur/hour]: approximated earnings=" <<
+            << log_utils::gpu_log_prefix(it->ct_, device_id) << "Calculated profit [eur/hour]: approximated earnings="
+            <<
             it->earnings_ << ", energy_cost=" << it->costs_ << ", profit=" << it->profit_ << std::endl;
             //
+            bool write_csv_header = !log_utils::check_file_existance(
+                    log_utils::get_profit_stats_filename(it->ct_, device_id));
             std::ofstream logfile(log_utils::get_profit_stats_filename(it->ct_, device_id), std::ofstream::app);
             if (!logfile)
                 THROW_IO_ERROR("Cannot open " + log_utils::get_profit_stats_filename(it->ct_, device_id));
+            if (write_csv_header)
+                logfile
+                        << "#timestamp,hashrate,power,energy_hash,stock_price,earnings,costs,profit,mem_clock,graph_clock"
+                        << std::endl;
             logfile << log_timestamp << "," << it->hashrate_ << "," << it->power_ << "," << it->energy_hash_ <<
                     "," << it->stock_price_eur_ << "," << it->earnings_ << "," << it->costs_ << "," << it->profit_
                     << "," << it->ct_mem_clock_ << "," << it->ct_graph_clock_ << std::endl;
@@ -92,15 +98,20 @@ namespace frequency_scaling {
         //print and log best device local profit stats
         {
             VLOG(0)
-            << gpu_log_prefix(device_id) << "Local profit stats [eur/hour]: currency="
+            << log_utils::gpu_log_prefix(device_id) << "Local profit stats [eur/hour]: currency="
             << device_best_currency_stats.ct_.currency_name_ << ", approximated earnings=" <<
             device_best_currency_stats.earnings_ << ", energy_cost=" << device_best_currency_stats.costs_ <<
             " (" << device_best_currency_stats.power_ << "W), profit=" << device_best_currency_stats.profit_
             << std::endl;
             //
+            bool write_csv_header = !log_utils::check_file_existance(log_utils::get_profit_stats_filename(device_id));
             std::ofstream logfile(log_utils::get_profit_stats_filename(device_id), std::ofstream::app);
             if (!logfile)
                 THROW_IO_ERROR("Cannot open " + log_utils::get_profit_stats_filename(device_id));
+            if (write_csv_header)
+                logfile
+                        << "#timestamp,currency_name,hashrate,power,energy_hash,stock_price,earnings,costs,profit,mem_clock,graph_clock"
+                        << std::endl;
             logfile << log_timestamp << "," << device_best_currency_stats.ct_.currency_name_ << ","
                     << device_best_currency_stats.hashrate_
                     << "," << device_best_currency_stats.power_ << "," << device_best_currency_stats.energy_hash_
@@ -116,9 +127,12 @@ namespace frequency_scaling {
                     get_global_earnings() << ", energy_cost=" << get_global_costs() <<
                     " (" << get_global_power() << "W), profit=" << get_global_profit() << std::endl;
             //
+            bool write_csv_header = !log_utils::check_file_existance(log_utils::get_profit_stats_filename());
             std::ofstream logfile(log_utils::get_profit_stats_filename(), std::ofstream::app);
             if (!logfile)
                 THROW_IO_ERROR("Cannot open " + log_utils::get_profit_stats_filename());
+            if (write_csv_header)
+                logfile << "#timestamp,earnings,costs,power,profit" << std::endl;
             logfile << log_timestamp << "," << get_global_earnings() << "," << get_global_costs() <<
                     "," << get_global_power() << "," << get_global_profit() << std::endl;
         }
@@ -194,14 +208,14 @@ namespace frequency_scaling {
         for (auto &elem : energy_hash_info_) {
             const currency_type &ct = elem.first;
             if (currency_blacklist_.count(ct)) {
-                LOG(WARNING) << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
+                LOG(WARNING) << log_utils::gpu_log_prefix(ct, dci_.device_id_nvml_) <<
                              "Skipping profit calculation: Currency on blacklist (probably pool or miner down)"
                              << std::endl;
                 continue;
             }
             auto it_ci = currency_info_.find(ct);
             if (it_ci == currency_info_.end()) {
-                LOG(WARNING) << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
+                LOG(WARNING) << log_utils::gpu_log_prefix(ct, dci_.device_id_nvml_) <<
                              "Skipping profit calculation: No currency info available" << std::endl;
                 continue;
             }
@@ -239,10 +253,10 @@ namespace frequency_scaling {
                 }
                 currency_info_.erase(ct);
                 currency_info_.emplace(ct, currency_info(ct, approximated_earnings, used_hashrate, cs));
-                VLOG(1) << gpu_log_prefix(ct, dci_.device_id_nvml_) << "Update currency info using hashrate "
+                VLOG(1) << log_utils::gpu_log_prefix(ct, dci_.device_id_nvml_) << "Update currency info using hashrate "
                         << used_hashrate << std::endl;
             } catch (const network_error &err) {
-                LOG(ERROR) << gpu_log_prefix(ct, dci_.device_id_nvml_) <<
+                LOG(ERROR) << log_utils::gpu_log_prefix(ct, dci_.device_id_nvml_) <<
                            "Failed to update currency info: " << err.what() << std::endl;
             }
         }
@@ -291,7 +305,7 @@ namespace frequency_scaling {
                               (last_period_ms / (double) total_period_ms) * last_hashrate;
         energy_hash_info_.at(current_mined_ct).optimal_configuration_profit_.update_hashrate(new_hashrate,
                                                                                              total_period_ms);
-        VLOG(1) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+        VLOG(1) << log_utils::gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                 "Updated avg profit hashrate: " << new_hashrate << std::endl;
         return true;
     }
@@ -303,7 +317,7 @@ namespace frequency_scaling {
         //update power
         double cur_power = get_avg_power_usage(dci_.device_id_nvml_, system_time_start_ms, system_time_now_ms);
         if (cur_power <= 0 || !std::isfinite(cur_power)) {
-            LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+            LOG(ERROR) << log_utils::gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                        "Failed to get avg profit power" << std::endl;
             return false;
         }
@@ -314,7 +328,7 @@ namespace frequency_scaling {
         double new_power = (cur_period_ms / (double) total_period_ms) * cur_power +
                            (last_period_ms / (double) total_period_ms) * last_power;
         energy_hash_info_.at(current_mined_ct).optimal_configuration_profit_.update_power(new_power, total_period_ms);
-        VLOG(1) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+        VLOG(1) << log_utils::gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                 "Update profit power: " << new_power << std::endl;
         return true;
     }
@@ -330,7 +344,7 @@ namespace frequency_scaling {
             ehi.optimal_configuration_profit_.update_hashrate(new_config_online.hashrate_, 0);
         if (ehi.optimal_configuration_profit_.power_measure_dur_ms_ <= 0)
             ehi.optimal_configuration_profit_.update_power(new_config_online.power_, 0);
-        VLOG(1) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+        VLOG(1) << log_utils::gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                 "Update opt_config_online" << std::endl;
     }
 
@@ -425,7 +439,8 @@ namespace frequency_scaling {
             for (auto &dur : elem.second)
                 ct_total_dur += dur.second;
             VLOG(log_level)
-            << gpu_log_prefix(elem.first, dci_.device_id_nvml_) << "Currency mining duration: last_period=" <<
+            << log_utils::gpu_log_prefix(elem.first, dci_.device_id_nvml_) << "Currency mining duration: last_period="
+            <<
             ct_period_dur / (3600 * 1000.0) << "h, total=" << ct_total_dur / (3600 * 1000.0) << "h" << std::endl;
         }
     }
@@ -443,17 +458,18 @@ namespace frequency_scaling {
                 return 0;
             const std::string &worker = user_info.worker_names_.at(dci_.device_id_nvml_);
             double avg_hashrate = get_avg_worker_hashrate(current_mined_ct,
-                                                          user_info.wallet_addresses_.at(current_mined_ct),
+                                                          user_info.wallet_addresses_.at(
+                                                                  current_mined_ct),
                                                           worker, period_ms);
             if (avg_hashrate <= 0 || !std::isfinite(avg_hashrate)) {
-                LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+                LOG(ERROR) << log_utils::gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                            "Failed to get avg profit hashrate: Worker "
                            << worker << " not available" << std::endl;
                 return -1;
             }
             return avg_hashrate;
         } catch (const network_error &err) {
-            LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+            LOG(ERROR) << log_utils::gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                        "Failed to get avg profit hashrate: " << err.what() << std::endl;
             return -1;
         }
@@ -469,17 +485,18 @@ namespace frequency_scaling {
                 return 0;
             const std::string &worker = user_info.worker_names_.at(dci_.device_id_nvml_);
             double current_hashrate = get_current_worker_hashrate(current_mined_ct,
-                                                                  user_info.wallet_addresses_.at(current_mined_ct),
+                                                                  user_info.wallet_addresses_.at(
+                                                                          current_mined_ct),
                                                                   worker, period_ms);
             if (current_hashrate <= 0 || !std::isfinite(current_hashrate)) {
-                LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+                LOG(ERROR) << log_utils::gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                            "Failed to get current profit hashrate: Worker "
                            << worker << " not available" << std::endl;
                 return -1;
             }
             return current_hashrate;
         } catch (const network_error &err) {
-            LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+            LOG(ERROR) << log_utils::gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                        "Failed to get current profit hashrate: " << err.what() << std::endl;
             return -1;
         }
@@ -491,7 +508,7 @@ namespace frequency_scaling {
         double avg_hashrate = get_avg_hashrate_online_log(current_mined_ct, dci_.device_id_nvml_,
                                                           system_time_start_ms, system_time_end_ms);
         if (avg_hashrate <= 0 || !std::isfinite(avg_hashrate)) {
-            LOG(ERROR) << gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
+            LOG(ERROR) << log_utils::gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                        "Failed to get online log hashrate" << std::endl;
             return -1;
         }

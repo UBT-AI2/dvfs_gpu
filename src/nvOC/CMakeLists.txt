@@ -16,24 +16,20 @@ set(SCRIPT_RUNNING_FILES
         script_running/process_management.h script_running/process_management.cpp
         script_running/log_utils.h script_running/log_utils.cpp
         script_running/network_requests.h script_running/network_requests.cpp
+        script_running/optimization_config.h script_running/optimization_config.cpp
+        script_running/cli_utils.h script_running/cli_utils.cpp
         ${COMMON_HEADER})
 set(FREQ_EXHAUSTIVE_FILES
         freq_exhaustive/freq_exhaustive.h freq_exhaustive/freq_exhaustive.cpp
         ${COMMON_HEADER})
-set(FREQ_HILL_CLIMBING_FILES
-        freq_hill_climbing/freq_hill_climbing.h freq_hill_climbing/freq_hill_climbing.cpp
-        ${COMMON_HEADER})
-set(FREQ_NELDER_MEAD_FILES
-        freq_nelder_mead/freq_nelder_mead.h freq_nelder_mead/freq_nelder_mead.cpp
-        ${COMMON_HEADER})
-set(FREQ_SIMULATED_ANNEALING_FILES
-        freq_simulated_annealing/freq_simulated_annealing.h freq_simulated_annealing/freq_simulated_annealing.cpp
+set(FREQ_OPTIMIZATION_FILES
+        freq_optimization/freq_simulated_annealing.h freq_optimization/freq_simulated_annealing.cpp
+        freq_optimization/freq_nelder_mead.h freq_optimization/freq_nelder_mead.cpp
+        freq_optimization/freq_hill_climbing.h freq_optimization/freq_hill_climbing.cpp
         ${COMMON_HEADER})
 set(PROFIT_OPTIMIZATION_FILES
         profit_optimization/profit_calculation.h profit_optimization/profit_calculation.cpp
         profit_optimization/profit_optimization.h profit_optimization/profit_optimization.cpp
-        profit_optimization/optimization_config.h profit_optimization/optimization_config.cpp
-        profit_optimization/cli_utils.h profit_optimization/cli_utils.cpp
         ${COMMON_HEADER})
 
 #
@@ -94,42 +90,20 @@ target_link_libraries(freq_exhaustive
         freq_exhaustive_lib)
 
 #
-add_library(freq_hill_climbing_lib
-        ${FREQ_HILL_CLIMBING_FILES})
-target_link_libraries(freq_hill_climbing_lib
+add_library(freq_optimization_lib
+        ${FREQ_OPTIMIZATION_FILES})
+target_link_libraries(freq_optimization_lib
         script_running_lib)
-add_executable(freq_hill_climbing
-        freq_hill_climbing/main.cpp)
-target_link_libraries(freq_hill_climbing
-        freq_hill_climbing_lib)
-
-#
-add_library(freq_nelder_mead_lib
-        ${FREQ_NELDER_MEAD_FILES})
-target_link_libraries(freq_nelder_mead_lib
-        script_running_lib)
-add_executable(freq_nelder_mead
-        freq_nelder_mead/main.cpp)
-target_link_libraries(freq_nelder_mead
-        freq_nelder_mead_lib)
-
-#
-add_library(freq_simulated_annealing_lib
-        ${FREQ_SIMULATED_ANNEALING_FILES})
-target_link_libraries(freq_simulated_annealing_lib
-        script_running_lib
-        freq_hill_climbing_lib)
-add_executable(freq_simulated_annealing
-        freq_simulated_annealing/main.cpp)
-target_link_libraries(freq_simulated_annealing
-        freq_simulated_annealing_lib)
+add_executable(freq_optimization
+        freq_optimization/main.cpp)
+target_link_libraries(freq_optimization
+        freq_optimization_lib)
 
 #
 add_library(profit_optimization_lib
         ${PROFIT_OPTIMIZATION_FILES})
 target_link_libraries(profit_optimization_lib
-        freq_simulated_annealing_lib
-        freq_nelder_mead_lib)
+        freq_optimization_lib)
 add_executable(profit_optimization
         profit_optimization/main.cpp)
 target_link_libraries(profit_optimization

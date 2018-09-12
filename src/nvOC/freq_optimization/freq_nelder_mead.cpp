@@ -1,5 +1,4 @@
 #include "freq_nelder_mead.h"
-
 #include <random>
 #include <chrono>
 #include <glog/logging.h>

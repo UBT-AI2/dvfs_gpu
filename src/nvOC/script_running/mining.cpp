@@ -2,7 +2,6 @@
 // Created by alex on 16.05.18.
 //
 #include "mining.h"
-
 #include <regex>
 #include <thread>
 #include <fstream>
@@ -16,7 +15,8 @@
 namespace frequency_scaling {
 
 
-    bool start_mining_script(const currency_type &ct, const device_clock_info &dci, const miner_user_info &user_info) {
+    bool start_mining_script(const currency_type &ct, const device_clock_info &dci,
+                             const miner_user_info &user_info) {
         const std::string &wallet_addr = user_info.wallet_addresses_.at(ct);
         const std::string &worker_name = user_info.worker_names_.at(dci.device_id_nvml_);
         std::string pool_csv;
@@ -46,8 +46,9 @@ namespace frequency_scaling {
     }
 
 
-    double get_avg_hashrate_online_log(const currency_type &ct, int device_id, long long int system_timestamp_start_ms,
-                                       long long int system_timestamp_end_ms) {
+    double
+    get_avg_hashrate_online_log(const currency_type &ct, int device_id, long long int system_timestamp_start_ms,
+                                long long int system_timestamp_end_ms) {
         std::ifstream file(log_utils::get_hash_log_filename(ct, device_id));
         if (!file)
             THROW_IO_ERROR("Cannot open " + log_utils::get_hash_log_filename(ct, device_id));
@@ -78,7 +79,7 @@ namespace frequency_scaling {
             int nvml_graph_clock_idx) {
         int mem_clock = dci.nvapi_default_mem_clock_ + mem_oc;
         int graph_clock = dci.nvml_graph_clocks_[nvml_graph_clock_idx];
-        VLOG(1) << gpu_log_prefix(ct, dci.device_id_nvml_) <<
+        VLOG(1) << log_utils::gpu_log_prefix(ct, dci.device_id_nvml_) <<
                 "Running online benchmark with clocks: mem=" << mem_clock << ",graph=" << graph_clock
                 << std::endl;
         //change graph and mem clocks and start mining
@@ -91,7 +92,8 @@ namespace frequency_scaling {
         //get power and hashrate and stop mining
         long long int system_time_now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count();
-        double power = get_avg_power_usage(dci.device_id_nvml_, system_time_start_ms, system_time_now_ms);
+        double power = get_avg_power_usage(dci.device_id_nvml_, system_time_start_ms,
+                                           system_time_now_ms);
         double hashrate = hashrate_func(ct, dci.device_id_nvml_, system_time_start_ms, system_time_now_ms);
         if (mining_started)
             stop_mining_script(dci.device_id_nvml_);
@@ -103,19 +105,24 @@ namespace frequency_scaling {
         m.mem_oc = mem_oc;
         m.graph_oc = graph_clock - dci.nvapi_default_graph_clock_;
         //
+        bool write_csv_header = !log_utils::check_file_existance(
+                log_utils::get_online_bench_filename(ct, dci.device_id_nvml_));
         std::ofstream logfile(log_utils::get_online_bench_filename(ct, dci.device_id_nvml_), std::ofstream::app);
         if (!logfile)
             THROW_IO_ERROR("Cannot open " + log_utils::get_online_bench_filename(ct, dci.device_id_nvml_));
         logfile.exceptions(std::ifstream::badbit);
+        if (write_csv_header)
+            logfile << "#mem_clock,graph_clock,power,hashrate,energy_hash,bench_duration,timestamp" << std::endl;
         logfile << m.mem_clock_ << "," << m.graph_clock_ << "," << m.power_ << "," << m.hashrate_
                 << "," << m.energy_hash_ << "," << m.hashrate_measure_dur_ms_ << "," << system_time_start_ms
                 << std::endl;
         return m;
     }
 
-    measurement run_benchmark_mining_online_nanopool(const miner_user_info &user_info, int period_ms,
-                                                     const currency_type &ct, const device_clock_info &dci, int mem_oc,
-                                                     int nvml_graph_clock_idx) {
+    measurement run_benchmark_mining_online_pool(const miner_user_info &user_info, int period_ms,
+                                                 const currency_type &ct, const device_clock_info &dci,
+                                                 int mem_oc,
+                                                 int nvml_graph_clock_idx) {
         if (!ct.has_avg_hashrate_api() || period_ms < ct.avg_hashrate_min_period_ms()) {
             return run_benchmark_mining_online_log(user_info, period_ms, ct, dci, mem_oc, nvml_graph_clock_idx);
         } else {
@@ -133,7 +140,8 @@ namespace frequency_scaling {
 
 
     measurement run_benchmark_mining_online_log(const miner_user_info &user_info, int period_ms,
-                                                const currency_type &ct, const device_clock_info &dci, int mem_oc,
+                                                const currency_type &ct, const device_clock_info &dci,
+                                                int mem_oc,
                                                 int nvml_graph_clock_idx) {
         return run_benchmark_mining_online(&get_avg_hashrate_online_log, user_info, period_ms, ct, dci, mem_oc,
                                            nvml_graph_clock_idx);

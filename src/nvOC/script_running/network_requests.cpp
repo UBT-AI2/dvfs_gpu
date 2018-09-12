@@ -1,5 +1,4 @@
 #include "network_requests.h"
-
 #include <sstream>
 #include <thread>
 #include <glog/logging.h>
@@ -10,6 +9,7 @@
 #include "../common_header/constants.h"
 
 namespace frequency_scaling {
+
 
     double currency_stats::calc_approximated_earnings_eur_hour(double user_hashrate_hs) const {
         return (user_hashrate_hs / nethash_) * (1 / block_time_sec_) *
@@ -195,7 +195,8 @@ namespace frequency_scaling {
 
 
     double get_avg_worker_hashrate(const currency_type &ct, const std::string &wallet_address,
-                                   const std::string &worker_name, int period_ms, int trials, int trial_timeout_ms) {
+                                   const std::string &worker_name, int period_ms, int trials,
+                                   int trial_timeout_ms) {
         return safe_network_proxycall<double, const currency_type &, const std::string &, const std::string &, int>(
                 trials, trial_timeout_ms, &__get_avg_worker_hashrate,
                 std::move(ct), std::move(wallet_address), std::move(worker_name), std::move(period_ms));

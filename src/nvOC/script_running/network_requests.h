@@ -7,7 +7,6 @@
 #include "currency_type.h"
 
 namespace frequency_scaling {
-
     struct currency_stats {
         double calc_approximated_earnings_eur_hour(double user_hashrate_hs) const;
 
@@ -57,5 +56,6 @@ namespace frequency_scaling {
      * @return energy cost eur/kWh
      */
     double get_energy_cost_stromdao(int plz, int trials = 3, int trial_timeout_ms = 1000);
+
 
 }

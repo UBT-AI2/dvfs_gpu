@@ -4,9 +4,9 @@
 #include "../nvml/nvmlOC.h"
 #include "../script_running/process_management.h"
 #include "../script_running/log_utils.h"
+#include "../script_running/optimization_config.h"
+#include "../script_running/cli_utils.h"
 #include "profit_optimization.h"
-#include "optimization_config.h"
-#include "cli_utils.h"
 
 using namespace frequency_scaling;
 
@@ -15,12 +15,11 @@ int main(int argc, char **argv) {
         //parse cmd options
         const std::map<std::string, std::string> &cmd_args = parse_cmd_options(argc, argv);
         if (cmd_args.count("--help")) {
-            full_expression_accumulator<>(std::cout) << "Options:\n\t"
-                                                        "--help\t\t\t\tshows this message\n\t"
-                                                        "--currency_config=<filename>\tcurrency configuration json file\n\t"
-                                                        "--user_config=<filename>\tuser configuration json file\n\t"
-                                                        "--opt_result=<filename>\t\toptimization result json file"
-                                                     << std::endl;
+            fullexpr_accum<>(std::cout) << "Options:\n\t"
+                                           "--currency_config=<filename>\tCurrency configuration to use.\n\t"
+                                           "--user_config=<filename>\tUser configuration to use.\n\t"
+                                           "--opt_result=<filename>\t\tOptimization result to use.\n\t"
+                                           "--help\t\t\t\tShows this message.\n\t" << std::endl;
             return 1;
         }
         //init logging stuff

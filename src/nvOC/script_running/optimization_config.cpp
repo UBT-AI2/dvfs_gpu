@@ -2,7 +2,6 @@
 // Created by Alex on 10.06.2018.
 //
 #include "optimization_config.h"
-
 #include <fstream>
 #include <limits>
 #include <glog/logging.h>
@@ -24,7 +23,7 @@
 #include "../common_header/exceptions.h"
 #include "../common_header/constants.h"
 #include "cli_utils.h"
-#include "../script_running/log_utils.h"
+#include "log_utils.h"
 
 
 namespace frequency_scaling {
@@ -77,7 +76,7 @@ namespace frequency_scaling {
         optimization_config opt_config;
         std::string user_in, user_msg;
         //input energy costs
-        //double energy_cost_kwh = get_energy_cost_stromdao(95440);
+        //double energy_cost_kwh = network_requests::get_energy_cost_stromdao(95440);
         double energy_cost_kwh = cli_get_float("Enter energy cost in euro per kwh:");
         opt_config.energy_cost_kwh_ = energy_cost_kwh;
         //select monitoring interval
@@ -182,7 +181,8 @@ namespace frequency_scaling {
     }
 
     optimization_config
-    parse_config_json(const std::string &filename, const std::map<std::string, currency_type> &available_currencies) {
+    parse_config_json(const std::string &filename,
+                      const std::map<std::string, currency_type> &available_currencies) {
         namespace pt = boost::property_tree;
         pt::ptree root;
         pt::read_json(filename, root);
@@ -212,7 +212,8 @@ namespace frequency_scaling {
                              << std::endl;
                 opt_config.dcis_.emplace_back(device_id);
             }
-            opt_config.miner_user_infos_.worker_names_.emplace(device_id, pt_device.get<std::string>("worker_name"));
+            opt_config.miner_user_infos_.worker_names_.emplace(device_id,
+                                                               pt_device.get<std::string>("worker_name"));
         }
         if (opt_config.dcis_.empty())
             THROW_RUNTIME_ERROR("No device available");
@@ -225,8 +226,10 @@ namespace frequency_scaling {
             }
             const currency_type &ct = available_currencies.at(array_elem.first);
             const boost::property_tree::ptree &pt_currency = array_elem.second;
-            const boost::property_tree::ptree &pt_opt_method_params = array_elem.second.get_child("opt_method_params");
-            opt_config.miner_user_infos_.wallet_addresses_.emplace(ct, pt_currency.get<std::string>("wallet_address"));
+            const boost::property_tree::ptree &pt_opt_method_params = array_elem.second.get_child(
+                    "opt_method_params");
+            opt_config.miner_user_infos_.wallet_addresses_.emplace(ct,
+                                                                   pt_currency.get<std::string>("wallet_address"));
             optimization_method_params opt_method_params(
                     string_to_opt_method(pt_opt_method_params.get<std::string>("method")),
                     pt_opt_method_params.get<double>("min_hashrate"));

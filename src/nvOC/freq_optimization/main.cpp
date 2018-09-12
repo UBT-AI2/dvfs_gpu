@@ -1,17 +1,22 @@
+//
+// Created by alex on 28.05.18.
+//
 #include <glog/logging.h>
 #include <boost/algorithm/string.hpp>
 #include "../common_header/fullexpr_accum.h"
+#include "../common_header/exceptions.h"
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
 #include "../script_running/benchmark.h"
 #include "../script_running/process_management.h"
-#include "../script_running/optimization_config.h"
 #include "../script_running/cli_utils.h"
+#include "../script_running/optimization_config.h"
 #include "../script_running/log_utils.h"
-#include "freq_exhaustive.h"
+#include "freq_simulated_annealing.h"
+#include "freq_hill_climbing.h"
+#include "freq_nelder_mead.h"
 
 using namespace frequency_scaling;
-
 
 static bool cmd_arg_check(int argc, char **argv, std::map<std::string, std::string> &cmd_args) {
     //parse cmd options
@@ -20,10 +25,13 @@ static bool cmd_arg_check(int argc, char **argv, std::map<std::string, std::stri
         fullexpr_accum<>(std::cout) << "Options:\n\t"
                                        "-d <int>\t\t\tGPU to use (required).\n\t"
                                        "-c <string>\t\t\tCurrency to use (required).\n\t"
+                                       "-a <string>\t\t\tOptimization algo to use. HC=hill climbing, SA=simulated annealing, NM=nelder mead (required).\n\t"
                                        "--currency_config=<filename>\tCurrency configuration to use.\n\t"
                                        "--use_online_bench=<filename>\tUsage of online benchmark with specified user configuration.\n\t"
-                                       "--mem_step=<int>\t\tDefault memory clock step size.\n\t"
-                                       "--graph_idx_step=<int>\tDefault core clock index step size.\n\t"
+                                       "--min_hashrate=<float>\t\tMinimum hashrate to adhere in percentage of maximum hashrate.\n\t"
+                                       "--max_iterations=<int>\t\tMaximum iterations of optimization algo.\n\t"
+                                       "--mem_step=<float>\t\tDefault memory clock step size of optimization algo in percentage of value range.\n\t"
+                                       "--graph_idx_step=<float>\tDefault core clock index step size of optimization algo in percentage of value range.\n\t"
                                        "--min_mem_oc=<int>\t\tMinimum allowed gpu memory overclock.\n\t"
                                        "--max_mem_oc=<int>\t\tMaximum allowed gpu memory overclock.\n\t"
                                        "--min_graph_oc=<int>\t\tMinimum allowed gpu core overclock.\n\t"
@@ -33,12 +41,12 @@ static bool cmd_arg_check(int argc, char **argv, std::map<std::string, std::stri
     }
     //
     std::string missing_args;
-    for (const std::string &req_opt : {"-c", "-d"}) {
+    for (const std::string &req_opt : {"-c", "-d", "-a"}) {
         if (!cmd_args.count(req_opt) || cmd_args.at(req_opt).empty())
             missing_args += ((missing_args.empty()) ? "" : ", ") + req_opt;
     }
     if (!missing_args.empty()) {
-        fullexpr_accum<>(std::cout) << "Specify missing arguments: " << missing_args << std::endl;
+        fullexpr_accum<>(std::cout) << "Specify missing required arguments: " << missing_args << std::endl;
         fullexpr_accum<>(std::cout) << "See --help for all options" << std::endl;
         return false;
     }
@@ -60,8 +68,14 @@ int main(int argc, char **argv) {
                            : optimization_config();
     int device_id = std::stoi(cmd_args.at("-d"));
     const currency_type &ct = available_currencies.at(boost::algorithm::to_upper_copy(cmd_args.at("-c")));
-    int mem_step = (cmd_args.count("--mem_step")) ? std::stoi(cmd_args.at("--mem_step")) : 50;
-    int graph_idx_step = (cmd_args.count("--graph_idx_step")) ? std::stoi(cmd_args.at("--graph_idx_step")) : 2;
+    optimization_method opt_method = string_to_opt_method(cmd_args.at("-a"));
+    double min_hashrate_pct = (cmd_args.count("--min_hashrate")) ? std::stod(cmd_args.at("--min_hashrate")) : -1.0;
+    int max_iterations = (cmd_args.count("--max_iterations")) ? std::stoi(cmd_args.at("--max_iterations"))
+                                                              : (opt_method == optimization_method::NELDER_MEAD) ? 8
+                                                                                                                 : 5;
+    double mem_step_pct = (cmd_args.count("--mem_step")) ? std::stod(cmd_args.at("--mem_step")) : 0.15;
+    double graph_idx_step_pct = (cmd_args.count("--graph_idx_step")) ? std::stod(cmd_args.at("--graph_idx_step"))
+                                                                     : 0.15;
     int min_mem_oc = (cmd_args.count("--min_mem_oc")) ? std::stoi(cmd_args.at("--min_mem_oc")) : 1;
     int max_mem_oc = (cmd_args.count("--max_mem_oc")) ? std::stoi(cmd_args.at("--max_mem_oc")) : -1;
     int min_graph_oc = (cmd_args.count("--min_graph_oc")) ? std::stoi(cmd_args.at("--min_graph_oc")) : 1;
@@ -75,18 +89,32 @@ int main(int argc, char **argv) {
 
         //start power monitoring
         start_power_monitoring_script(device_id);
+
         //
         device_clock_info dci(device_id, min_mem_oc, min_graph_oc, max_mem_oc, max_graph_oc);
-        const measurement &m = (online_bench) ? freq_exhaustive(std::bind(&run_benchmark_mining_online_log,
-                                                                          std::cref(opt_config.miner_user_infos_),
-                                                                          opt_config.online_bench_duration_sec_ * 1000,
-                                                                          std::placeholders::_1,
-                                                                          std::placeholders::_2,
-                                                                          std::placeholders::_3,
-                                                                          std::placeholders::_4), online_bench, ct, dci,
-                                                                mem_step, graph_idx_step)
-                                              : freq_exhaustive(&run_benchmark_mining_offline, online_bench, ct, dci,
-                                                                mem_step, graph_idx_step);
+        const benchmark_func &bf = (online_bench) ? std::bind(&run_benchmark_mining_online_log,
+                                                              std::cref(opt_config.miner_user_infos_),
+                                                              opt_config.online_bench_duration_sec_ * 1000,
+                                                              std::placeholders::_1,
+                                                              std::placeholders::_2,
+                                                              std::placeholders::_3,
+                                                              std::placeholders::_4)
+                                                  : benchmark_func(&run_benchmark_mining_offline);
+        measurement m;
+        switch (opt_method) {
+            case optimization_method::HILL_CLIMBING:
+                m = freq_hill_climbing(bf, ct, dci, max_iterations, mem_step_pct, graph_idx_step_pct, min_hashrate_pct);
+                break;
+            case optimization_method::SIMULATED_ANNEALING:
+                m = freq_simulated_annealing(bf, ct, dci, max_iterations, mem_step_pct, graph_idx_step_pct,
+                                             min_hashrate_pct);
+                break;
+            case optimization_method::NELDER_MEAD:
+                m = freq_nelder_mead(bf, ct, dci, max_iterations, mem_step_pct, graph_idx_step_pct, min_hashrate_pct);
+                break;
+            default:
+                THROW_RUNTIME_ERROR("Invalid enum value");
+        }
         VLOG(0) << log_utils::gpu_log_prefix(ct, dci.device_id_nvml_) << "Computed optimal energy-hash ratio: "
                 << m.energy_hash_ << " (mem=" << m.mem_clock_ << ",graph=" << m.graph_clock_ << ")" << std::endl;
 
@@ -107,3 +135,4 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+

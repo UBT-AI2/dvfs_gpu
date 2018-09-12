@@ -20,12 +20,14 @@ namespace frequency_scaling {
 
     bool currency_type::has_avg_hashrate_api() const {
         return !pool_avg_hashrate_api_address_.empty() && !pool_avg_hashrate_json_path_worker_array_.empty() &&
-               !pool_avg_hashrate_json_path_worker_name_.empty() && !pool_avg_hashrate_json_path_hashrate_.empty() &&
+               !pool_avg_hashrate_json_path_worker_name_.empty() &&
+               !pool_avg_hashrate_json_path_hashrate_.empty() &&
                pool_avg_hashrate_api_unit_factor_hashrate_ > 0 && pool_avg_hashrate_api_unit_factor_period_ > 0;
     }
 
     bool currency_type::has_current_hashrate_api() const {
-        return !pool_current_hashrate_api_address_.empty() && !pool_current_hashrate_json_path_worker_array_.empty() &&
+        return !pool_current_hashrate_api_address_.empty() &&
+               !pool_current_hashrate_json_path_worker_array_.empty() &&
                !pool_current_hashrate_json_path_worker_name_.empty() &&
                !pool_current_hashrate_json_path_hashrate_.empty() &&
                pool_current_hashrate_api_unit_factor_hashrate_ > 0;
@@ -55,16 +57,6 @@ namespace frequency_scaling {
 
     bool currency_type::operator!=(const currency_type &other) const {
         return currency_name_ != other.currency_name_;
-    }
-
-    std::string gpu_log_prefix(int device_id_nvml) {
-        return "GPU " + std::to_string(device_id_nvml) + " [" +
-               nvmlGetDeviceName(device_id_nvml) + "]: ";
-    }
-
-    std::string gpu_log_prefix(const currency_type &ct, int device_id_nvml) {
-        return "GPU " + std::to_string(device_id_nvml) + " [" +
-               nvmlGetDeviceName(device_id_nvml) + "]: " + ct.currency_name_ + ": ";
     }
 
 
@@ -225,11 +217,13 @@ namespace frequency_scaling {
             }
             ct.pool_pass_ = pt_currency_type.get<std::string>("pool_pass", "x");
             if (ct.pool_addresses_.empty())
-                THROW_RUNTIME_ERROR("Currency config " + filename + " : No pool specified for " + ct.currency_name_);
+                THROW_RUNTIME_ERROR(
+                        "Currency config " + filename + " : No pool specified for " + ct.currency_name_);
             ct.whattomine_coin_id_ = pt_currency_type.get<int>("whattomine_coin_id");
             //optional fields
             ct.cryptocompare_fsym_ = pt_currency_type.get<std::string>("cryptocompare_fsym", ct.currency_name_);
-            ct.pool_avg_hashrate_api_address_ = pt_currency_type.get<std::string>("pool_avg_hashrate_api_address", "");
+            ct.pool_avg_hashrate_api_address_ = pt_currency_type.get<std::string>("pool_avg_hashrate_api_address",
+                                                                                  "");
             ct.pool_avg_hashrate_json_path_worker_array_ = pt_currency_type.get<std::string>(
                     "pool_avg_hashrate_json_path_worker_array", "");
             ct.pool_avg_hashrate_json_path_worker_name_ = pt_currency_type.get<std::string>(
@@ -309,7 +303,8 @@ namespace frequency_scaling {
                                  ct.pool_current_hashrate_json_path_hashrate_);
             pt_currency_type.put("pool_current_hashrate_api_unit_factor_hashrate",
                                  ct.pool_current_hashrate_api_unit_factor_hashrate_);
-            pt_currency_type.put("pool_approximated_earnings_api_address", ct.pool_approximated_earnings_api_address_);
+            pt_currency_type.put("pool_approximated_earnings_api_address",
+                                 ct.pool_approximated_earnings_api_address_);
             pt_currency_type.put("pool_approximated_earnings_json_path", ct.pool_approximated_earnings_json_path_);
             pt_currency_type.put("pool_approximated_earnings_api_unit_factor_hashrate",
                                  ct.pool_approximated_earnings_api_unit_factor_hashrate_);
@@ -320,5 +315,6 @@ namespace frequency_scaling {
         root.add_child("available_currencies", pt_available_currencies);
         pt::write_json(filename, root);
     }
+
 }
 

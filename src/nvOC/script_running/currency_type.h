@@ -58,10 +58,6 @@ namespace frequency_scaling {
     };
 
 
-    std::string gpu_log_prefix(int device_id_nvml);
-
-    std::string gpu_log_prefix(const currency_type &ct, int device_id_nvml);
-
     std::map<std::string, currency_type> create_default_currency_config();
 
     std::map<std::string, currency_type> read_currency_config(const std::string &filename);

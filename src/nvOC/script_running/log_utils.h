@@ -17,6 +17,8 @@ namespace frequency_scaling {
 
         static std::string get_logdir_name();
 
+        static bool check_file_existance(const std::string &filename, bool logdir_prefix = false);
+
         static std::string get_power_log_filename(int device_id_nvml, bool logdir_prefix = true);
 
         static std::string
@@ -42,6 +44,10 @@ namespace frequency_scaling {
         static std::string get_autosave_opt_result_optphase_filename(bool logdir_prefix = true);
 
         static std::string get_autosave_opt_result_monitorphase_filename(bool logdir_prefix = true);
+
+        static std::string gpu_log_prefix(int device_id_nvml);
+
+        static std::string gpu_log_prefix(const frequency_scaling::currency_type &ct, int device_id_nvml);
 
     private:
         static std::string logdir_name_;

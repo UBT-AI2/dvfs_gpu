@@ -2,7 +2,6 @@
 // Created by alex on 16.05.18.
 //
 #include "profit_optimization.h"
-
 #include <thread>
 #include <future>
 #include <condition_variable>
@@ -12,15 +11,15 @@
 #include <glog/logging.h>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
-#include "../freq_nelder_mead/freq_nelder_mead.h"
-#include "../freq_hill_climbing/freq_hill_climbing.h"
-#include "../freq_simulated_annealing/freq_simulated_annealing.h"
+#include "../freq_optimization/freq_nelder_mead.h"
+#include "../freq_optimization/freq_hill_climbing.h"
+#include "../freq_optimization/freq_simulated_annealing.h"
 #include "../nvml/nvmlOC.h"
 #include "../script_running/process_management.h"
 #include "../common_header/constants.h"
 #include "../common_header/exceptions.h"
+#include "../script_running/cli_utils.h"
 #include "../script_running/log_utils.h"
-#include "cli_utils.h"
 
 namespace frequency_scaling {
 
@@ -133,7 +132,7 @@ namespace frequency_scaling {
                     THROW_RUNTIME_ERROR("Invalid enum value");
             }
             //
-            VLOG(0) << gpu_log_prefix(ct, dci.device_id_nvml_) <<
+            VLOG(0) << log_utils::gpu_log_prefix(ct, dci.device_id_nvml_) <<
                     "Computed optimal energy-hash ratio: "
                     << optimal_config.energy_hash_ << " (mem=" << optimal_config.mem_clock_ << ",graph="
                     << optimal_config.graph_clock_ << ")"
@@ -145,7 +144,7 @@ namespace frequency_scaling {
             return std::make_pair(true, optimal_config);
         }
         catch (const custom_error &err) {
-            LOG(ERROR) << gpu_log_prefix(ct, dci.device_id_nvml_) << "Optimization failed: " << err.what()
+            LOG(ERROR) << log_utils::gpu_log_prefix(ct, dci.device_id_nvml_) << "Optimization failed: " << err.what()
                        << std::endl;
             if (mining_started)
                 stop_mining_script(dci.device_id_nvml_);
@@ -185,7 +184,7 @@ namespace frequency_scaling {
         stop_mining_script(device_id);
         const currency_type &best_currency = profit_calc.getBest_currency_();
         start_mining_script(best_currency, profit_calc.getDci_(), user_infos);
-        VLOG(0) << gpu_log_prefix(device_id) <<
+        VLOG(0) << log_utils::gpu_log_prefix(device_id) <<
                 "Started mining best currency " << best_currency.currency_name_
                 << " with approximated profit of "
                 << profit_calc.getBest_currency_profit_() << " euro/h"
@@ -201,13 +200,13 @@ namespace frequency_scaling {
         bool res = true;
         //check if miner and power_monitor still running and restart if one somehow crashed
         if (!process_management::gpu_has_background_process(device_id, process_type::MINER)) {
-            LOG(ERROR) << gpu_log_prefix(profit_calc.getBest_currency_(), device_id)
+            LOG(ERROR) << log_utils::gpu_log_prefix(profit_calc.getBest_currency_(), device_id)
                        << "Monitoring sanity check failed: Miner down" << std::endl;
             start_mining_best_currency(profit_calc, user_infos);
             res = false;
         }
         if (!process_management::gpu_has_background_process(device_id, process_type::POWER_MONITOR)) {
-            LOG(ERROR) << gpu_log_prefix(profit_calc.getBest_currency_(), device_id)
+            LOG(ERROR) << log_utils::gpu_log_prefix(profit_calc.getBest_currency_(), device_id)
                        << "Monitoring sanity check failed: Power monitor down" << std::endl;
             start_power_monitoring_script(device_id);
             res = false;
@@ -256,7 +255,8 @@ namespace frequency_scaling {
                 current_monitoring_time_ms = profit_calc.window_dur_ms_;
             }
             VLOG(0)
-            << gpu_log_prefix(old_best_currency, device_id) << "Entering monitor update cycle. Current time window: "
+            << log_utils::gpu_log_prefix(old_best_currency, device_id)
+            << "Entering monitor update cycle. Current time window: "
             << current_monitoring_time_ms / (3600 * 1000.0) << "h." << std::endl;
             //update power only if hashrate update was successful -> pool could be down!!!
             if (profit_calc.update_opt_config_profit_hashrate(old_best_currency, user_infos, system_time_start_ms))
@@ -270,12 +270,12 @@ namespace frequency_scaling {
                 //stop mining former best currency
                 profit_calc.save_current_period(old_best_currency, system_time_start_ms_no_window);
                 stop_mining_script(device_id);
-                VLOG(0) << gpu_log_prefix(device_id) <<
+                VLOG(0) << log_utils::gpu_log_prefix(device_id) <<
                         "Stopped mining currency "
                         << old_best_currency.currency_name_ << std::endl;
                 //start mining new best currency
                 start_mining_best_currency(profit_calc, user_infos);
-                VLOG(0) << gpu_log_prefix(device_id) << "Reoptimizing currency "
+                VLOG(0) << log_utils::gpu_log_prefix(device_id) << "Reoptimizing currency "
                         << new_best_currency.currency_name_ << std::endl;
                 //reset timestamp
                 system_time_start_ms = system_time_start_ms_no_window = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -387,9 +387,11 @@ namespace frequency_scaling {
                                 std::promise<std::pair<int, device_opt_result>> &&p) {
         try {
             if (gpu_optimization_work.empty()) {
-                VLOG(0) << gpu_log_prefix(gpu_dci.device_id_nvml_) << "Skipping optimization phase..." << std::endl;
+                VLOG(0)
+                << log_utils::gpu_log_prefix(gpu_dci.device_id_nvml_) << "Skipping optimization phase..." << std::endl;
             } else {
-                VLOG(0) << gpu_log_prefix(gpu_dci.device_id_nvml_) << "Starting optimization phase..." << std::endl;
+                VLOG(0)
+                << log_utils::gpu_log_prefix(gpu_dci.device_id_nvml_) << "Starting optimization phase..." << std::endl;
                 const std::map<currency_type, measurement> &gpu_optimal_config_offline =
                         find_optimal_config(benchmark_info(&run_benchmark_mining_offline),
                                             gpu_dci, gpu_optimization_work,
@@ -422,7 +424,8 @@ namespace frequency_scaling {
                                         device_opt_result(gpu_dci.device_id_nvml_,
                                                           nvmlGetDeviceName(gpu_dci.device_id_nvml_), ehi));
                 }
-                VLOG(0) << gpu_log_prefix(gpu_dci.device_id_nvml_) << "Finished optimization phase..." << std::endl;
+                VLOG(0)
+                << log_utils::gpu_log_prefix(gpu_dci.device_id_nvml_) << "Finished optimization phase..." << std::endl;
                 {
                     std::unique_lock<std::mutex> lock_group(group.mutex_);
                     group.set_member_complete(gpu_dci.device_id_nvml_);
@@ -444,7 +447,8 @@ namespace frequency_scaling {
                 }
             }
             if (group.failed_) {
-                LOG(ERROR) << gpu_log_prefix(gpu_dci.device_id_nvml_) << "Optimization incomplete: Group failure"
+                LOG(ERROR) << log_utils::gpu_log_prefix(gpu_dci.device_id_nvml_)
+                           << "Optimization incomplete: Group failure"
                            << std::endl;
                 //TODO maybe recover
                 //TODO promises?
@@ -465,11 +469,13 @@ namespace frequency_scaling {
         try {
             if (terminate) {
                 VLOG(0)
-                << gpu_log_prefix(gpu_dci.device_id_nvml_) << "Main set terminate flag. Skipping monitoring phase..."
+                << log_utils::gpu_log_prefix(gpu_dci.device_id_nvml_)
+                << "Main set terminate flag. Skipping monitoring phase..."
                 << std::endl;
                 return;
             }
-            VLOG(0) << gpu_log_prefix(gpu_dci.device_id_nvml_) << "Starting mining and monitoring..." << std::endl;
+            VLOG(0)
+            << log_utils::gpu_log_prefix(gpu_dci.device_id_nvml_) << "Starting mining and monitoring..." << std::endl;
             std::map<currency_type, energy_hash_info> gpu_opt_res;
             {
                 std::lock_guard<std::mutex> lock_all(all_mutex);
@@ -575,7 +581,7 @@ namespace frequency_scaling {
             }
             catch (const std::exception &ex) {
                 const device_clock_info &gpu_dci = opt_config.dcis_[i];
-                LOG(ERROR) << gpu_log_prefix(gpu_dci.device_id_nvml_) <<
+                LOG(ERROR) << log_utils::gpu_log_prefix(gpu_dci.device_id_nvml_) <<
                            "Failed to get updated optimization result. "
                            "GPU-Thread terminated with unhandled exception: " << ex.what()
                            << std::endl;

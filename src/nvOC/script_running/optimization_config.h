@@ -4,8 +4,8 @@
 #pragma once
 
 #include <map>
-#include "../script_running/benchmark.h"
-#include "../script_running/mining.h"
+#include "benchmark.h"
+#include "mining.h"
 
 namespace frequency_scaling {
 
@@ -41,7 +41,8 @@ namespace frequency_scaling {
     void write_config_json(const std::string &filename, const optimization_config &opt_config);
 
     optimization_config
-    parse_config_json(const std::string &filename, const std::map<std::string, currency_type> &available_currencies);
+    parse_config_json(const std::string &filename,
+                      const std::map<std::string, currency_type> &available_currencies);
 
     std::string enum_to_string(optimization_method opt_method);
 
