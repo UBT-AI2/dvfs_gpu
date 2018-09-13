@@ -128,7 +128,7 @@ namespace frequency_scaling {
         } else {
             auto hashrate_func = [&user_info, period_ms](const currency_type &ct, int device_id,
                                                          long long int, long long int) -> double {
-                double avg_hashrate = get_avg_worker_hashrate(
+                double avg_hashrate = network_requests::get_avg_worker_hashrate(
                         ct, user_info.wallet_addresses_.at(ct), user_info.worker_names_.at(device_id), period_ms);
                 return avg_hashrate;
             };

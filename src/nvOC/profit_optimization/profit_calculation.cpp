@@ -237,13 +237,13 @@ namespace frequency_scaling {
             const currency_type &ct = elem.first;
             try {
                 double used_hashrate = calculate_used_hashrate(ct);
-                const currency_stats &cs = get_currency_stats(ct);
+                const currency_stats &cs = network_requests::get_currency_stats(ct);
                 double approximated_earnings;
                 if (!ct.has_approximated_earnings_api()) {
                     approximated_earnings = cs.calc_approximated_earnings_eur_hour(used_hashrate);
                 } else {
                     try {
-                        approximated_earnings = get_approximated_earnings_per_hour(ct, used_hashrate);
+                        approximated_earnings = network_requests::get_approximated_earnings_per_hour(ct, used_hashrate);
                     } catch (const network_error &err) {
                         //fallback
                         LOG(WARNING) << "Approximated earnings API call failed: " << err.what() <<
@@ -350,7 +350,7 @@ namespace frequency_scaling {
 
 
     void profit_calculator::update_energy_cost_stromdao(int plz) {
-        power_cost_kwh_ = get_energy_cost_stromdao(plz);
+        power_cost_kwh_ = network_requests::get_energy_cost_stromdao(plz);
     }
 
     const std::map<currency_type, currency_info> &profit_calculator::getCurrency_info_() const {
@@ -457,7 +457,7 @@ namespace frequency_scaling {
             if (!current_mined_ct.has_avg_hashrate_api() || period_ms < current_mined_ct.avg_hashrate_min_period_ms())
                 return 0;
             const std::string &worker = user_info.worker_names_.at(dci_.device_id_nvml_);
-            double avg_hashrate = get_avg_worker_hashrate(current_mined_ct,
+            double avg_hashrate = network_requests::get_avg_worker_hashrate(current_mined_ct,
                                                           user_info.wallet_addresses_.at(
                                                                   current_mined_ct),
                                                           worker, period_ms);
@@ -484,7 +484,7 @@ namespace frequency_scaling {
                 period_ms < current_mined_ct.current_hashrate_min_period_ms())
                 return 0;
             const std::string &worker = user_info.worker_names_.at(dci_.device_id_nvml_);
-            double current_hashrate = get_current_worker_hashrate(current_mined_ct,
+            double current_hashrate = network_requests::get_current_worker_hashrate(current_mined_ct,
                                                                   user_info.wallet_addresses_.at(
                                                                           current_mined_ct),
                                                                   worker, period_ms);

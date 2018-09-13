@@ -76,7 +76,7 @@ namespace frequency_scaling {
         optimization_config opt_config;
         std::string user_in, user_msg;
         //input energy costs
-        //double energy_cost_kwh = network_requests::get_energy_cost_stromdao(95440);
+        //double energy_cost_kwh = network_requests::network_requests::get_energy_cost_stromdao(95440);
         double energy_cost_kwh = cli_get_float("Enter energy cost in euro per kwh:");
         opt_config.energy_cost_kwh_ = energy_cost_kwh;
         //select monitoring interval
