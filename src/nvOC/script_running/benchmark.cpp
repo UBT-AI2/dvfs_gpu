@@ -25,7 +25,20 @@ namespace frequency_scaling {
                                                              device_name_(nvmlGetDeviceName(device_id_nvml)),
                                                              min_mem_oc_(min_mem_oc), min_graph_oc_(min_graph_oc),
                                                              max_mem_oc_(max_mem_oc), max_graph_oc_(max_graph_oc) {
-        nvml_supported_ = nvmlCheckOCSupport(device_id_nvml);
+        CUresult res = cuDeviceGetByPCIBusId(&device_id_cuda_, nvmlGetBusIdString(device_id_nvml).c_str());
+        if (res == CUDA_ERROR_NOT_INITIALIZED) {
+            cuInit(0);
+            cuDeviceGetByPCIBusId(&device_id_cuda_, nvmlGetBusIdString(device_id_nvml).c_str());
+        }
+        int cuda_cc_major;
+        cuDeviceGetAttribute(&cuda_cc_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id_cuda_);
+        if (cuda_cc_major < 6) {
+            LOG(WARNING) << log_utils::gpu_log_prefix(device_id_nvml) <<
+                         "Architecture < Pascal: NVML frequency setting does not work correctly. Disabling NVML..." << std::endl;
+            nvml_supported_ = false;
+        } else {
+            nvml_supported_ = nvmlCheckOCSupport(device_id_nvml);
+        }
         device_id_nvapi_ = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id_nvml));
         nvapi_supported_ = (device_id_nvapi_ < 0) ? false : nvapiCheckSupport(device_id_nvapi_);
         VLOG(0)
@@ -35,11 +48,7 @@ namespace frequency_scaling {
         << log_utils::gpu_log_prefix(device_id_nvml)
         << "NVML and NVAPI not supported: Frequency optimization not possible"
         << std::endl;
-        CUresult res = cuDeviceGetByPCIBusId(&device_id_cuda_, nvmlGetBusIdString(device_id_nvml).c_str());
-        if (res == CUDA_ERROR_NOT_INITIALIZED) {
-            cuInit(0);
-            cuDeviceGetByPCIBusId(&device_id_cuda_, nvmlGetBusIdString(device_id_nvml).c_str());
-        }
+
         VLOG(0) << "Matching device by PCIBusId: NVML-Id=" << device_id_nvml << ", NVAPI-Id=" <<
                 device_id_nvapi_ << ", CUDA-Id=" << device_id_cuda_ << std::endl;
         //set default min and max frequencies
