@@ -278,6 +278,7 @@ namespace frequency_scaling {
                 nvapiOC(dci.device_id_nvapi_, graph_oc, mem_oc);
             } else {
                 nvapiOC(dci.device_id_nvapi_, 0, mem_oc);
+                //setting of mem clock has no effect with nvml
                 nvmlOC(dci.device_id_nvml_, graph_clock, dci.nvml_mem_clocks_[0]);
             }
         } else if (dci.nvml_supported_) {
