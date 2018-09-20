@@ -458,9 +458,9 @@ namespace frequency_scaling {
                 return 0;
             const std::string &worker = user_info.worker_names_.at(dci_.device_id_nvml_);
             double avg_hashrate = network_requests::get_avg_worker_hashrate(current_mined_ct,
-                                                          user_info.wallet_addresses_.at(
-                                                                  current_mined_ct),
-                                                          worker, period_ms);
+                                                                            user_info.wallet_addresses_.at(
+                                                                                    current_mined_ct),
+                                                                            worker, period_ms);
             if (avg_hashrate <= 0 || !std::isfinite(avg_hashrate)) {
                 LOG(ERROR) << log_utils::gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                            "Failed to get avg profit hashrate: Worker "
@@ -485,9 +485,9 @@ namespace frequency_scaling {
                 return 0;
             const std::string &worker = user_info.worker_names_.at(dci_.device_id_nvml_);
             double current_hashrate = network_requests::get_current_worker_hashrate(current_mined_ct,
-                                                                  user_info.wallet_addresses_.at(
-                                                                          current_mined_ct),
-                                                                  worker, period_ms);
+                                                                                    user_info.wallet_addresses_.at(
+                                                                                            current_mined_ct),
+                                                                                    worker, period_ms);
             if (current_hashrate <= 0 || !std::isfinite(current_hashrate)) {
                 LOG(ERROR) << log_utils::gpu_log_prefix(current_mined_ct, dci_.device_id_nvml_) <<
                            "Failed to get current profit hashrate: Worker "

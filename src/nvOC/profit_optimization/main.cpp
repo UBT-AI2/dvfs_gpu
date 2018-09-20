@@ -24,6 +24,12 @@ int main(int argc, char **argv) {
         }
         //init logging stuff
         log_utils::init_logging("profit-optimization-logs", "glog-profit-optimization-", 1, argv[0]);
+
+        //init apis
+        nvapiInit();
+        nvmlInit_();
+        process_management::register_process_cleanup_sighandler();
+
         //read currency config if given, otherwise create default one
         std::map<std::string, currency_type> available_currencies;
         if (cmd_args.count("--currency_config")) {
@@ -32,10 +38,6 @@ int main(int argc, char **argv) {
             write_currency_config("currency_config_default.json", create_default_currency_config());
             available_currencies = read_currency_config("currency_config_default.json");
         }
-        //init apis
-        nvapiInit();
-        nvmlInit_();
-        process_management::register_process_cleanup_sighandler();
 
         //start mining and monitoring best currency;
         const optimization_config &opt_config = (cmd_args.count("--user_config")) ? parse_config_json(

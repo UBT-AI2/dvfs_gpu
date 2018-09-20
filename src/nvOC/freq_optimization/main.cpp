@@ -54,38 +54,39 @@ static bool cmd_arg_check(int argc, char **argv, std::map<std::string, std::stri
 }
 
 int main(int argc, char **argv) {
-    //get cmd options
-    std::map<std::string, std::string> cmd_args;
-    if (!cmd_arg_check(argc, argv, cmd_args))
-        return 1;
-    //
-    bool online_bench = cmd_args.count("--use_online_bench") != 0;
-    const std::map<std::string, currency_type> &available_currencies =
-            (cmd_args.count("--currency_config")) ? read_currency_config(cmd_args.at("--currency_config"))
-                                                  : create_default_currency_config();
-    const optimization_config &opt_config =
-            (online_bench) ? parse_config_json(cmd_args.at("--use_online_bench"), available_currencies)
-                           : optimization_config();
-    int device_id = std::stoi(cmd_args.at("-d"));
-    const currency_type &ct = available_currencies.at(boost::algorithm::to_upper_copy(cmd_args.at("-c")));
-    optimization_method opt_method = string_to_opt_method(cmd_args.at("-a"));
-    double min_hashrate_pct = (cmd_args.count("--min_hashrate")) ? std::stod(cmd_args.at("--min_hashrate")) : -1.0;
-    int max_iterations = (cmd_args.count("--max_iterations")) ? std::stoi(cmd_args.at("--max_iterations"))
-                                                              : (opt_method == optimization_method::NELDER_MEAD) ? 8
-                                                                                                                 : 5;
-    double mem_step_pct = (cmd_args.count("--mem_step")) ? std::stod(cmd_args.at("--mem_step")) : 0.15;
-    double graph_idx_step_pct = (cmd_args.count("--graph_idx_step")) ? std::stod(cmd_args.at("--graph_idx_step"))
-                                                                     : 0.15;
-    int min_mem_oc = (cmd_args.count("--min_mem_oc")) ? std::stoi(cmd_args.at("--min_mem_oc")) : 1;
-    int max_mem_oc = (cmd_args.count("--max_mem_oc")) ? std::stoi(cmd_args.at("--max_mem_oc")) : -1;
-    int min_graph_oc = (cmd_args.count("--min_graph_oc")) ? std::stoi(cmd_args.at("--min_graph_oc")) : 1;
-    int max_graph_oc = (cmd_args.count("--max_graph_oc")) ? std::stoi(cmd_args.at("--max_graph_oc")) : -1;
-    //
     try {
+        //get cmd options
+        std::map<std::string, std::string> cmd_args;
+        if (!cmd_arg_check(argc, argv, cmd_args))
+            return 1;
+        
         //init apis
         nvapiInit();
         nvmlInit_();
         process_management::register_process_cleanup_sighandler();
+
+        //
+        bool online_bench = cmd_args.count("--use_online_bench") != 0;
+        const std::map<std::string, currency_type> &available_currencies =
+                (cmd_args.count("--currency_config")) ? read_currency_config(cmd_args.at("--currency_config"))
+                                                      : create_default_currency_config();
+        const optimization_config &opt_config =
+                (online_bench) ? parse_config_json(cmd_args.at("--use_online_bench"), available_currencies)
+                               : optimization_config();
+        int device_id = std::stoi(cmd_args.at("-d"));
+        const currency_type &ct = available_currencies.at(boost::algorithm::to_upper_copy(cmd_args.at("-c")));
+        optimization_method opt_method = string_to_opt_method(cmd_args.at("-a"));
+        double min_hashrate_pct = (cmd_args.count("--min_hashrate")) ? std::stod(cmd_args.at("--min_hashrate")) : -1.0;
+        int max_iterations = (cmd_args.count("--max_iterations")) ? std::stoi(cmd_args.at("--max_iterations"))
+                                                                  : (opt_method == optimization_method::NELDER_MEAD) ? 8
+                                                                                                                     : 5;
+        double mem_step_pct = (cmd_args.count("--mem_step")) ? std::stod(cmd_args.at("--mem_step")) : 0.15;
+        double graph_idx_step_pct = (cmd_args.count("--graph_idx_step")) ? std::stod(cmd_args.at("--graph_idx_step"))
+                                                                         : 0.15;
+        int min_mem_oc = (cmd_args.count("--min_mem_oc")) ? std::stoi(cmd_args.at("--min_mem_oc")) : 1;
+        int max_mem_oc = (cmd_args.count("--max_mem_oc")) ? std::stoi(cmd_args.at("--max_mem_oc")) : -1;
+        int min_graph_oc = (cmd_args.count("--min_graph_oc")) ? std::stoi(cmd_args.at("--min_graph_oc")) : 1;
+        int max_graph_oc = (cmd_args.count("--max_graph_oc")) ? std::stoi(cmd_args.at("--max_graph_oc")) : -1;
 
         //start power monitoring
         start_power_monitoring_script(device_id);

@@ -34,7 +34,8 @@ namespace frequency_scaling {
         cuDeviceGetAttribute(&cuda_cc_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id_cuda_);
         if (cuda_cc_major < 6) {
             LOG(WARNING) << log_utils::gpu_log_prefix(device_id_nvml) <<
-                         "Architecture < Pascal: NVML frequency setting does not work correctly. Disabling NVML..." << std::endl;
+                         "Architecture < Pascal: NVML frequency setting does not work correctly. Disabling NVML..."
+                         << std::endl;
             nvml_supported_ = false;
         } else {
             nvml_supported_ = nvmlCheckOCSupport(device_id_nvml);
