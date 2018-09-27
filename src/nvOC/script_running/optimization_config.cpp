@@ -60,17 +60,6 @@ namespace frequency_scaling {
                       min_hashrate_pct) {}
 
 
-    static std::string getworker_name(int device_id) {
-        char buf[BUFFER_SIZE];
-#ifdef _WIN32
-        DWORD size = sizeof(buf);
-        GetComputerName(buf, &size);
-#else
-        gethostname(buf, sizeof(buf));
-#endif
-        return buf + std::string("_gpu") + std::to_string(device_id);
-    }
-
 
     optimization_config get_config_user_dialog(const std::map<std::string, currency_type> &available_currencies) {
         optimization_config opt_config;
@@ -248,6 +237,16 @@ namespace frequency_scaling {
         return opt_config;
     }
 
+    std::string getworker_name(int device_id) {
+        char buf[BUFFER_SIZE];
+#ifdef _WIN32
+        DWORD size = sizeof(buf);
+        GetComputerName(buf, &size);
+#else
+        gethostname(buf, sizeof(buf));
+#endif
+        return buf + std::string("_gpu") + std::to_string(device_id);
+    }
 
     std::string enum_to_string(optimization_method opt_method) {
         switch (opt_method) {

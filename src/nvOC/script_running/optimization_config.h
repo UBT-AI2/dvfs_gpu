@@ -44,6 +44,8 @@ namespace frequency_scaling {
     parse_config_json(const std::string &filename,
                       const std::map<std::string, currency_type> &available_currencies);
 
+    std::string getworker_name(int device_id);
+
     std::string enum_to_string(optimization_method opt_method);
 
     optimization_method string_to_opt_method(const std::string &str);

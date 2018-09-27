@@ -20,8 +20,9 @@ static bool cmd_arg_check(int argc, char **argv, std::map<std::string, std::stri
         fullexpr_accum<>(std::cout) << "Options:\n\t"
                                        "-d <int>\t\t\tGPU to use (required).\n\t"
                                        "-c <string>\t\t\tCurrency to use (required).\n\t"
+                                       "--use_online_bench=<wallet>\tUsage of online benchmarks with specified wallet address.\n\t"
+                                       "--online_bench_duration=<int>\tDuration of an online benchmark in seconds.\n\t"
                                        "--currency_config=<filename>\tCurrency configuration to use.\n\t"
-                                       "--use_online_bench=<filename>\tUsage of online benchmark with specified user configuration.\n\t"
                                        "--mem_step=<int>\t\tDefault memory clock step size.\n\t"
                                        "--graph_idx_step=<int>\tDefault core clock index step size.\n\t"
                                        "--min_mem_oc=<int>\t\tMinimum allowed gpu memory overclock.\n\t"
@@ -58,13 +59,9 @@ int main(int argc, char **argv) {
         process_management::register_process_cleanup_sighandler();
 
         //
-        bool online_bench = cmd_args.count("--use_online_bench") != 0;
         const std::map<std::string, currency_type> &available_currencies =
                 (cmd_args.count("--currency_config")) ? read_currency_config(cmd_args.at("--currency_config"))
                                                       : create_default_currency_config();
-        const optimization_config &opt_config =
-                (online_bench) ? parse_config_json(cmd_args.at("--use_online_bench"), available_currencies)
-                               : optimization_config();
         int device_id = std::stoi(cmd_args.at("-d"));
         const currency_type &ct = available_currencies.at(boost::algorithm::to_upper_copy(cmd_args.at("-c")));
         int mem_step = (cmd_args.count("--mem_step")) ? std::stoi(cmd_args.at("--mem_step")) : 50;
@@ -73,14 +70,23 @@ int main(int argc, char **argv) {
         int max_mem_oc = (cmd_args.count("--max_mem_oc")) ? std::stoi(cmd_args.at("--max_mem_oc")) : -1;
         int min_graph_oc = (cmd_args.count("--min_graph_oc")) ? std::stoi(cmd_args.at("--min_graph_oc")) : 1;
         int max_graph_oc = (cmd_args.count("--max_graph_oc")) ? std::stoi(cmd_args.at("--max_graph_oc")) : -1;
-
+        //online bench stuff
+        bool online_bench = cmd_args.count("--use_online_bench") != 0;
+        miner_user_info mui;
+        int online_bench_duration_sec;
+        if (online_bench) {
+            mui.wallet_addresses_.emplace(ct, cmd_args.at("--use_online_bench"));
+            mui.worker_names_.emplace(device_id, getworker_name(device_id));
+            online_bench_duration_sec = (cmd_args.count("--online_bench_duration")) ? std::stoi(
+                    cmd_args.at("--online_bench_duration")) : 120;
+        }
         //start power monitoring
         start_power_monitoring_script(device_id);
         //
         device_clock_info dci(device_id, min_mem_oc, min_graph_oc, max_mem_oc, max_graph_oc);
         const measurement &m = (online_bench) ? freq_exhaustive(std::bind(&run_benchmark_mining_online_log,
-                                                                          std::cref(opt_config.miner_user_infos_),
-                                                                          opt_config.online_bench_duration_sec_ * 1000,
+                                                                          std::cref(mui),
+                                                                          online_bench_duration_sec * 1000,
                                                                           std::placeholders::_1,
                                                                           std::placeholders::_2,
                                                                           std::placeholders::_3,
