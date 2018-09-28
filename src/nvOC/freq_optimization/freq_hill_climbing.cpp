@@ -48,12 +48,14 @@ namespace frequency_scaling {
             int mem_minus = current_node.mem_oc - mem_step;
             int graph_plus_idx = current_node.nvml_graph_clock_idx + graph_step_idx;
             int graph_minus_idx = current_node.nvml_graph_clock_idx - graph_step_idx;
+            bool optimization2D = dci.is_graph_oc_supported() && dci.is_mem_oc_supported();
 
             //horizontal/vertical 4 neighborhood
-            if (!dci.nvapi_supported_ || expl_type == exploration_type::NEIGHBORHOOD_8 ||
+            if (!optimization2D ||
+                expl_type == exploration_type::NEIGHBORHOOD_8 ||
                 expl_type == exploration_type::NEIGHBORHOOD_4_STRAIGHT ||
                 (expl_type == exploration_type::NEIGHBORHOOD_4_ALTERNATING && (iteration % 2))) {
-                if (dci.nvapi_supported_ && mem_plus <= dci.max_mem_oc_ &&
+                if (dci.is_mem_oc_supported() && mem_plus <= dci.max_mem_oc_ &&
                     !is_origin_direction(current_node, last_node, 1, 0)) {
                     const measurement &m = benchmarkFunc(ms, dci, mem_plus,
                                                          current_node.nvml_graph_clock_idx);
@@ -63,7 +65,7 @@ namespace frequency_scaling {
                                 compute_derivatives(dci, m, current_node, current_slope), m);
                     }
                 }
-                if (dci.nvapi_supported_ && mem_minus >= dci.min_mem_oc_ &&
+                if (dci.is_mem_oc_supported() && mem_minus >= dci.min_mem_oc_ &&
                     !is_origin_direction(current_node, last_node, -1, 0)) {
                     const measurement &m = benchmarkFunc(ms, dci, mem_minus,
                                                          current_node.nvml_graph_clock_idx);
@@ -73,7 +75,7 @@ namespace frequency_scaling {
                                 compute_derivatives(dci, m, current_node, current_slope), m);
                     }
                 }
-                if (graph_plus_idx < dci.nvml_graph_clocks_.size() &&
+                if (dci.is_graph_oc_supported() && graph_plus_idx < dci.nvml_graph_clocks_.size() &&
                     !is_origin_direction(current_node, last_node, 0, 1)) {
                     const measurement &m = benchmarkFunc(ms, dci, current_node.mem_oc,
                                                          graph_plus_idx);
@@ -83,7 +85,7 @@ namespace frequency_scaling {
                                 compute_derivatives(dci, m, current_node, current_slope), m);
                     }
                 }
-                if (graph_minus_idx >= 0 &&
+                if (dci.is_graph_oc_supported() && graph_minus_idx >= 0 &&
                     !is_origin_direction(current_node, last_node, 0, -1)) {
                     const measurement &m = benchmarkFunc(ms, dci, current_node.mem_oc,
                                                          graph_minus_idx);
@@ -96,10 +98,11 @@ namespace frequency_scaling {
             }
 
             //diagonal 4 neighborhood
-            if (dci.nvapi_supported_ && (expl_type == exploration_type::NEIGHBORHOOD_8 ||
-                                         expl_type == exploration_type::NEIGHBORHOOD_4_DIAGONAL ||
-                                         (expl_type == exploration_type::NEIGHBORHOOD_4_ALTERNATING &&
-                                          !(iteration % 2)))) {
+            if (optimization2D &&
+                (expl_type == exploration_type::NEIGHBORHOOD_8 ||
+                 expl_type == exploration_type::NEIGHBORHOOD_4_DIAGONAL ||
+                 (expl_type == exploration_type::NEIGHBORHOOD_4_ALTERNATING &&
+                  !(iteration % 2)))) {
                 if (mem_plus <= dci.max_mem_oc_ && graph_plus_idx < dci.nvml_graph_clocks_.size() &&
                     !is_origin_direction(current_node, last_node, 1, 1)) {
                     const measurement &m = benchmarkFunc(ms, dci, mem_plus, graph_plus_idx);

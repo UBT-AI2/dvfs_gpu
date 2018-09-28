@@ -12,6 +12,10 @@ namespace frequency_scaling {
         device_clock_info(int device_id_nvml, int min_mem_oc, int min_graph_oc,
                           int max_mem_oc, int max_graph_oc);
 
+        bool is_graph_oc_supported() const;
+
+        bool is_mem_oc_supported() const;
+
         int device_id_nvml_, device_id_nvapi_, device_id_cuda_;
         std::string device_name_;
         int nvapi_default_mem_clock_, nvapi_default_graph_clock_;

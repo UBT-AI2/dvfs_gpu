@@ -119,6 +119,14 @@ namespace frequency_scaling {
         }
     }
 
+    bool device_clock_info::is_graph_oc_supported() const {
+        return max_graph_oc_ - min_graph_oc_ > 0;
+    }
+
+    bool device_clock_info::is_mem_oc_supported() const {
+        return max_mem_oc_ - min_mem_oc_ > 0;
+    }
+
     measurement::measurement() : mem_clock_(0), graph_clock_(0), power_(0),
                                  hashrate_(0), energy_hash_(0),
                                  nvml_graph_clock_idx(-1), mem_oc(0), graph_oc(0) {}

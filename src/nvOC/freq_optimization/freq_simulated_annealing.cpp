@@ -74,7 +74,6 @@ namespace frequency_scaling {
                 VLOG(0) << "Simulated annealing convergence reached" << std::endl;
                 break;
             }
-            VLOG(0) << cancel_count << std::endl;
             //decrease temperature
             Tk = c * Tk;
         }

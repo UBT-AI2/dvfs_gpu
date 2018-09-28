@@ -394,7 +394,7 @@ namespace frequency_scaling {
                 << log_utils::gpu_log_prefix(gpu_dci.device_id_nvml_) << "Starting optimization phase..." << std::endl;
                 //offline optimization
                 std::map<currency_type, measurement> gpu_optimal_config_offline;
-                if(!opt_config.skip_offline_phase_) {
+                if (!opt_config.skip_offline_phase_) {
                     gpu_optimal_config_offline =
                             find_optimal_config(benchmark_info(&run_benchmark_mining_offline),
                                                 gpu_dci, gpu_optimization_work,
@@ -417,8 +417,8 @@ namespace frequency_scaling {
                 std::map<currency_type, energy_hash_info> ehi;
                 for (auto &elem : gpu_optimal_config_online) {
                     ehi.emplace(elem.first, energy_hash_info(elem.first, (gpu_optimal_config_offline.count(elem.first))
-                                                             ? gpu_optimal_config_offline.at(elem.first)
-                                                             : elem.second, elem.second));
+                                                                         ? gpu_optimal_config_offline.at(elem.first)
+                                                                         : elem.second, elem.second));
                 }
                 {
                     std::lock_guard<std::mutex> lock_all(all_mutex);
