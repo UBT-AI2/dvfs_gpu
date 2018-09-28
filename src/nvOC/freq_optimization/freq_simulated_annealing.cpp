@@ -69,9 +69,10 @@ namespace frequency_scaling {
             if (eb < ea || exp(-(eb - ea) / Tk) > prob_check(eng)) {
                 current_node = neighbor_node;
                 cancel_count = 0;
-            } else {
+            } else if (++cancel_count > 1) {
                 //termination criterium
-                if (++cancel_count > 1);
+                VLOG(0) << "Simulated annealing convergence reached" << std::endl;
+                break;
             }
             VLOG(0) << cancel_count << std::endl;
             //decrease temperature

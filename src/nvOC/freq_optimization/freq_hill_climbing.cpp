@@ -233,13 +233,13 @@ namespace frequency_scaling {
             }
             cancel_val = std::max(last_node.energy_hash_, cancel_val);
             //termination criterium
-            if (tmp_val < cancel_val) {
-                if (++cancel_count > 2);
+            if (tmp_val < cancel_val && ++cancel_count > 2) {
+                VLOG(0) << "Hill Climbing convergence reached" << std::endl;
+                break;
             } else {
                 cancel_count = 0;
                 cancel_val = std::numeric_limits<double>::lowest();
             }
-            VLOG(0) << cancel_count << std::endl;
             //compute slope
             int memDiff = current_node.mem_oc - last_node.mem_oc;
             int graphDiff = dci.nvml_graph_clocks_[current_node.nvml_graph_clock_idx] -

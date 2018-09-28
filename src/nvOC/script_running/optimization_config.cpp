@@ -60,7 +60,6 @@ namespace frequency_scaling {
                       min_hashrate_pct) {}
 
 
-
     optimization_config get_config_user_dialog(const std::map<std::string, currency_type> &available_currencies) {
         optimization_config opt_config;
         std::string user_in, user_msg;
@@ -130,6 +129,7 @@ namespace frequency_scaling {
         root.put("energy_cost", opt_config.energy_cost_kwh_);
         root.put("monitoring_interval", opt_config.monitoring_interval_sec_);
         root.put("online_bench_duration", opt_config.online_bench_duration_sec_);
+        root.put("skip_offline_phase", opt_config.skip_offline_phase_);
         root.put("email", opt_config.miner_user_infos_.email_adress_);
         //write devices to use
         pt::ptree devices_to_use;
@@ -180,6 +180,7 @@ namespace frequency_scaling {
         opt_config.monitoring_interval_sec_ = root.get<int>("monitoring_interval");
         opt_config.online_bench_duration_sec_ = root.get<int>("online_bench_duration",
                                                               opt_config.online_bench_duration_sec_);
+        opt_config.skip_offline_phase_ = root.get<bool>("skip_offline_phase", opt_config.skip_offline_phase_);
         opt_config.miner_user_infos_.email_adress_ = root.get<std::string>("email", "");
         //read device infos
         for (const pt::ptree::value_type &array_elem : root.get_child("devices_to_use")) {

@@ -91,8 +91,8 @@ namespace frequency_scaling {
         //
         try {
 
-            int online_div = (bi.offline_) ? 1 : 2;
-            const measurement &start_node = (bi.offline_) ? bi.bf_(ct, dci, dci.max_mem_oc_, 0) :
+            int online_div = (!bi.start_values_.count(ct)) ? 1 : 2;
+            const measurement &start_node = (!bi.start_values_.count(ct)) ? bi.bf_(ct, dci, dci.max_mem_oc_, 0) :
                                             bi.bf_(ct, dci, bi.start_values_.at(ct).mem_oc,
                                                    bi.start_values_.at(ct).nvml_graph_clock_idx);
             double min_hashrate = -1.0;
@@ -392,13 +392,15 @@ namespace frequency_scaling {
             } else {
                 VLOG(0)
                 << log_utils::gpu_log_prefix(gpu_dci.device_id_nvml_) << "Starting optimization phase..." << std::endl;
-                const std::map<currency_type, measurement> &gpu_optimal_config_offline =
-                        find_optimal_config(benchmark_info(&run_benchmark_mining_offline),
-                                            gpu_dci, gpu_optimization_work,
-                                            opt_config.opt_method_params_);
-                std::set<currency_type> online_opt_currencies;
-                for (auto &elem : gpu_optimal_config_offline)
-                    online_opt_currencies.emplace(elem.first);
+                //offline optimization
+                std::map<currency_type, measurement> gpu_optimal_config_offline;
+                if(!opt_config.skip_offline_phase_) {
+                    gpu_optimal_config_offline =
+                            find_optimal_config(benchmark_info(&run_benchmark_mining_offline),
+                                                gpu_dci, gpu_optimization_work,
+                                                opt_config.opt_method_params_);
+                }
+                //online optimization
                 const std::map<currency_type, measurement> &gpu_optimal_config_online =
                         find_optimal_config(benchmark_info(std::bind(&run_benchmark_mining_online_log,
                                                                      std::cref(opt_config.miner_user_infos_),
@@ -409,14 +411,14 @@ namespace frequency_scaling {
                                                                      std::placeholders::_4),
                                                            gpu_optimal_config_offline,
                                                            opt_config.miner_user_infos_),
-                                            gpu_dci, online_opt_currencies,
+                                            gpu_dci, gpu_optimization_work,
                                             opt_config.opt_method_params_);
+                //save results
                 std::map<currency_type, energy_hash_info> ehi;
-                for (auto &elem : gpu_optimal_config_offline) {
-                    ehi.emplace(elem.first, energy_hash_info(elem.first, elem.second,
-                                                             (gpu_optimal_config_online.count(elem.first))
-                                                             ? gpu_optimal_config_online.at(elem.first)
-                                                             : elem.second));
+                for (auto &elem : gpu_optimal_config_online) {
+                    ehi.emplace(elem.first, energy_hash_info(elem.first, (gpu_optimal_config_offline.count(elem.first))
+                                                             ? gpu_optimal_config_offline.at(elem.first)
+                                                             : elem.second, elem.second));
                 }
                 {
                     std::lock_guard<std::mutex> lock_all(all_mutex);

@@ -53,6 +53,7 @@ int main(int argc, char **argv) {
         if (!cmd_arg_check(argc, argv, cmd_args))
             return 1;
 
+        FLAGS_v = 1;
         //init apis
         nvapiInit();
         nvmlInit_();

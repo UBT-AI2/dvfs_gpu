@@ -33,6 +33,7 @@ namespace frequency_scaling {
         double energy_cost_kwh_;
         int monitoring_interval_sec_;
         int online_bench_duration_sec_ = 120;
+        bool skip_offline_phase_ = false;
     };
 
 
