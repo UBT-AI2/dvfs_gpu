@@ -308,7 +308,6 @@ namespace frequency_scaling {
             stop_power_monitoring_script(device_id);
     }
 
-
     static std::list<gpu_group> find_equal_gpus(const std::vector<device_clock_info> &dcis) {
         std::list<gpu_group> res;
         std::set<int> remaining_devices;
@@ -330,7 +329,6 @@ namespace frequency_scaling {
         }
         return res;
     }
-
 
     static std::map<int, std::set<currency_type>>
     find_optimization_gpu_distr(const std::list<gpu_group> &equal_gpus,
@@ -360,7 +358,6 @@ namespace frequency_scaling {
         return res;
     };
 
-
     static void
     complete_optimization_results(std::map<int, device_opt_result> &optimization_results,
                                   const gpu_group &eq_vec) {
@@ -376,6 +373,46 @@ namespace frequency_scaling {
                     cur_or.emplace(elem.first, elem.second);
             }
         }
+    }
+
+    static std::map<int, device_opt_result> clean_opt_result(const std::map<int, device_opt_result> &opt_results_in,
+                                                             const optimization_config &opt_config,
+                                                             const std::set<currency_type> &currencies) {
+        std::map<int, device_opt_result> opt_results_out(opt_results_in.begin(),
+                                                         opt_results_in.end());
+        //check for new gpus of available type or swap of gpus of different type
+        for (auto &dci : opt_config.dcis_) {
+            if (opt_results_in.count(dci.device_id_nvml_) &&
+                dci.device_name_ == opt_results_in.at(dci.device_id_nvml_).device_name_)
+                continue;
+            for (auto &elem : opt_results_in) {
+                if (dci.device_name_ == elem.second.device_name_) {
+                    opt_results_out.at(dci.device_id_nvml_) = elem.second;
+                    break;
+                }
+            }
+        }
+        //remove gpus/currencies that are not in opt_config from available opt_results
+        for (auto it = opt_results_out.begin(); it != opt_results_out.end();) {
+            bool gpu_found = false;
+            for (auto &elem : opt_config.dcis_)
+                if (elem.device_id_nvml_ == it->first) {
+                    gpu_found = true;
+                    break;
+                }
+            if (!gpu_found) {
+                it = opt_results_out.erase(it);
+                continue;
+            }
+            for (auto it_inner = it->second.currency_ehi_.begin(); it_inner != it->second.currency_ehi_.end();) {
+                if (!currencies.count(it_inner->first))
+                    it_inner = it->second.currency_ehi_.erase(it_inner);
+                else
+                    ++it_inner;
+            }
+            ++it;
+        }
+        return opt_results_out;
     }
 
     static void gpu_thread_func(const optimization_config &opt_config,
@@ -511,28 +548,9 @@ namespace frequency_scaling {
         std::set<currency_type> currencies;
         for (auto &ui : opt_config.miner_user_infos_.wallet_addresses_)
             currencies.insert(ui.first);
-        //remove gpus/currencies that are not in opt_config from available opt_results
-        std::map<int, device_opt_result> opt_results_optphase(opt_results_in.begin(),
-                                                              opt_results_in.end());
-        for (auto it = opt_results_optphase.begin(); it != opt_results_optphase.end();) {
-            bool gpu_found = false;
-            for (auto &elem : opt_config.dcis_)
-                if (elem.device_id_nvml_ == it->first) {
-                    gpu_found = true;
-                    break;
-                }
-            if (!gpu_found) {
-                it = opt_results_optphase.erase(it);
-                continue;
-            }
-            for (auto it_inner = it->second.currency_ehi_.begin(); it_inner != it->second.currency_ehi_.end();) {
-                if (!currencies.count(it_inner->first))
-                    it_inner = it->second.currency_ehi_.erase(it_inner);
-                else
-                    ++it_inner;
-            }
-            ++it;
-        }
+        //clean and complete opt_result
+        std::map<int, device_opt_result> &&opt_results_optphase = clean_opt_result(opt_results_in, opt_config,
+                                                                                   currencies);
         //distribute optimization work exploiting equal gpus and already available opt_results
         const std::map<int, std::set<currency_type>> &gpu_distr =
                 find_optimization_gpu_distr(equal_gpus, currencies, opt_results_optphase);
@@ -693,6 +711,5 @@ namespace frequency_scaling {
         }
         return opt_results;
     }
-
 
 }

@@ -2,6 +2,7 @@
   "energy_cost": "0.1",
   "monitoring_interval": "3601",
   "online_bench_duration": "120",
+  "skip_offline_phase": "false",
   "email": "alexander.fiebig@uni-bayreuth.de",
   "devices_to_use": [
     {

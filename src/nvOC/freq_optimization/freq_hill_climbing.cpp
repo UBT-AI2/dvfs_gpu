@@ -188,11 +188,10 @@ namespace frequency_scaling {
                          int max_iterations, int mem_step, int graph_idx_step, double min_hashrate,
                          exploration_type expl_type) {
         if (start_node.hashrate_ < min_hashrate) {
-            //throw optimization_error("Minimum hashrate cannot be reached");
-            LOG(ERROR) << "start_node does not have minimum hashrate (" <<
+            LOG(WARNING) << "start_node does not have minimum hashrate (" <<
                        start_node.hashrate_ << " < " << min_hashrate << ")" << std::endl;
         }
-        if (!dci.nvml_supported_ && !dci.nvapi_supported_)
+        if (!dci.is_graph_oc_supported() && !dci.is_mem_oc_supported())
             return start_node;
 
         measurement current_node = start_node;

@@ -56,8 +56,7 @@ namespace frequency_scaling {
             const measurement &m = (num_func_evals == 1) ? best_measurement : benchmarkFunc(ct, dci, mem_oc, graph_idx);
             if (m.hashrate_ < min_hashrate) {
                 if (num_func_evals == 1) {
-                    //throw optimization_error("Minimum hashrate cannot be reached");
-                    LOG(ERROR) << "start_node does not have minimum hashrate (" <<
+                    LOG(WARNING) << "start_node does not have minimum hashrate (" <<
                                m.hashrate_ << " < " << min_hashrate << ")" << std::endl;
                 }
                 return std::numeric_limits<double>::max();
@@ -130,8 +129,7 @@ namespace frequency_scaling {
             const measurement &m = (num_func_evals == 1) ? best_measurement : benchmarkFunc(ct, dci, mem_oc, graph_idx);
             if (m.hashrate_ < min_hashrate) {
                 if (num_func_evals == 1) {
-                    //throw optimization_error("Minimum hashrate cannot be reached");
-                    LOG(ERROR) << "start_node does not have minimum hashrate (" <<
+                    LOG(WARNING) << "start_node does not have minimum hashrate (" <<
                                m.hashrate_ << " < " << min_hashrate << ")" << std::endl;
                 }
                 return std::numeric_limits<double>::max();

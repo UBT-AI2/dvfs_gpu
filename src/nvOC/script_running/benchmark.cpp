@@ -17,6 +17,12 @@
 
 namespace frequency_scaling {
 
+    static void safeCudaCall(CUresult res) {
+        if(res != CUDA_SUCCESS){
+            THROW_RUNTIME_ERROR("Cuda call failed");
+        }
+    }
+
     device_clock_info::device_clock_info(int device_id_nvml) : device_clock_info(device_id_nvml, 1, 1, -1, -1) {}
 
     device_clock_info::device_clock_info(int device_id_nvml, int min_mem_oc,
@@ -28,20 +34,34 @@ namespace frequency_scaling {
         CUresult res = cuDeviceGetByPCIBusId(&device_id_cuda_, nvmlGetBusIdString(device_id_nvml).c_str());
         if (res == CUDA_ERROR_NOT_INITIALIZED) {
             cuInit(0);
-            cuDeviceGetByPCIBusId(&device_id_cuda_, nvmlGetBusIdString(device_id_nvml).c_str());
+            safeCudaCall(cuDeviceGetByPCIBusId(&device_id_cuda_, nvmlGetBusIdString(device_id_nvml).c_str()));
+        }
+        else {
+            safeCudaCall(res);
         }
         int cuda_cc_major;
-        cuDeviceGetAttribute(&cuda_cc_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id_cuda_);
+        safeCudaCall(cuDeviceGetAttribute(&cuda_cc_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id_cuda_));
         if (cuda_cc_major < 6) {
+#ifndef _WIN32
+            LOG(WARNING) << log_utils::gpu_log_prefix(device_id_nvml) <<
+                         "Architecture < Pascal: NVML and NV-Control X frequency setting does not work correctly. Disabling NVML and NV-Control X..."
+                         << std::endl;
+            nvapi_supported = false;
+#else
             LOG(WARNING) << log_utils::gpu_log_prefix(device_id_nvml) <<
                          "Architecture < Pascal: NVML frequency setting does not work correctly. Disabling NVML..."
                          << std::endl;
+#endif
             nvml_supported_ = false;
         } else {
             nvml_supported_ = nvmlCheckOCSupport(device_id_nvml);
         }
         device_id_nvapi_ = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id_nvml));
+#ifndef _WIN32
+        nvapi_supported_ = (device_id_nvapi_ < 0 || cuda_cc_major < 6) ? false : nvapiCheckSupport(device_id_nvapi_);
+#else
         nvapi_supported_ = (device_id_nvapi_ < 0) ? false : nvapiCheckSupport(device_id_nvapi_);
+#endif
         VLOG(0)
         << log_utils::gpu_log_prefix(device_id_nvml) << "NVAPI support: " << ((nvapi_supported_) ? "Yes. " : "No. ") <<
         "NVML support: " << ((nvml_supported_) ? "Yes" : "No. ") << std::endl;

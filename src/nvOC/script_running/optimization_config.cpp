@@ -70,6 +70,8 @@ namespace frequency_scaling {
         //select monitoring interval
         int monitoring_interval_sec = cli_get_int("Enter miner monitoring interval in seconds:");
         opt_config.monitoring_interval_sec_ = monitoring_interval_sec;
+        user_in = cli_get_string("Skip offline phase during frequency optimization? [y/n]", "[yn]");
+        opt_config.skip_offline_phase_ = user_in == "y";
         //
         user_in = cli_get_string("Let miner notify you via email? [y/n]", "[yn]");
         if (user_in == "y") {
