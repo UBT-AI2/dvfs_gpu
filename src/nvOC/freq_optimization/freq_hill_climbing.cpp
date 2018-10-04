@@ -10,15 +10,15 @@ namespace frequency_scaling {
 
     static bool is_origin_direction(const measurement &current_node, const measurement &last_node,
                                     int mem_step_sgn, int graph_idx_step_sgn) {
-        /*int mem_diff = current_node.mem_oc - last_node.mem_oc;
+        int mem_diff = current_node.mem_oc - last_node.mem_oc;
         int graph_idx_diff = current_node.nvml_graph_clock_idx - last_node.nvml_graph_clock_idx;
         auto sgn = [](int a) {
-            if (a < 0) return -1;
-            if (a > 0) return 1;
+            if (a < 0) return 1;
+            if (a > 0) return -1;
             return 0;
         };
-        return sgn(mem_diff) == mem_step_sgn && sgn(graph_idx_diff) == graph_idx_step_sgn;*/
-        return false;
+        return sgn(mem_diff) == mem_step_sgn && sgn(graph_idx_diff) == graph_idx_step_sgn;
+        //return false;
     }
 
     static std::pair<double, double> compute_derivatives(const device_clock_info &dci,

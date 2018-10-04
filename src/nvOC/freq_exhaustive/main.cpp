@@ -65,8 +65,8 @@ int main(int argc, char **argv) {
                                                       : create_default_currency_config();
         int device_id = std::stoi(cmd_args.at("-d"));
         const currency_type &ct = available_currencies.at(boost::algorithm::to_upper_copy(cmd_args.at("-c")));
-        int mem_step = (cmd_args.count("--mem_step")) ? std::stoi(cmd_args.at("--mem_step")) : 50;
-        int graph_idx_step = (cmd_args.count("--graph_idx_step")) ? std::stoi(cmd_args.at("--graph_idx_step")) : 2;
+        int mem_step = (cmd_args.count("--mem_step")) ? std::stoi(cmd_args.at("--mem_step")) : 100;
+        int graph_idx_step = (cmd_args.count("--graph_idx_step")) ? std::stoi(cmd_args.at("--graph_idx_step")) : 6;
         int min_mem_oc = (cmd_args.count("--min_mem_oc")) ? std::stoi(cmd_args.at("--min_mem_oc")) : 1;
         int max_mem_oc = (cmd_args.count("--max_mem_oc")) ? std::stoi(cmd_args.at("--max_mem_oc")) : -1;
         int min_graph_oc = (cmd_args.count("--min_graph_oc")) ? std::stoi(cmd_args.at("--min_graph_oc")) : 1;

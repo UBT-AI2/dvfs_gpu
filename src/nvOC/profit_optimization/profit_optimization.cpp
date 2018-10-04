@@ -380,17 +380,21 @@ namespace frequency_scaling {
                                                              const std::set<currency_type> &currencies) {
         std::map<int, device_opt_result> opt_results_out(opt_results_in.begin(),
                                                          opt_results_in.end());
-        //check for new gpus of available type or swap of gpus of different type
+        //check for new gpus of available type or swap of gpus of different type + remove invalid gpus
         for (auto &dci : opt_config.dcis_) {
             if (opt_results_in.count(dci.device_id_nvml_) &&
                 dci.device_name_ == opt_results_in.at(dci.device_id_nvml_).device_name_)
                 continue;
+			bool repaired = false;
             for (auto &elem : opt_results_in) {
                 if (dci.device_name_ == elem.second.device_name_) {
                     opt_results_out.at(dci.device_id_nvml_) = elem.second;
+					repaired = true;
                     break;
                 }
             }
+			if (!repaired)
+				opt_results_out.erase(dci.device_id_nvml_);
         }
         //remove gpus/currencies that are not in opt_config from available opt_results
         for (auto it = opt_results_out.begin(); it != opt_results_out.end();) {
@@ -459,9 +463,13 @@ namespace frequency_scaling {
                 }
                 {
                     std::lock_guard<std::mutex> lock_all(all_mutex);
-                    opt_results.emplace(gpu_dci.device_id_nvml_,
+                    auto it_pair = opt_results.emplace(gpu_dci.device_id_nvml_,
                                         device_opt_result(gpu_dci.device_id_nvml_,
                                                           nvmlGetDeviceName(gpu_dci.device_id_nvml_), ehi));
+					if (!it_pair.second) {
+						std::map<currency_type, energy_hash_info>& existing_ehi = it_pair.first->second.currency_ehi_;
+						existing_ehi.insert(ehi.begin(), ehi.end());
+					}
                 }
                 VLOG(0)
                 << log_utils::gpu_log_prefix(gpu_dci.device_id_nvml_) << "Finished optimization phase..." << std::endl;
@@ -611,15 +619,15 @@ namespace frequency_scaling {
             }
         }
 
+		//always save to logdir
+		save_optimization_result(log_utils::get_autosave_opt_result_monitorphase_filename(),
+			opt_results_monitoringphase);
         //save opt results dialog
         user_in = cli_get_string("Save optimization results? [y/n]", "[yn]");
         if (user_in == "y") {
             user_in = cli_get_string("Enter filename:", "[\\w-.]+");
             save_optimization_result(user_in, opt_results_monitoringphase);
         }
-        //always save to logdir
-        save_optimization_result(log_utils::get_autosave_opt_result_monitorphase_filename(),
-                                 opt_results_monitoringphase);
     }
 
     void save_optimization_result(const std::string &filename,

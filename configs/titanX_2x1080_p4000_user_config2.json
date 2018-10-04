@@ -14,6 +14,15 @@
       "max_graph_oc": "100",
       "worker_name": "DESKTOP-6817PNB_gpu0"
     },
+	{
+      "index": "1",
+      "name": "TITAN X (Pascal)",
+      "min_mem_oc": "1",
+      "min_graph_oc": "1",
+      "max_mem_oc": "-1",
+      "max_graph_oc": "100",
+      "worker_name": "DESKTOP-6817PNB_gpu1"
+    },
     {
       "index": "2",
       "name": "GeForce GTX 1080",
@@ -22,6 +31,15 @@
       "max_mem_oc": "-1",
       "max_graph_oc": "100",
       "worker_name": "DESKTOP-6817PNB_gpu2"
+    },
+	{
+      "index": "3",
+      "name": "TITAN V",
+      "min_mem_oc": "1",
+      "min_graph_oc": "-1600",
+      "max_mem_oc": "0",
+      "max_graph_oc": "0",
+      "worker_name": "DESKTOP-6817PNB_gpu3"
     }
   ],
   "currencies_to_use": {
