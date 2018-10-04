@@ -13,6 +13,8 @@ namespace frequency_scaling {
 
     bool nvmlCheckOCSupport(int device_id);
 
+    bool enablePerformanceState3(int device_id);
+
     std::vector<int> nvmlGetAvailableMemClocks(int device_id);
 
     std::vector<int> nvmlGetAvailableGraphClocks(int device_id);

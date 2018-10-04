@@ -500,8 +500,8 @@ namespace frequency_scaling {
                                                                            std::to_string(device_id_nvapi));
 
 
-        res.min_oc_ = valid_values.u.range.min;
-        res.max_oc_ = valid_values.u.range.max;
+        res.min_oc_ = valid_values.u.range.min / 2;
+        res.max_oc_ = valid_values.u.range.max / 2;
         res.current_oc_ = current_oc;
         res.current_freq_ = (current_clock_freqs & 0xffff);
         return res;
@@ -560,7 +560,7 @@ namespace frequency_scaling {
                                                               device_id_nvapi,
                                                               3,//performance level
                                                               NV_CTRL_GPU_MEM_TRANSFER_RATE_OFFSET,
-                                                              memOCMHz),
+                                                              memOCMHz * 2),
                         "Unable to set value " + std::to_string(memOCMHz) +
                         " for NV_CTRL_GPU_MEM_TRANSFER_RATE_OFFSET on GPU " +
                         std::to_string(device_id_nvapi));

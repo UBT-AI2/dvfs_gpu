@@ -42,25 +42,19 @@ namespace frequency_scaling {
         int cuda_cc_major;
         safeCudaCall(cuDeviceGetAttribute(&cuda_cc_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id_cuda_));
         if (cuda_cc_major < 6) {
-#ifndef _WIN32
-            LOG(WARNING) << log_utils::gpu_log_prefix(device_id_nvml) <<
-                         "Architecture < Pascal: NVML and NV-Control X frequency setting does not work correctly. Disabling NVML and NV-Control X..."
-                         << std::endl;
-            nvapi_supported = false;
-#else
             LOG(WARNING) << log_utils::gpu_log_prefix(device_id_nvml) <<
                          "Architecture < Pascal: NVML frequency setting does not work correctly. Disabling NVML..."
                          << std::endl;
-#endif
             nvml_supported_ = false;
         } else {
             nvml_supported_ = nvmlCheckOCSupport(device_id_nvml);
         }
         device_id_nvapi_ = nvapiGetDeviceIndexByBusId(nvmlGetBusId(device_id_nvml));
-#ifndef _WIN32
-        nvapi_supported_ = (device_id_nvapi_ < 0 || cuda_cc_major < 6) ? false : nvapiCheckSupport(device_id_nvapi_);
-#else
+#ifdef _WIN32
         nvapi_supported_ = (device_id_nvapi_ < 0) ? false : nvapiCheckSupport(device_id_nvapi_);
+#else
+        nvapi_supported_ = (device_id_nvapi_ < 0 || (cuda_cc_major < 6 && !enablePerformanceState3(device_id_nvml))) ?
+                           false : nvapiCheckSupport(device_id_nvapi_);
 #endif
         VLOG(0)
         << log_utils::gpu_log_prefix(device_id_nvml) << "NVAPI support: " << ((nvapi_supported_) ? "Yes. " : "No. ") <<
@@ -75,8 +69,8 @@ namespace frequency_scaling {
         //set default min and max frequencies
         //##############################
         //get default clocks from nvml (no oc support requiered)
-        nvapi_default_graph_clock_ = nvmlGetDefaultGraphClock(device_id_nvml_);
-        nvapi_default_mem_clock_ = nvmlGetDefaultMemClock(device_id_nvml_);
+        nvapi_default_graph_clock_ = nvmlGetDefaultGraphClock(device_id_nvml);
+        nvapi_default_mem_clock_ = nvmlGetDefaultMemClock(device_id_nvml);
         //
         if (nvml_supported_)
             nvml_register_gpu(device_id_nvml);
