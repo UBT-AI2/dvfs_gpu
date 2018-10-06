@@ -91,13 +91,13 @@ namespace frequency_scaling {
         return __nvmlCheckOCSupport(device_id) == NVML_SUCCESS;
     }
 
-    bool enablePerformanceState3(int device_id){
+    bool enablePerformanceState3(int device_id) {
         //hack to enforce performance mode 3 for GPUs < Pascal
         //https://wiki.archlinux.org/index.php/Talk:NVIDIA/Tips_and_tricks
         nvmlDevice_t device;
         safeNVMLCall(nvmlDeviceGetHandleByIndex(device_id, &device));
-        if(nvmlDeviceSetApplicationsClocks(device, nvmlGetDefaultMemClock(device_id),
-                                           nvmlGetDefaultGraphClock(device_id)) != NVML_SUCCESS)
+        if (nvmlDeviceSetApplicationsClocks(device, nvmlGetDefaultMemClock(device_id),
+                                            nvmlGetDefaultGraphClock(device_id)) != NVML_SUCCESS)
             return false;
         return true;
     }

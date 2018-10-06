@@ -189,7 +189,7 @@ namespace frequency_scaling {
                          exploration_type expl_type) {
         if (start_node.hashrate_ < min_hashrate) {
             LOG(WARNING) << "start_node does not have minimum hashrate (" <<
-                       start_node.hashrate_ << " < " << min_hashrate << ")" << std::endl;
+                         start_node.hashrate_ << " < " << min_hashrate << ")" << std::endl;
         }
         if (!dci.is_graph_oc_supported() && !dci.is_mem_oc_supported())
             return start_node;
@@ -235,7 +235,7 @@ namespace frequency_scaling {
             }
             cancel_val = std::max(last_node.energy_hash_, cancel_val);
             //termination criterium
-            if (tmp_val < cancel_val && ++cancel_count > 2) {
+            if (tmp_val < cancel_val && ++cancel_count > 1) {
                 VLOG(0) << "Hill Climbing convergence reached" << std::endl;
                 break;
             } else {
@@ -270,7 +270,7 @@ namespace frequency_scaling {
         //initial guess at maximum frequencies
         const measurement &start_node = benchmarkFunc(ct, dci, dci.max_mem_oc_, 0);
         double min_hashrate = min_hashrate_pct * start_node.hashrate_;
-        return freq_hill_climbing(benchmarkFunc, ct, dci, start_node, true, max_iterations, mem_step_pct,
+        return freq_hill_climbing(benchmarkFunc, ct, dci, start_node, max_iterations, mem_step_pct,
                                   graph_idx_step_pct,
                                   min_hashrate, expl_type);
     }
@@ -278,12 +278,12 @@ namespace frequency_scaling {
 
     measurement
     freq_hill_climbing(const benchmark_func &benchmarkFunc, const currency_type &ct, const device_clock_info &dci,
-                       const measurement &start_node, bool allow_start_node_result,
+                       const measurement &start_node,
                        int max_iterations, double mem_step_pct, double graph_idx_step_pct, double min_hashrate,
                        exploration_type expl_type) {
         int mem_step = std::lround(mem_step_pct * (dci.max_mem_oc_ - dci.min_mem_oc_));
         int graph_idx_step = std::lround(std::max(graph_idx_step_pct * dci.nvml_graph_clocks_.size(), 1.0));
-        return __freq_hill_climbing(benchmarkFunc, ct, dci, start_node, allow_start_node_result, max_iterations,
+        return __freq_hill_climbing(benchmarkFunc, ct, dci, start_node, true, max_iterations,
                                     mem_step,
                                     graph_idx_step,
                                     min_hashrate, expl_type);

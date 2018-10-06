@@ -1,6 +1,8 @@
 //
 // Created by alex on 28.05.18.
 //
+#include <random>
+#include <chrono>
 #include <glog/logging.h>
 #include <boost/algorithm/string.hpp>
 #include "../common_header/fullexpr_accum.h"
@@ -31,8 +33,11 @@ static bool cmd_arg_check(int argc, char **argv, std::map<std::string, std::stri
                                        "--currency_config=<filename>\tCurrency configuration to use.\n\t"
                                        "--min_hashrate=<float>\t\tMinimum hashrate to adhere in percentage of maximum hashrate.\n\t"
                                        "--max_iterations=<int>\t\tMaximum iterations of optimization algo.\n\t"
-                                       "--mem_step=<float>\t\tDefault memory clock step size of optimization algo in percentage of value range.\n\t"
-                                       "--graph_idx_step=<float>\tDefault core clock index step size of optimization algo in percentage of value range.\n\t"
+                                       "--mem_step_pct=<float>\t\tDefault memory clock step size of optimization algo in percentage of value range.\n\t"
+                                       "--graph_idx_step_pct=<float>\tDefault core clock index step size of optimization algo in percentage of value range.\n\t"
+                                       "--start_mem_oc=<int>\t\tStart gpu memory overclock of optimization algo. Not possible when minimum hashrate is used\n\t"
+                                       "--start_graph_idx=<int>\t\tStart gpu core clock index of optimization algo. Not possible when minimum hashrate is used\n\t"
+                                       "--rand_start_clocks\t\tUse random start clocks for optimization algo. Overwritten by explicitly specified start clock. Not possible when minimum hashrate is used\n\t"
                                        "--min_mem_oc=<int>\t\tMinimum allowed gpu memory overclock.\n\t"
                                        "--max_mem_oc=<int>\t\tMaximum allowed gpu memory overclock.\n\t"
                                        "--min_graph_oc=<int>\t\tMinimum allowed gpu core overclock.\n\t"
@@ -78,9 +83,10 @@ int main(int argc, char **argv) {
         int max_iterations = (cmd_args.count("--max_iterations")) ? std::stoi(cmd_args.at("--max_iterations"))
                                                                   : (opt_method == optimization_method::NELDER_MEAD) ? 8
                                                                                                                      : 5;
-        double mem_step_pct = (cmd_args.count("--mem_step")) ? std::stod(cmd_args.at("--mem_step")) : 0.15;
-        double graph_idx_step_pct = (cmd_args.count("--graph_idx_step")) ? std::stod(cmd_args.at("--graph_idx_step"))
-                                                                         : 0.15;
+        double mem_step_pct = (cmd_args.count("--mem_step_pct")) ? std::stod(cmd_args.at("--mem_step_pct")) : 0.15;
+        double graph_idx_step_pct = (cmd_args.count("--graph_idx_step_pct")) ? std::stod(
+                cmd_args.at("--graph_idx_step_pct"))
+                                                                             : 0.15;
         int min_mem_oc = (cmd_args.count("--min_mem_oc")) ? std::stoi(cmd_args.at("--min_mem_oc")) : 1;
         int max_mem_oc = (cmd_args.count("--max_mem_oc")) ? std::stoi(cmd_args.at("--max_mem_oc")) : -1;
         int min_graph_oc = (cmd_args.count("--min_graph_oc")) ? std::stoi(cmd_args.at("--min_graph_oc")) : 1;
@@ -95,12 +101,6 @@ int main(int argc, char **argv) {
             online_bench_duration_sec = (cmd_args.count("--online_bench_duration")) ? std::stoi(
                     cmd_args.at("--online_bench_duration")) : 120;
         }
-
-        //start power monitoring
-        start_power_monitoring_script(device_id);
-
-        //
-        device_clock_info dci(device_id, min_mem_oc, min_graph_oc, max_mem_oc, max_graph_oc);
         const benchmark_func &bf = (online_bench) ? std::bind(&run_benchmark_mining_online_log,
                                                               std::cref(mui),
                                                               online_bench_duration_sec * 1000,
@@ -109,25 +109,51 @@ int main(int argc, char **argv) {
                                                               std::placeholders::_3,
                                                               std::placeholders::_4)
                                                   : benchmark_func(&run_benchmark_mining_offline);
+
+        //
+        device_clock_info dci(device_id, min_mem_oc, min_graph_oc, max_mem_oc, max_graph_oc);
+        int start_mem_oc = (cmd_args.count("--start_mem_oc") && min_hashrate_pct < 0) ?
+                           std::stoi(cmd_args.at("--start_mem_oc")) : dci.max_mem_oc_;
+        int start_graph_idx = (cmd_args.count("--start_graph_idx") && min_hashrate_pct < 0) ?
+                              std::stoi(cmd_args.at("--start_graph_idx")) : 0;
+        if (cmd_args.count("--rand_start_clocks") && min_hashrate_pct < 0) {
+            std::default_random_engine eng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+            if (!cmd_args.count("--start_mem_oc"))
+                start_mem_oc = std::uniform_int_distribution<int>(dci.min_mem_oc_, dci.max_mem_oc_)(eng);
+            if (!cmd_args.count("--start_graph_idx"))
+                start_graph_idx = std::uniform_int_distribution<int>(0, dci.nvml_graph_clocks_.size() - 1)(eng);
+        }
+        //check boundaries
+        start_mem_oc = std::min(dci.max_mem_oc_, std::max(start_mem_oc, dci.min_mem_oc_));
+        start_graph_idx = std::min((int) dci.nvml_graph_clocks_.size() - 1, std::max(start_graph_idx, 0));
+
+        //start power monitoring and mining
+        start_power_monitoring_script(device_id);
+        if (online_bench)
+            start_mining_script(ct, dci, mui);
         measurement m;
+        const measurement &start_node = bf(ct, dci, start_mem_oc, start_graph_idx);
         switch (opt_method) {
             case optimization_method::HILL_CLIMBING:
-                m = freq_hill_climbing(bf, ct, dci, max_iterations, mem_step_pct, graph_idx_step_pct, min_hashrate_pct);
+                m = freq_hill_climbing(bf, ct, dci, start_node, max_iterations, mem_step_pct, graph_idx_step_pct,
+                                       min_hashrate_pct);
                 break;
             case optimization_method::SIMULATED_ANNEALING:
-                m = freq_simulated_annealing(bf, ct, dci, max_iterations, mem_step_pct, graph_idx_step_pct,
+                m = freq_simulated_annealing(bf, ct, dci, start_node, max_iterations, mem_step_pct, graph_idx_step_pct,
                                              min_hashrate_pct);
                 break;
             case optimization_method::NELDER_MEAD:
-                m = freq_nelder_mead(bf, ct, dci, max_iterations, mem_step_pct, graph_idx_step_pct, min_hashrate_pct);
+                m = freq_nelder_mead(bf, ct, dci, start_node, max_iterations, mem_step_pct, graph_idx_step_pct,
+                                     min_hashrate_pct);
                 break;
             default:
                 THROW_RUNTIME_ERROR("Invalid enum value");
         }
         VLOG(0) << log_utils::gpu_log_prefix(ct, dci.device_id_nvml_) << "Computed optimal energy-hash ratio: "
                 << m.energy_hash_ << " (mem=" << m.mem_clock_ << ",graph=" << m.graph_clock_ << ")" << std::endl;
-
-        //stop power monitoring
+        //stop power monitoring and mining
+        if (online_bench)
+            stop_mining_script(dci.device_id_nvml_);
         stop_power_monitoring_script(device_id);
 
         //unload apis

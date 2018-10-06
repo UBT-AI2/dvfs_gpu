@@ -57,7 +57,7 @@ namespace frequency_scaling {
             if (m.hashrate_ < min_hashrate) {
                 if (num_func_evals == 1) {
                     LOG(WARNING) << "start_node does not have minimum hashrate (" <<
-                               m.hashrate_ << " < " << min_hashrate << ")" << std::endl;
+                                 m.hashrate_ << " < " << min_hashrate << ")" << std::endl;
                 }
                 return std::numeric_limits<double>::max();
             }
@@ -130,7 +130,7 @@ namespace frequency_scaling {
             if (m.hashrate_ < min_hashrate) {
                 if (num_func_evals == 1) {
                     LOG(WARNING) << "start_node does not have minimum hashrate (" <<
-                               m.hashrate_ << " < " << min_hashrate << ")" << std::endl;
+                                 m.hashrate_ << " < " << min_hashrate << ")" << std::endl;
                 }
                 return std::numeric_limits<double>::max();
             }

@@ -33,7 +33,7 @@ namespace frequency_scaling {
                              int mem_step, int graph_idx_step, double min_hashrate) {
         if (start_node.hashrate_ < min_hashrate) {
             LOG(WARNING) << "start_node does not have minimum hashrate (" <<
-                       start_node.hashrate_ << " < " << min_hashrate << ")" << std::endl;
+                         start_node.hashrate_ << " < " << min_hashrate << ")" << std::endl;
         }
         if (!dci.is_graph_oc_supported() && !dci.is_mem_oc_supported())
             return start_node;

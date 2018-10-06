@@ -81,10 +81,12 @@ int main(int argc, char **argv) {
             online_bench_duration_sec = (cmd_args.count("--online_bench_duration")) ? std::stoi(
                     cmd_args.at("--online_bench_duration")) : 120;
         }
-        //start power monitoring
-        start_power_monitoring_script(device_id);
         //
         device_clock_info dci(device_id, min_mem_oc, min_graph_oc, max_mem_oc, max_graph_oc);
+        //start power monitoring and mining
+        start_power_monitoring_script(device_id);
+        if (online_bench)
+            start_mining_script(ct, dci, mui);
         const measurement &m = (online_bench) ? freq_exhaustive(std::bind(&run_benchmark_mining_online_log,
                                                                           std::cref(mui),
                                                                           online_bench_duration_sec * 1000,
@@ -98,7 +100,9 @@ int main(int argc, char **argv) {
         VLOG(0) << log_utils::gpu_log_prefix(ct, dci.device_id_nvml_) << "Computed optimal energy-hash ratio: "
                 << m.energy_hash_ << " (mem=" << m.mem_clock_ << ",graph=" << m.graph_clock_ << ")" << std::endl;
 
-        //stop power monitoring
+        //stop power monitoring and mining
+        if (online_bench)
+            stop_mining_script(dci.device_id_nvml_);
         stop_power_monitoring_script(device_id);
 
         //unload apis

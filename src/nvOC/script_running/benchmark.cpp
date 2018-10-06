@@ -18,7 +18,7 @@
 namespace frequency_scaling {
 
     static void safeCudaCall(CUresult res) {
-        if(res != CUDA_SUCCESS){
+        if (res != CUDA_SUCCESS) {
             THROW_RUNTIME_ERROR("Cuda call failed");
         }
     }
@@ -35,12 +35,12 @@ namespace frequency_scaling {
         if (res == CUDA_ERROR_NOT_INITIALIZED) {
             cuInit(0);
             safeCudaCall(cuDeviceGetByPCIBusId(&device_id_cuda_, nvmlGetBusIdString(device_id_nvml).c_str()));
-        }
-        else {
+        } else {
             safeCudaCall(res);
         }
         int cuda_cc_major;
-        safeCudaCall(cuDeviceGetAttribute(&cuda_cc_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id_cuda_));
+        safeCudaCall(
+                cuDeviceGetAttribute(&cuda_cc_major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id_cuda_));
         if (cuda_cc_major < 6) {
             LOG(WARNING) << log_utils::gpu_log_prefix(device_id_nvml) <<
                          "Architecture < Pascal: NVML frequency setting does not work correctly. Disabling NVML..."
