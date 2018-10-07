@@ -114,7 +114,7 @@ namespace frequency_scaling {
                     break;
                 case optimization_method::HILL_CLIMBING:
                     optimal_config = freq_hill_climbing(bi.bf_, ct, dci,
-                                                        start_node, true,
+                                                        start_node,
                                                         opt_params_ct.max_iterations_ / online_div,
                                                         opt_params_ct.mem_step_pct_ / online_div,
                                                         opt_params_ct.graph_idx_step_pct_ / online_div,

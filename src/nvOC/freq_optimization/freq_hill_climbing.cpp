@@ -9,7 +9,8 @@ namespace frequency_scaling {
 
 
     static bool is_origin_direction(const measurement &current_node, const measurement &last_node,
-                                    int mem_step_sgn, int graph_idx_step_sgn) {
+                                    int mem_step_sgn, int graph_idx_step_sgn,
+                                    exploration_type expl_type, int iteration) {
         int mem_diff = current_node.mem_oc - last_node.mem_oc;
         int graph_idx_diff = current_node.nvml_graph_clock_idx - last_node.nvml_graph_clock_idx;
         auto sgn = [](int a) {
@@ -17,8 +18,10 @@ namespace frequency_scaling {
             if (a > 0) return -1;
             return 0;
         };
+        //alternating_diagonal?
+        if (expl_type == exploration_type::NEIGHBORHOOD_4_ALTERNATING && iteration % 2 == 0)
+            return sgn(mem_diff) == mem_step_sgn || sgn(graph_idx_diff) == graph_idx_step_sgn;
         return sgn(mem_diff) == mem_step_sgn && sgn(graph_idx_diff) == graph_idx_step_sgn;
-        //return false;
     }
 
     static std::pair<double, double> compute_derivatives(const device_clock_info &dci,
@@ -56,7 +59,7 @@ namespace frequency_scaling {
                 expl_type == exploration_type::NEIGHBORHOOD_4_STRAIGHT ||
                 (expl_type == exploration_type::NEIGHBORHOOD_4_ALTERNATING && (iteration % 2))) {
                 if (dci.is_mem_oc_supported() && mem_plus <= dci.max_mem_oc_ &&
-                    !is_origin_direction(current_node, last_node, 1, 0)) {
+                    !is_origin_direction(current_node, last_node, 1, 0, expl_type, iteration)) {
                     const measurement &m = benchmarkFunc(ms, dci, mem_plus,
                                                          current_node.nvml_graph_clock_idx);
                     if (m.hashrate_ >= min_hashrate) {
@@ -66,7 +69,7 @@ namespace frequency_scaling {
                     }
                 }
                 if (dci.is_mem_oc_supported() && mem_minus >= dci.min_mem_oc_ &&
-                    !is_origin_direction(current_node, last_node, -1, 0)) {
+                    !is_origin_direction(current_node, last_node, -1, 0, expl_type, iteration)) {
                     const measurement &m = benchmarkFunc(ms, dci, mem_minus,
                                                          current_node.nvml_graph_clock_idx);
                     if (m.hashrate_ >= min_hashrate) {
@@ -76,7 +79,7 @@ namespace frequency_scaling {
                     }
                 }
                 if (dci.is_graph_oc_supported() && graph_plus_idx < dci.nvml_graph_clocks_.size() &&
-                    !is_origin_direction(current_node, last_node, 0, 1)) {
+                    !is_origin_direction(current_node, last_node, 0, 1, expl_type, iteration)) {
                     const measurement &m = benchmarkFunc(ms, dci, current_node.mem_oc,
                                                          graph_plus_idx);
                     if (m.hashrate_ >= min_hashrate) {
@@ -86,7 +89,7 @@ namespace frequency_scaling {
                     }
                 }
                 if (dci.is_graph_oc_supported() && graph_minus_idx >= 0 &&
-                    !is_origin_direction(current_node, last_node, 0, -1)) {
+                    !is_origin_direction(current_node, last_node, 0, -1, expl_type, iteration)) {
                     const measurement &m = benchmarkFunc(ms, dci, current_node.mem_oc,
                                                          graph_minus_idx);
                     if (m.hashrate_ >= min_hashrate) {
@@ -104,7 +107,7 @@ namespace frequency_scaling {
                  (expl_type == exploration_type::NEIGHBORHOOD_4_ALTERNATING &&
                   !(iteration % 2)))) {
                 if (mem_plus <= dci.max_mem_oc_ && graph_plus_idx < dci.nvml_graph_clocks_.size() &&
-                    !is_origin_direction(current_node, last_node, 1, 1)) {
+                    !is_origin_direction(current_node, last_node, 1, 1, expl_type, iteration)) {
                     const measurement &m = benchmarkFunc(ms, dci, mem_plus, graph_plus_idx);
                     if (m.hashrate_ >= min_hashrate) {
                         neighbor_nodes.push_back(m);
@@ -113,7 +116,7 @@ namespace frequency_scaling {
                     }
                 }
                 if (mem_minus >= dci.min_mem_oc_ && graph_minus_idx >= 0 &&
-                    !is_origin_direction(current_node, last_node, -1, -1)) {
+                    !is_origin_direction(current_node, last_node, -1, -1, expl_type, iteration)) {
                     const measurement &m = benchmarkFunc(ms, dci, mem_minus, graph_minus_idx);
                     if (m.hashrate_ >= min_hashrate) {
                         neighbor_nodes.push_back(m);
@@ -122,7 +125,7 @@ namespace frequency_scaling {
                     }
                 }
                 if (mem_minus >= dci.min_mem_oc_ && graph_plus_idx < dci.nvml_graph_clocks_.size() &&
-                    !is_origin_direction(current_node, last_node, -1, 1)) {
+                    !is_origin_direction(current_node, last_node, -1, 1, expl_type, iteration)) {
                     const measurement &m = benchmarkFunc(ms, dci, mem_minus, graph_plus_idx);
                     if (m.hashrate_ >= min_hashrate) {
                         neighbor_nodes.push_back(m);
@@ -131,7 +134,7 @@ namespace frequency_scaling {
                     }
                 }
                 if (mem_plus <= dci.max_mem_oc_ && graph_minus_idx >= 0 &&
-                    !is_origin_direction(current_node, last_node, 1, -1)) {
+                    !is_origin_direction(current_node, last_node, 1, -1, expl_type, iteration)) {
                     const measurement &m = benchmarkFunc(ms, dci, mem_plus, graph_minus_idx);
                     if (m.hashrate_ >= min_hashrate) {
                         neighbor_nodes.push_back(m);
@@ -156,13 +159,15 @@ namespace frequency_scaling {
 
         //iff slope of slope is positive explore in that direction as long it stays positive
         measurement max_deriv_current_node = current_node;
+        double momentum_factor = 1.4;
         while (max_deriv_slopediff > 0) {
             VLOG(2) << "HC iteration" << iteration << ": max_deriv_slopediff: " << max_deriv_slopediff << std::endl;
             int max_deriv_mem_oc_diff = max_deriv_measurement.mem_oc - max_deriv_current_node.mem_oc;
             int max_deriv_graph_idx_diff =
                     max_deriv_measurement.nvml_graph_clock_idx - max_deriv_current_node.nvml_graph_clock_idx;
-            int max_deriv_mem_oc = max_deriv_measurement.mem_oc + max_deriv_mem_oc_diff;
-            int max_deriv_graph_idx = max_deriv_measurement.nvml_graph_clock_idx + max_deriv_graph_idx_diff;
+            int max_deriv_mem_oc = max_deriv_measurement.mem_oc + max_deriv_mem_oc_diff * momentum_factor;
+            int max_deriv_graph_idx =
+                    max_deriv_measurement.nvml_graph_clock_idx + max_deriv_graph_idx_diff * momentum_factor;
             if (max_deriv_mem_oc > dci.max_mem_oc_ || max_deriv_mem_oc < dci.min_mem_oc_ ||
                 max_deriv_graph_idx >= dci.nvml_graph_clocks_.size() || max_deriv_graph_idx < 0)
                 break;
