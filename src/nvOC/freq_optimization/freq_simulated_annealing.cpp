@@ -47,7 +47,7 @@ namespace frequency_scaling {
         std::uniform_real_distribution<double> distr_mem_stepsize(0.33 * mem_step, 3.0 * mem_step);
         //
         double Tk = start_temperature;
-        double c = 0.8;
+        double c = 0.7;
         int cancel_count = 0;
         for (int i = 0; i < max_iterations; i++) {
             int cur_mem_step = std::lround(distr_mem_stepsize(eng));

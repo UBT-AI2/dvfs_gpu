@@ -240,12 +240,14 @@ namespace frequency_scaling {
                     VLOG(0) << "Hill Climbing convergence reached" << std::endl;
                     break;
                 }
-                current_node = last_node;
+                //current_node = last_node;
                 cur_mem_step *= shrinkage_factor;
                 cur_graph_idx_step *= shrinkage_factor;
             } else {
                 //cancel_count = 0;
-                //cancel_count--;
+				cancel_count = std::max(cancel_count - 1, 0);
+				cur_mem_step = std::min((int)(cur_mem_step/shrinkage_factor), mem_step);
+				cur_graph_idx_step = std::min((int)(cur_graph_idx_step / shrinkage_factor), graph_idx_step);
                 cancel_val = std::numeric_limits<double>::lowest();
             }
             //compute slope
