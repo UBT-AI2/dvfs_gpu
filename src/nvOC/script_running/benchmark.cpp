@@ -6,6 +6,7 @@
 #include <cmath>
 #include <fstream>
 #include <algorithm>
+#include <list>
 #include <cuda.h>
 #include <glog/logging.h>
 #include "../nvapi/nvapiOC.h"
@@ -72,65 +73,87 @@ namespace frequency_scaling {
         nvapi_default_graph_clock_ = nvmlGetDefaultGraphClock(device_id_nvml);
         nvapi_default_mem_clock_ = nvmlGetDefaultMemClock(device_id_nvml);
         //
+		int min_mem_border = 0, max_mem_border = 0;
+		int min_graph_border = 0, max_graph_border = 0;
         if (nvml_supported_)
             nvml_register_gpu(device_id_nvml);
         if (nvapi_supported_) {
             nvapi_register_gpu(device_id_nvapi_);
             const nvapi_clock_info &nvapi_ci_mem = nvapiGetMemClockInfo(device_id_nvapi_);
-            if (min_mem_oc > 0)
-                min_mem_oc_ = nvapi_ci_mem.min_oc_;
-            if (max_mem_oc < 0)
-                max_mem_oc_ = std::min(900, nvapi_ci_mem.max_oc_);
+			min_mem_border = nvapi_ci_mem.min_oc_;
+			max_mem_border = (max_mem_oc == -1) ? std::min(900, nvapi_ci_mem.max_oc_) : nvapi_ci_mem.max_oc_;
+			//determine min_mem_oc
+			min_mem_oc_ = (min_mem_oc == 1) ? min_mem_border : 
+					std::min(std::max(min_mem_oc, min_mem_border), max_mem_border);
+			//determine max_mem_oc
+			max_mem_oc_ = (max_mem_oc == -1) ? max_mem_border :
+				std::min(std::max(max_mem_oc, min_mem_border), max_mem_border);
 
             const nvapi_clock_info &nvapi_ci_graph = nvapiGetGraphClockInfo(device_id_nvapi_);
-            if (min_graph_oc > 0)
-                min_graph_oc_ = nvapi_ci_graph.min_oc_;
-            if (max_graph_oc < 0)
-                max_graph_oc_ = std::min(100, nvapi_ci_graph.max_oc_);
+			min_graph_border = (!nvml_supported_) ? nvapi_ci_graph.min_oc_ : 
+				nvmlGetAvailableGraphClocks(device_id_nvml).back() - nvapi_default_graph_clock_;
+			max_graph_border = (max_graph_oc == -1) ? std::min(100, nvapi_ci_graph.max_oc_) : nvapi_ci_graph.max_oc_;
+			//determine min_graph_oc
+			min_graph_oc_ = (min_graph_oc == 1) ? min_graph_border :
+				std::min(std::max(min_graph_oc, min_graph_border), max_graph_border);
+			//determine max_graph_oc
+			max_graph_oc_ = (max_graph_oc == -1) ? max_graph_border :
+				std::min(std::max(max_graph_oc, min_graph_border), max_graph_border);
         } else {
+			min_graph_border = (!nvml_supported_) ? 0 :
+				nvmlGetAvailableGraphClocks(device_id_nvml).back() - nvapi_default_graph_clock_;
             min_mem_oc_ = max_mem_oc_ = 0;
             max_graph_oc_ = 0;
-            if (!nvml_supported_)
-                min_graph_oc_ = 0;
-            else if (min_graph_oc > 0)
-                min_graph_oc_ = nvmlGetAvailableGraphClocks(device_id_nvml).back() - nvapi_default_graph_clock_;
+			min_graph_oc_ = (min_graph_oc == 1) ? min_graph_border :
+					std::min(std::max(min_graph_oc, min_graph_border), max_graph_border);
         }
+		//should not happen
         if (min_mem_oc_ > max_mem_oc_)
             THROW_RUNTIME_ERROR("max_mem_oc >= min_mem_oc violated");
         if (min_graph_oc_ > max_graph_oc_)
             THROW_RUNTIME_ERROR("max_graph_oc >= min_graph_oc violated");
+		//log
+		VLOG(0) << log_utils::gpu_log_prefix(device_id_nvml) << "Default clocks: mem=" << nvapi_default_mem_clock_ << ",graph=" << nvapi_default_graph_clock_ << std::endl;
+		VLOG(0) << log_utils::gpu_log_prefix(device_id_nvml) << "Used OC range: min_mem=" << min_mem_oc_ << ",max_mem=" << max_mem_oc_ <<
+			",min_graph=" << min_graph_oc_ << ",max_graph=" << max_graph_oc_ << std::endl;
         //fill frequency vectors
         //###############################
         int oc_interval = 15;
+		std::list<int> all_available_graph_clocks;
         if (nvml_supported_) {
-            nvml_mem_clocks_ = nvmlGetAvailableMemClocks(device_id_nvml);
             if (nvapi_supported_) {
-                for (int graph_oc = max_graph_oc_; graph_oc >= oc_interval; graph_oc -= oc_interval) {
-                    if (min_graph_oc <= 0 && graph_oc < min_graph_oc_)
-                        break;
-                    nvml_graph_clocks_.push_back(nvapi_default_graph_clock_ + graph_oc);
+                for (int graph_oc = max_graph_border; graph_oc >= oc_interval; graph_oc -= oc_interval) {
+					all_available_graph_clocks.push_back(nvapi_default_graph_clock_ + graph_oc);
                 }
             }
-            for (int graph_clock : nvmlGetAvailableGraphClocks(device_id_nvml)) {
-                int graph_oc = graph_clock - nvapi_default_graph_clock_;
-                if ((min_graph_oc <= 0 && graph_oc < min_graph_oc_) ||
-                    (max_graph_oc >= 0 && graph_oc > max_graph_oc_))
-                    continue;
-                if (graph_clock <= nvapi_default_graph_clock_)
-                    nvml_graph_clocks_.push_back(graph_clock);
-            }
+			for (int graph_clock : nvmlGetAvailableGraphClocks(device_id_nvml))
+				all_available_graph_clocks.push_back(graph_clock);
         } else if (nvapi_supported_) {
             //fake nvml vectors
-            for (int graph_oc = max_graph_oc_; graph_oc >= min_graph_oc_; graph_oc -= oc_interval) {
-                nvml_graph_clocks_.push_back(nvapi_default_graph_clock_ + graph_oc);
+            for (int graph_oc = max_graph_border; graph_oc >= min_graph_border; graph_oc -= oc_interval) {
+				all_available_graph_clocks.push_back(nvapi_default_graph_clock_ + graph_oc);
             }
-            for (int mem_oc = max_mem_oc_; mem_oc >= min_mem_oc_; mem_oc -= oc_interval) {
-                nvml_mem_clocks_.push_back(nvapi_default_mem_clock_ + mem_oc);
-            }
-        } else {
-            nvml_graph_clocks_.push_back(nvapi_default_graph_clock_);
-            nvml_mem_clocks_.push_back(nvapi_default_mem_clock_);
         }
+		//cleanup
+        if(all_available_graph_clocks.empty())
+			nvml_graph_clocks_.push_back(nvapi_default_graph_clock_);
+		else {
+			int min_graph_clock = nvapi_default_graph_clock_ + min_graph_oc_;
+			int max_graph_clock = nvapi_default_graph_clock_ + max_graph_oc_;
+			for (auto it = all_available_graph_clocks.begin(); it != all_available_graph_clocks.end();) {
+				if (*it > max_graph_clock)
+					it = all_available_graph_clocks.erase(it);
+				else
+					++it;
+			}
+			for (auto it = all_available_graph_clocks.end(); it != all_available_graph_clocks.begin();) {
+				if (all_available_graph_clocks.size() == 1)
+					break;
+				if (*(--it) < min_graph_clock)
+					it = all_available_graph_clocks.erase(it);
+			}
+			nvml_graph_clocks_.insert(nvml_graph_clocks_.begin(), all_available_graph_clocks.begin(), all_available_graph_clocks.end());
+		}
     }
 
     bool device_clock_info::is_graph_oc_supported() const {
@@ -302,13 +325,13 @@ namespace frequency_scaling {
             } else {
                 nvapiOC(dci.device_id_nvapi_, 0, mem_oc);
                 //setting of mem clock has no effect with nvml
-                nvmlOC(dci.device_id_nvml_, graph_clock, dci.nvml_mem_clocks_[0]);
+                nvmlOC(dci.device_id_nvml_, graph_clock, dci.nvapi_default_mem_clock_);
             }
         } else if (dci.nvml_supported_) {
             int graph_clock = dci.nvml_graph_clocks_[nvml_graph_clock_idx];
             if (mem_oc != 0)
                 THROW_RUNTIME_ERROR("mem_oc != 0 althought nvapi not supported");
-            nvmlOC(dci.device_id_nvml_, graph_clock, dci.nvml_mem_clocks_[0]);
+            nvmlOC(dci.device_id_nvml_, graph_clock, dci.nvapi_default_mem_clock_);
         } else {
             if (mem_oc != 0 || nvml_graph_clock_idx != 0)
                 THROW_RUNTIME_ERROR(
