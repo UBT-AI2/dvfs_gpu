@@ -159,7 +159,7 @@ namespace frequency_scaling {
 
         //iff slope of slope is positive explore in that direction as long it stays positive
         measurement max_deriv_current_node = current_node;
-        double momentum_factor = 1.4;
+        double momentum_factor = 1.3;
         while (max_deriv_slopediff > 0) {
             VLOG(2) << "HC iteration" << iteration << ": max_deriv_slopediff: " << max_deriv_slopediff << std::endl;
             int max_deriv_mem_oc_diff = max_deriv_measurement.mem_oc - max_deriv_current_node.mem_oc;
@@ -205,24 +205,19 @@ namespace frequency_scaling {
             best_node = current_node;
         else
             best_node.energy_hash_ = std::numeric_limits<double>::lowest();
-        std::default_random_engine eng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
-        std::uniform_real_distribution<double> distr_stepsize(1.0, 2.0);
+
+        //std::default_random_engine eng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+        //std::uniform_real_distribution<double> distr_stepsize(0.5, 0.8);
 
         double currentslope = 0, slopediff = 0;//corresponds to first/second derivative
         int cur_mem_step = mem_step, cur_graph_idx_step = graph_idx_step;
         int cancel_count = 0;
         double cancel_val = std::numeric_limits<double>::lowest();
+        double shrinkage_factor = 0.7;
         measurement last_node = current_node;
         //exploration
         for (int i = 0; i < max_iterations; i++) {
-            if (currentslope > 0) {//slope increasing
-                cur_mem_step = std::lround(mem_step * distr_stepsize(eng));
-                cur_graph_idx_step = std::lround(graph_idx_step * distr_stepsize(eng));
-            } else if (currentslope < 0) { //slope decreasing
-                cur_mem_step = std::lround(mem_step / distr_stepsize(eng));
-                cur_graph_idx_step = std::lround(std::max(graph_idx_step / distr_stepsize(eng), 1.0));
-            }
-
+            //explore neighbors
             const std::vector<measurement> &neighbors = explore_neighborhood(benchmarkFunc, ct, dci, current_node,
                                                                              last_node,
                                                                              currentslope,
@@ -240,11 +235,17 @@ namespace frequency_scaling {
             }
             cancel_val = std::max(last_node.energy_hash_, cancel_val);
             //termination criterium
-            if (tmp_val < cancel_val && ++cancel_count > 1) {
-                VLOG(0) << "Hill Climbing convergence reached" << std::endl;
-                break;
+            if (tmp_val < cancel_val) {
+                if (++cancel_count > 2) {
+                    VLOG(0) << "Hill Climbing convergence reached" << std::endl;
+                    break;
+                }
+                current_node = last_node;
+                cur_mem_step *= shrinkage_factor;
+                cur_graph_idx_step *= shrinkage_factor;
             } else {
-                cancel_count = 0;
+                //cancel_count = 0;
+                //cancel_count--;
                 cancel_val = std::numeric_limits<double>::lowest();
             }
             //compute slope
