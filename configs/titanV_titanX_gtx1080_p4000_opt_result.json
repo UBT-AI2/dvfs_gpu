@@ -54,9 +54,9 @@
           "hashrate_measure_dur_ms": "18848"
         },
         "online": {
-          "power": "75.881181818181545",
-          "hashrate": "25689631.375",
-          "energy_hash": "338550.75473856978",
+          "power": "74.242174061433417",
+          "hashrate": "25488162.541666668",
+          "energy_hash": "343311.10132329765",
           "nvml_graph_clock_idx": "55",
           "mem_oc": "0",
           "graph_oc": "-696",
@@ -66,16 +66,16 @@
           "hashrate_measure_dur_ms": "120000"
         },
         "profit": {
-          "power": "75.82802491749581",
-          "hashrate": "25177473.077013053",
-          "energy_hash": "332033.87671520177",
+          "power": "75.463938753536837",
+          "hashrate": "25649478.187282141",
+          "energy_hash": "339890.53064209432",
           "nvml_graph_clock_idx": "55",
           "mem_oc": "0",
           "graph_oc": "-696",
           "graph_clock": "1012",
           "mem_clock": "3802",
-          "power_measure_dur_ms": "87569805",
-          "hashrate_measure_dur_ms": "87528333"
+          "power_measure_dur_ms": "152370335",
+          "hashrate_measure_dur_ms": "152328343"
         }
       },
       "LUX": {
@@ -92,28 +92,28 @@
           "hashrate_measure_dur_ms": "126267"
         },
         "online": {
-          "power": "31.219828813559349",
-          "hashrate": "1587769.4828523749",
-          "energy_hash": "50857.725464618088",
-          "nvml_graph_clock_idx": "88",
+          "power": "30.903080204778192",
+          "hashrate": "1377981.0802386249",
+          "energy_hash": "44590.41205949313",
+          "nvml_graph_clock_idx": "86",
           "mem_oc": "0",
-          "graph_oc": "-1114",
-          "graph_clock": "594",
+          "graph_oc": "-1088",
+          "graph_clock": "620",
           "mem_clock": "3802",
-          "power_measure_dur_ms": "120000",
-          "hashrate_measure_dur_ms": "120000"
+          "power_measure_dur_ms": "120001",
+          "hashrate_measure_dur_ms": "120001"
         },
         "profit": {
-          "power": "31.219828813559349",
-          "hashrate": "1587769.4828523749",
-          "energy_hash": "50857.725464618088",
-          "nvml_graph_clock_idx": "88",
+          "power": "32.16810267991945",
+          "hashrate": "890762.38027832797",
+          "energy_hash": "27690.858523476913",
+          "nvml_graph_clock_idx": "86",
           "mem_oc": "0",
-          "graph_oc": "-1114",
-          "graph_clock": "594",
+          "graph_oc": "-1088",
+          "graph_clock": "620",
           "mem_clock": "3802",
-          "power_measure_dur_ms": "0",
-          "hashrate_measure_dur_ms": "0"
+          "power_measure_dur_ms": "9024682",
+          "hashrate_measure_dur_ms": "9024395"
         }
       },
       "RVN": {
@@ -325,28 +325,28 @@
           "hashrate_measure_dur_ms": "19153"
         },
         "online": {
-          "power": "122.51349230769243",
-          "hashrate": "32407444.625",
-          "energy_hash": "264521.43363613175",
+          "power": "121.93249146757699",
+          "hashrate": "32014470.75",
+          "energy_hash": "262558.9813238004",
           "nvml_graph_clock_idx": "63",
           "mem_oc": "232",
           "graph_oc": "-722",
           "graph_clock": "1189",
           "mem_clock": "5237",
-          "power_measure_dur_ms": "120001",
-          "hashrate_measure_dur_ms": "120001"
+          "power_measure_dur_ms": "120000",
+          "hashrate_measure_dur_ms": "120000"
         },
         "profit": {
-          "power": "124.27053252329775",
-          "hashrate": "32665158.687262863",
-          "energy_hash": "262855.22419515607",
+          "power": "123.95050167543195",
+          "hashrate": "33068138.424297277",
+          "energy_hash": "266785.03093829483",
           "nvml_graph_clock_idx": "63",
           "mem_oc": "232",
           "graph_oc": "-722",
           "graph_clock": "1189",
           "mem_clock": "5237",
-          "power_measure_dur_ms": "73913007",
-          "hashrate_measure_dur_ms": "73911008"
+          "power_measure_dur_ms": "138713423",
+          "hashrate_measure_dur_ms": "138711011"
         }
       },
       "LUX": {
@@ -363,28 +363,28 @@
           "hashrate_measure_dur_ms": "47214"
         },
         "online": {
-          "power": "57.769644329896842",
-          "hashrate": "1725577.1017236665",
-          "energy_hash": "29869.962360676142",
-          "nvml_graph_clock_idx": "131",
-          "mem_oc": "-634",
-          "graph_oc": "-1582",
-          "graph_clock": "329",
-          "mem_clock": "4371",
+          "power": "57.856015358361773",
+          "hashrate": "2064816.0285190002",
+          "energy_hash": "35688.873762381874",
+          "nvml_graph_clock_idx": "119",
+          "mem_oc": "-514",
+          "graph_oc": "-1431",
+          "graph_clock": "480",
+          "mem_clock": "4491",
           "power_measure_dur_ms": "120000",
           "hashrate_measure_dur_ms": "120000"
         },
         "profit": {
-          "power": "82.734166593682744",
-          "hashrate": "2640318.6797670424",
-          "energy_hash": "31913.280673194655",
-          "nvml_graph_clock_idx": "131",
-          "mem_oc": "-634",
-          "graph_oc": "-1582",
-          "graph_clock": "329",
-          "mem_clock": "4371",
-          "power_measure_dur_ms": "31274989",
-          "hashrate_measure_dur_ms": "31274052"
+          "power": "79.563821858721937",
+          "hashrate": "2576943.4613186703",
+          "energy_hash": "32388.382070112697",
+          "nvml_graph_clock_idx": "119",
+          "mem_oc": "-514",
+          "graph_oc": "-1431",
+          "graph_clock": "480",
+          "mem_clock": "4491",
+          "power_measure_dur_ms": "36219499",
+          "hashrate_measure_dur_ms": "36218380"
         }
       },
       "RVN": {
@@ -477,28 +477,28 @@
           "hashrate_measure_dur_ms": "16131"
         },
         "online": {
-          "power": "93.974749571183679",
-          "hashrate": "778.44583333333321",
-          "energy_hash": "8.2835637965034277",
+          "power": "91.613176068375878",
+          "hashrate": "760.13441666666665",
+          "energy_hash": "8.2972171612011039",
           "nvml_graph_clock_idx": "60",
           "mem_oc": "366",
           "graph_oc": "-684",
           "graph_clock": "1227",
           "mem_clock": "5371",
-          "power_measure_dur_ms": "120001",
-          "hashrate_measure_dur_ms": "120001"
+          "power_measure_dur_ms": "120000",
+          "hashrate_measure_dur_ms": "120000"
         },
         "profit": {
-          "power": "95.810740448740802",
-          "hashrate": "807.19671702454718",
-          "energy_hash": "8.4249084522669069",
+          "power": "94.015000792992907",
+          "hashrate": "841.15455186018323",
+          "energy_hash": "8.9470248871483911",
           "nvml_graph_clock_idx": "60",
           "mem_oc": "366",
           "graph_oc": "-684",
           "graph_clock": "1227",
           "mem_clock": "5371",
-          "power_measure_dur_ms": "32660844",
-          "hashrate_measure_dur_ms": "32659966"
+          "power_measure_dur_ms": "54261037",
+          "hashrate_measure_dur_ms": "54259967"
         }
       },
       "ZEC": {
@@ -558,28 +558,28 @@
           "hashrate_measure_dur_ms": "6146"
         },
         "online": {
-          "power": "104.52180442176873",
-          "hashrate": "16478149.767087363",
-          "energy_hash": "157652.74870872265",
-          "nvml_graph_clock_idx": "0",
-          "mem_oc": "-611",
-          "graph_oc": "100",
-          "graph_clock": "2011",
-          "mem_clock": "4394",
-          "power_measure_dur_ms": "120000",
-          "hashrate_measure_dur_ms": "120000"
+          "power": "104.96248634812288",
+          "hashrate": "16205617.359415",
+          "energy_hash": "154394.37386864852",
+          "nvml_graph_clock_idx": "4",
+          "mem_oc": "-830",
+          "graph_oc": "30",
+          "graph_clock": "1941",
+          "mem_clock": "4175",
+          "power_measure_dur_ms": "120001",
+          "hashrate_measure_dur_ms": "120001"
         },
         "profit": {
-          "power": "109.77750079356457",
-          "hashrate": "15946295.414977241",
-          "energy_hash": "145260.14255839254",
-          "nvml_graph_clock_idx": "0",
-          "mem_oc": "-611",
-          "graph_oc": "100",
-          "graph_clock": "2011",
-          "mem_clock": "4394",
-          "power_measure_dur_ms": "9977883",
-          "hashrate_measure_dur_ms": "9977546"
+          "power": "109.78070288741839",
+          "hashrate": "16763180.589968923",
+          "energy_hash": "152696.96903981199",
+          "nvml_graph_clock_idx": "4",
+          "mem_oc": "-830",
+          "graph_oc": "30",
+          "graph_clock": "1941",
+          "mem_clock": "4175",
+          "power_measure_dur_ms": "25146994",
+          "hashrate_measure_dur_ms": "25146226"
         }
       },
       "ETH": {
@@ -596,28 +596,28 @@
           "hashrate_measure_dur_ms": "18922"
         },
         "online": {
-          "power": "104.14866021126764",
-          "hashrate": "24368014.041666668",
-          "energy_hash": "233973.37989980538",
-          "nvml_graph_clock_idx": "1",
-          "mem_oc": "618",
-          "graph_oc": "85",
-          "graph_clock": "1996",
-          "mem_clock": "5623",
-          "power_measure_dur_ms": "120013",
-          "hashrate_measure_dur_ms": "120013"
+          "power": "104.70511443661961",
+          "hashrate": "25079121.875",
+          "energy_hash": "239521.45995868198",
+          "nvml_graph_clock_idx": "0",
+          "mem_oc": "761",
+          "graph_oc": "90",
+          "graph_clock": "2001",
+          "mem_clock": "5766",
+          "power_measure_dur_ms": "120012",
+          "hashrate_measure_dur_ms": "120012"
         },
         "profit": {
-          "power": "104.84211311255429",
-          "hashrate": "21964521.601387545",
-          "energy_hash": "209500.9433643074",
-          "nvml_graph_clock_idx": "1",
-          "mem_oc": "618",
-          "graph_oc": "85",
-          "graph_clock": "1996",
-          "mem_clock": "5623",
-          "power_measure_dur_ms": "8657900",
-          "hashrate_measure_dur_ms": "8657592"
+          "power": "104.79662046271105",
+          "hashrate": "24774773.972718406",
+          "energy_hash": "236408.1385766998",
+          "nvml_graph_clock_idx": "0",
+          "mem_oc": "761",
+          "graph_oc": "90",
+          "graph_clock": "2001",
+          "mem_clock": "5766",
+          "power_measure_dur_ms": "27932000",
+          "hashrate_measure_dur_ms": "27929335"
         }
       },
       "LUX": {
@@ -634,28 +634,28 @@
           "hashrate_measure_dur_ms": "61629"
         },
         "online": {
-          "power": "74.914560271646977",
-          "hashrate": "3577034.7465741672",
-          "energy_hash": "47748.191187447614",
-          "nvml_graph_clock_idx": "3",
-          "mem_oc": "215",
-          "graph_oc": "55",
-          "graph_clock": "1966",
-          "mem_clock": "5220",
+          "power": "32.106775510204024",
+          "hashrate": "3587797.6540306001",
+          "energy_hash": "111745.81056544726",
+          "nvml_graph_clock_idx": "12",
+          "mem_oc": "-19",
+          "graph_oc": "-90",
+          "graph_clock": "1821",
+          "mem_clock": "4986",
           "power_measure_dur_ms": "120000",
           "hashrate_measure_dur_ms": "120000"
         },
         "profit": {
-          "power": "71.128231585368056",
-          "hashrate": "3335240.923854447",
-          "energy_hash": "46890.536282369023",
-          "nvml_graph_clock_idx": "3",
-          "mem_oc": "215",
-          "graph_oc": "55",
-          "graph_clock": "1966",
-          "mem_clock": "5220",
-          "power_measure_dur_ms": "75310103",
-          "hashrate_measure_dur_ms": "75308364"
+          "power": "73.364698492405125",
+          "hashrate": "3585863.5839317408",
+          "energy_hash": "48877.234659431706",
+          "nvml_graph_clock_idx": "12",
+          "mem_oc": "-19",
+          "graph_oc": "-90",
+          "graph_clock": "1821",
+          "mem_clock": "4986",
+          "power_measure_dur_ms": "200525484",
+          "hashrate_measure_dur_ms": "200521186"
         }
       },
       "RVN": {
@@ -672,28 +672,28 @@
           "hashrate_measure_dur_ms": "3482"
         },
         "online": {
-          "power": "94.698735494880495",
-          "hashrate": "9093156.5318956245",
-          "energy_hash": "96021.942472370283",
+          "power": "98.460568994889272",
+          "hashrate": "10605432.647638001",
+          "energy_hash": "107712.48588039838",
           "nvml_graph_clock_idx": "4",
-          "mem_oc": "-956",
-          "graph_oc": "40",
-          "graph_clock": "1951",
-          "mem_clock": "4049",
-          "power_measure_dur_ms": "120022",
-          "hashrate_measure_dur_ms": "120022"
+          "mem_oc": "-911",
+          "graph_oc": "30",
+          "graph_clock": "1941",
+          "mem_clock": "4094",
+          "power_measure_dur_ms": "120000",
+          "hashrate_measure_dur_ms": "120000"
         },
         "profit": {
-          "power": "101.7159504212724",
-          "hashrate": "8303132.4618212534",
-          "energy_hash": "81630.584263653262",
+          "power": "102.61184806809899",
+          "hashrate": "8636530.216029631",
+          "energy_hash": "84166.988302344427",
           "nvml_graph_clock_idx": "4",
-          "mem_oc": "-956",
-          "graph_oc": "40",
-          "graph_clock": "1951",
-          "mem_clock": "4049",
-          "power_measure_dur_ms": "95962299",
-          "hashrate_measure_dur_ms": "95960186"
+          "mem_oc": "-911",
+          "graph_oc": "30",
+          "graph_clock": "1941",
+          "mem_clock": "4094",
+          "power_measure_dur_ms": "184730098",
+          "hashrate_measure_dur_ms": "184724422"
         }
       },
       "VTC": {
@@ -748,28 +748,28 @@
           "hashrate_measure_dur_ms": "15731"
         },
         "online": {
-          "power": "82.470386324786332",
-          "hashrate": "594.12125000000003",
-          "energy_hash": "7.2040556189493428",
-          "nvml_graph_clock_idx": "4",
-          "mem_oc": "758",
-          "graph_oc": "40",
-          "graph_clock": "1951",
-          "mem_clock": "5763",
-          "power_measure_dur_ms": "120003",
-          "hashrate_measure_dur_ms": "120003"
+          "power": "85.397263620386639",
+          "hashrate": "591.45583333333332",
+          "energy_hash": "6.9259342543165143",
+          "nvml_graph_clock_idx": "6",
+          "mem_oc": "731",
+          "graph_oc": "0",
+          "graph_clock": "1911",
+          "mem_clock": "5736",
+          "power_measure_dur_ms": "120001",
+          "hashrate_measure_dur_ms": "120001"
         },
         "profit": {
-          "power": "82.470386324786332",
-          "hashrate": "594.12125000000003",
-          "energy_hash": "7.2040556189493428",
-          "nvml_graph_clock_idx": "4",
-          "mem_oc": "758",
-          "graph_oc": "40",
-          "graph_clock": "1951",
-          "mem_clock": "5763",
-          "power_measure_dur_ms": "0",
-          "hashrate_measure_dur_ms": "0"
+          "power": "83.368073135133457",
+          "hashrate": "525",
+          "energy_hash": "6.2973747653854728",
+          "nvml_graph_clock_idx": "6",
+          "mem_oc": "731",
+          "graph_oc": "0",
+          "graph_clock": "1911",
+          "mem_clock": "5736",
+          "power_measure_dur_ms": "5059483",
+          "hashrate_measure_dur_ms": "5059338"
         }
       },
       "ZEC": {
@@ -867,28 +867,28 @@
           "hashrate_measure_dur_ms": "19079"
         },
         "online": {
-          "power": "123.36840068493154",
-          "hashrate": "51194156.333333336",
-          "energy_hash": "414969.76575125766",
+          "power": "123.13940683760666",
+          "hashrate": "50966812.333333336",
+          "energy_hash": "413895.2236512489",
           "nvml_graph_clock_idx": "89",
           "mem_oc": "0",
           "graph_oc": "-667",
           "graph_clock": "1245",
           "mem_clock": "850",
-          "power_measure_dur_ms": "120000",
-          "hashrate_measure_dur_ms": "120000"
+          "power_measure_dur_ms": "120001",
+          "hashrate_measure_dur_ms": "120001"
         },
         "profit": {
-          "power": "120.07815681506554",
-          "hashrate": "46868915.02726949",
-          "energy_hash": "390320.07377872331",
+          "power": "120.75369069759338",
+          "hashrate": "46799226.712485887",
+          "energy_hash": "387559.39004536439",
           "nvml_graph_clock_idx": "89",
           "mem_oc": "0",
           "graph_oc": "-667",
           "graph_clock": "1245",
           "mem_clock": "850",
-          "power_measure_dur_ms": "30516657",
-          "hashrate_measure_dur_ms": "30515790"
+          "power_measure_dur_ms": "73719754",
+          "hashrate_measure_dur_ms": "73715790"
         }
       },
       "LUX": {
@@ -1019,28 +1019,28 @@
           "hashrate_measure_dur_ms": "16281"
         },
         "online": {
-          "power": "81.113444444444355",
-          "hashrate": "1162.8791666666668",
-          "energy_hash": "14.336454019815886",
-          "nvml_graph_clock_idx": "103",
+          "power": "77.883945205479449",
+          "hashrate": "1130.4599999999998",
+          "energy_hash": "14.514673043559013",
+          "nvml_graph_clock_idx": "119",
           "mem_oc": "0",
-          "graph_oc": "-772",
-          "graph_clock": "1140",
+          "graph_oc": "-892",
+          "graph_clock": "1020",
           "mem_clock": "850",
           "power_measure_dur_ms": "120001",
           "hashrate_measure_dur_ms": "120001"
         },
         "profit": {
-          "power": "81.540903622363118",
-          "hashrate": "1132.3659844536705",
-          "energy_hash": "13.887091436930211",
-          "nvml_graph_clock_idx": "103",
+          "power": "81.335311447350094",
+          "hashrate": "1114.6391984909426",
+          "energy_hash": "13.704247007309609",
+          "nvml_graph_clock_idx": "119",
           "mem_oc": "0",
-          "graph_oc": "-772",
-          "graph_clock": "1140",
+          "graph_oc": "-892",
+          "graph_clock": "1020",
           "mem_clock": "850",
-          "power_measure_dur_ms": "42625920",
-          "hashrate_measure_dur_ms": "42595006"
+          "power_measure_dur_ms": "47077148",
+          "hashrate_measure_dur_ms": "47046056"
         }
       },
       "ZEC": {
