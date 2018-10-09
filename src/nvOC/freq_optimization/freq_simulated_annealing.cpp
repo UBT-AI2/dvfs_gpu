@@ -17,7 +17,7 @@ namespace frequency_scaling {
     guess_start_temperature(const benchmark_func &benchmarkFunc, const currency_type &ct,
                             const device_clock_info &dci) {
         int min_graph_idx = dci.nvml_graph_clocks_.size() - 1;
-        int min_mem_oc = dci.max_mem_oc_;
+        int min_mem_oc = dci.min_mem_oc_;
         const measurement &min_node = benchmarkFunc(ct, dci, min_mem_oc, min_graph_idx);
         int max_graph_idx = 0.5 * dci.nvml_graph_clocks_.size();
         int max_mem_oc = dci.min_mem_oc_ + 0.5 * (dci.max_mem_oc_ - dci.min_mem_oc_);
