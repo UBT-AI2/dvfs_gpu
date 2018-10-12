@@ -139,11 +139,11 @@ namespace frequency_scaling {
         {
             currency_type ct_lux("LUX", true);
             ct_lux.ccminer_algo_ = "phi2";
-            ct_lux.pool_addresses_ = {"phi2.mine.zergpool.com:8332"};
+            ct_lux.pool_addresses_ = {"phi2.mine.zpool.ca:8332"};
             ct_lux.pool_pass_ = "c=LUX,mc=LUX";
             ct_lux.whattomine_coin_id_ = 212;
             ct_lux.cryptocompare_fsym_ = "LUX";
-            ct_lux.pool_current_hashrate_api_address_ = "http://api.zergpool.com:8080/api/walletEx?address=%s";
+            ct_lux.pool_current_hashrate_api_address_ = "http://www.zpool.ca/api/walletEx?address=%s";
             ct_lux.pool_current_hashrate_json_path_worker_array_ = "miners";
             ct_lux.pool_current_hashrate_json_path_worker_name_ = "ID";
             ct_lux.pool_current_hashrate_json_path_hashrate_ = "accepted";
@@ -153,11 +153,11 @@ namespace frequency_scaling {
         {
             currency_type ct_btx("BTX", true);
             ct_btx.ccminer_algo_ = "bitcore";
-            ct_btx.pool_addresses_ = {"bitcore.mine.zergpool.com:3556"};
+            ct_btx.pool_addresses_ = {"bitcore.mine.zpool.ca:3556"};
             ct_btx.pool_pass_ = "c=BTX,mc=BTX";
             ct_btx.whattomine_coin_id_ = 202;
             ct_btx.cryptocompare_fsym_ = "BTX";
-            ct_btx.pool_current_hashrate_api_address_ = "http://api.zergpool.com:8080/api/walletEx?address=%s";
+            ct_btx.pool_current_hashrate_api_address_ = "http://www.zpool.ca/api/walletEx?address=%s";
             ct_btx.pool_current_hashrate_json_path_worker_array_ = "miners";
             ct_btx.pool_current_hashrate_json_path_worker_name_ = "ID";
             ct_btx.pool_current_hashrate_json_path_hashrate_ = "accepted";
@@ -167,11 +167,11 @@ namespace frequency_scaling {
         {
             currency_type ct_vtc("VTC", true);
             ct_vtc.ccminer_algo_ = "lyra2v2";
-            ct_vtc.pool_addresses_ = {"lyra2v2.mine.zergpool.com:4533"};
+            ct_vtc.pool_addresses_ = {"lyra2v2.mine.zpool.ca:4533"};
             ct_vtc.pool_pass_ = "c=VTC,mc=VTC";
             ct_vtc.whattomine_coin_id_ = 5;
             ct_vtc.cryptocompare_fsym_ = "VTC";
-            ct_vtc.pool_current_hashrate_api_address_ = "http://api.zergpool.com:8080/api/walletEx?address=%s";
+            ct_vtc.pool_current_hashrate_api_address_ = "http://www.zpool.ca/api/walletEx?address=%s";
             ct_vtc.pool_current_hashrate_json_path_worker_array_ = "miners";
             ct_vtc.pool_current_hashrate_json_path_worker_name_ = "ID";
             ct_vtc.pool_current_hashrate_json_path_hashrate_ = "accepted";
@@ -181,11 +181,11 @@ namespace frequency_scaling {
         {
             currency_type ct_rvn("RVN", true);
             ct_rvn.ccminer_algo_ = "x16r";
-            ct_rvn.pool_addresses_ = {"x16r.mine.zergpool.com:3636"};
+            ct_rvn.pool_addresses_ = {"x16r.mine.zpool.ca:3636"};
             ct_rvn.pool_pass_ = "c=RVN,mc=RVN";
             ct_rvn.whattomine_coin_id_ = 234;
             ct_rvn.cryptocompare_fsym_ = "RVN";
-            ct_rvn.pool_current_hashrate_api_address_ = "http://api.zergpool.com:8080/api/walletEx?address=%s";
+            ct_rvn.pool_current_hashrate_api_address_ = "http://www.zpool.ca/api/walletEx?address=%s";
             ct_rvn.pool_current_hashrate_json_path_worker_array_ = "miners";
             ct_rvn.pool_current_hashrate_json_path_worker_name_ = "ID";
             ct_rvn.pool_current_hashrate_json_path_hashrate_ = "accepted";

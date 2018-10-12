@@ -7,7 +7,7 @@
             "bench_script_path": "..\/scripts\/run_benchmark_generic_ccminer.sh",
             "mining_script_path": "..\/scripts\/start_mining_generic_ccminer.sh",
             "pool_addresses": [
-                "bitcore.mine.zergpool.com:3556"
+                "bitcore.mine.zpool.ca:3556"
             ],
             "pool_pass": "c=BTX,mc=BTX",
             "whattomine_coin_id": "202",
@@ -18,7 +18,7 @@
             "pool_avg_hashrate_json_path_hashrate": "",
             "pool_avg_hashrate_api_unit_factor_hashrate": "-1",
             "pool_avg_hashrate_api_unit_factor_period": "-1",
-            "pool_current_hashrate_api_address": "http:\/\/api.zergpool.com:8080\/api\/walletEx?address=%s",
+            "pool_current_hashrate_api_address": "http:\/\/www.zpool.ca\/api\/walletEx?address=%s",
             "pool_current_hashrate_json_path_worker_array": "miners",
             "pool_current_hashrate_json_path_worker_name": "ID",
             "pool_current_hashrate_json_path_hashrate": "accepted",
@@ -69,7 +69,7 @@
             "bench_script_path": "..\/scripts\/run_benchmark_generic_ccminer.sh",
             "mining_script_path": "..\/scripts\/start_mining_generic_ccminer.sh",
             "pool_addresses": [
-                "phi2.mine.zergpool.com:8332"
+                "phi2.mine.zpool.ca:8332"
             ],
             "pool_pass": "c=LUX,mc=LUX",
             "whattomine_coin_id": "212",
@@ -80,7 +80,7 @@
             "pool_avg_hashrate_json_path_hashrate": "",
             "pool_avg_hashrate_api_unit_factor_hashrate": "-1",
             "pool_avg_hashrate_api_unit_factor_period": "-1",
-            "pool_current_hashrate_api_address": "http:\/\/api.zergpool.com:8080\/api\/walletEx?address=%s",
+            "pool_current_hashrate_api_address": "http:\/\/www.zpool.ca\/api\/walletEx?address=%s",
             "pool_current_hashrate_json_path_worker_array": "miners",
             "pool_current_hashrate_json_path_worker_name": "ID",
             "pool_current_hashrate_json_path_hashrate": "accepted",
@@ -97,7 +97,7 @@
             "bench_script_path": "..\/scripts\/run_benchmark_generic_ccminer.sh",
             "mining_script_path": "..\/scripts\/start_mining_generic_ccminer.sh",
             "pool_addresses": [
-                "x16r.mine.zergpool.com:3636"
+                "x16r.mine.zpool.ca:3636"
             ],
             "pool_pass": "c=RVN,mc=RVN",
             "whattomine_coin_id": "234",
@@ -108,7 +108,7 @@
             "pool_avg_hashrate_json_path_hashrate": "",
             "pool_avg_hashrate_api_unit_factor_hashrate": "-1",
             "pool_avg_hashrate_api_unit_factor_period": "-1",
-            "pool_current_hashrate_api_address": "http:\/\/api.zergpool.com:8080\/api\/walletEx?address=%s",
+            "pool_current_hashrate_api_address": "http:\/\/www.zpool.ca\/api\/walletEx?address=%s",
             "pool_current_hashrate_json_path_worker_array": "miners",
             "pool_current_hashrate_json_path_worker_name": "ID",
             "pool_current_hashrate_json_path_hashrate": "accepted",
@@ -125,7 +125,7 @@
             "bench_script_path": "..\/scripts\/run_benchmark_generic_ccminer.sh",
             "mining_script_path": "..\/scripts\/start_mining_generic_ccminer.sh",
             "pool_addresses": [
-                "lyra2v2.mine.zergpool.com:4533"
+                "lyra2v2.mine.zpool.ca:4533"
             ],
             "pool_pass": "c=VTC,mc=VTC",
             "whattomine_coin_id": "5",
@@ -136,7 +136,7 @@
             "pool_avg_hashrate_json_path_hashrate": "",
             "pool_avg_hashrate_api_unit_factor_hashrate": "-1",
             "pool_avg_hashrate_api_unit_factor_period": "-1",
-            "pool_current_hashrate_api_address": "http:\/\/api.zergpool.com:8080\/api\/walletEx?address=%s",
+            "pool_current_hashrate_api_address": "http:\/\/www.zpool.ca\/api\/walletEx?address=%s",
             "pool_current_hashrate_json_path_worker_array": "miners",
             "pool_current_hashrate_json_path_worker_name": "ID",
             "pool_current_hashrate_json_path_hashrate": "accepted",

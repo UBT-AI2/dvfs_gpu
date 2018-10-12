@@ -30,23 +30,23 @@ function save_call_command {
 function optimization_test {
 	local DEVICE_ID=$1
 	local online=$2
-	for CURRENCY in VTC ZEC;
+	for CURRENCY in ZEC;
 	do
-		for OPT_ALGO in HC SA NM;
+		for OPT_ALGO in HC;
 		do
 			if [[ online -eq 0 ]];
 			then
 				#save_call_command ./freq_optimization -d $DEVICE_ID -c $CURRENCY -a $OPT_ALGO \
-				#	--start_mem_oc=900 --start_graph_idx=0 --max_iterations=20 --currency_config=$CURRENCY_CONFIG
+				#	--start_mem_oc=900 --start_graph_idx=0 --max_iterations=6 --currency_config=$CURRENCY_CONFIG
 				#mv offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat opt_bench_result_gpu${DEVICE_ID}_${CURRENCY}_${OPT_ALGO}_max_offline.dat
 				#save_call_command ./freq_optimization -d $DEVICE_ID -c $CURRENCY -a $OPT_ALGO \
-				#	--start_mem_oc=-50 --start_graph_idx=62 --max_iterations=20 --currency_config=$CURRENCY_CONFIG
+				#	--start_mem_oc=-50 --start_graph_idx=10 --max_iterations=6 --currency_config=$CURRENCY_CONFIG
 				#mv offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat opt_bench_result_gpu${DEVICE_ID}_${CURRENCY}_${OPT_ALGO}_mid_offline.dat
 				#save_call_command ./freq_optimization -d $DEVICE_ID -c $CURRENCY -a $OPT_ALGO \
-				#	--start_mem_oc=-1000 --start_graph_idx=147 --max_iterations=20 --currency_config=$CURRENCY_CONFIG
+				#	--start_mem_oc=-1000 --start_graph_idx=21 --max_iterations=6 --currency_config=$CURRENCY_CONFIG
 				#mv offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat opt_bench_result_gpu${DEVICE_ID}_${CURRENCY}_${OPT_ALGO}_min_offline.dat
-				save_call_command ./freq_optimization -d $DEVICE_ID -c $CURRENCY -a $OPT_ALGO --min_hashrate=0.85 \
-					--max_iterations=20 --currency_config=$CURRENCY_CONFIG
+				save_call_command ./freq_optimization -d $DEVICE_ID -c $CURRENCY -a $OPT_ALGO --min_hashrate=0.8 \
+					--max_iterations=6 --currency_config=$CURRENCY_CONFIG
 				mv offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat opt_bench_result_gpu${DEVICE_ID}_${CURRENCY}_${OPT_ALGO}_mh_offline.dat
 			else
 				save_call_command ./freq_optimization -d $DEVICE_ID -c $CURRENCY -a $OPT_ALGO --use_online_bench=${WALLET_MAP[$CURRENCY]} \
@@ -102,8 +102,7 @@ function exhaustive_test {
 
 
 pushd $BIN_DIR
-
-for id in $gpu;
+for id in 1;
 do
 	optimization_test $id 0
 done
