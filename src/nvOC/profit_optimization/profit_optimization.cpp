@@ -398,23 +398,60 @@ namespace frequency_scaling {
         }
         //remove gpus/currencies that are not in opt_config from available opt_results
         for (auto it = opt_results_out.begin(); it != opt_results_out.end();) {
-            bool gpu_found = false;
-            for (auto &elem : opt_config.dcis_)
-                if (elem.device_id_nvml_ == it->first) {
-                    gpu_found = true;
+            int dci_idx = -1;
+            for (int i = 0; i < opt_config.dcis_.size(); i++)
+                if (opt_config.dcis_[i].device_id_nvml_ == it->first) {
+                    dci_idx = i;
                     break;
                 }
-            if (!gpu_found) {
+            if (dci_idx < 0) {
                 it = opt_results_out.erase(it);
                 continue;
             }
+            //
+            const device_clock_info &dci_to_check = opt_config.dcis_[dci_idx];
             for (auto it_inner = it->second.currency_ehi_.begin(); it_inner != it->second.currency_ehi_.end();) {
-                if (!currencies.count(it_inner->first))
+                if (!currencies.count(it_inner->first)) {
+                    it_inner = it->second.currency_ehi_.erase(it_inner);
+                    continue;
+                }
+                bool valid_freqs = true;
+                std::vector<std::reference_wrapper<measurement>> temp;
+                temp.emplace_back(it_inner->second.optimal_configuration_offline_);
+                temp.emplace_back(it_inner->second.optimal_configuration_online_);
+                temp.emplace_back(it_inner->second.optimal_configuration_profit_);
+                for (measurement &m : temp) {
+                    if (m.graph_clock_ < dci_to_check.nvml_graph_clocks_.back() ||
+                        m.graph_clock_ > dci_to_check.nvml_graph_clocks_.front() ||
+                        m.mem_oc < dci_to_check.min_mem_oc_ || m.mem_oc > dci_to_check.max_mem_oc_) {
+                        valid_freqs = false;
+                        break;
+                    }
+                    if (m.nvml_graph_clock_idx >= 0 &&
+                        m.nvml_graph_clock_idx < dci_to_check.nvml_graph_clocks_.size() &&
+                        m.graph_clock_ == dci_to_check.nvml_graph_clocks_[m.nvml_graph_clock_idx])
+                        continue;
+                    //fix index
+                    for (int i = 0; i < dci_to_check.nvml_graph_clocks_.size(); i++) {
+                        int cur_val = dci_to_check.nvml_graph_clocks_[i];
+                        if (cur_val <= m.graph_clock_) {
+                            m.nvml_graph_clock_idx = i;
+                            m.graph_clock_ = cur_val;
+                            m.graph_oc = m.graph_clock_ - dci_to_check.nvapi_default_graph_clock_;
+                            break;
+                        }
+                    }
+                }
+                if (!valid_freqs)
                     it_inner = it->second.currency_ehi_.erase(it_inner);
                 else
                     ++it_inner;
             }
-            ++it;
+            //
+            if (it->second.currency_ehi_.empty())
+                it = opt_results_out.erase(it);
+            else
+                ++it;
         }
         return opt_results_out;
     }
