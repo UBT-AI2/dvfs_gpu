@@ -31,7 +31,7 @@ namespace frequency_scaling {
                          const measurement &optimal_configuration_profit);
 
         const currency_type type_;
-        const measurement optimal_configuration_offline_;
+        measurement optimal_configuration_offline_;
         measurement optimal_configuration_online_;
         measurement optimal_configuration_profit_;
     };
