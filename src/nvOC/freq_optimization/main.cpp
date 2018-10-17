@@ -133,11 +133,11 @@ int main(int argc, char **argv) {
             start_mining_script(ct, dci, mui);
         measurement m;
         const measurement &start_node = bf(ct, dci, start_mem_oc, start_graph_idx);
-		double min_hashrate = -1.0;
-		if (min_hashrate_pct > 0)
-			min_hashrate = (start_node.nvml_graph_clock_idx != 0 || start_node.mem_oc != dci.max_mem_oc_) ?
-			min_hashrate_pct * bf(ct, dci, dci.max_mem_oc_, 0).hashrate_ :
-			min_hashrate_pct * start_node.hashrate_;
+        double min_hashrate = -1.0;
+        if (min_hashrate_pct > 0)
+            min_hashrate = (start_node.nvml_graph_clock_idx != 0 || start_node.mem_oc != dci.max_mem_oc_) ?
+                           min_hashrate_pct * bf(ct, dci, dci.max_mem_oc_, 0).hashrate_ :
+                           min_hashrate_pct * start_node.hashrate_;
         switch (opt_method) {
             case optimization_method::HILL_CLIMBING:
                 m = freq_hill_climbing(bf, ct, dci, start_node, max_iterations, mem_step_pct, graph_idx_step_pct,

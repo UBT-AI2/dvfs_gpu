@@ -17,7 +17,7 @@ namespace frequency_scaling {
 
 
     namespace process_management {
-        bool register_process_cleanup_sighandler();
+        void register_process_cleanup_sighandler();
 
         FILE *popen_file(const std::string &cmd);
 
@@ -28,7 +28,7 @@ namespace frequency_scaling {
         bool gpu_kill_background_process(int device_id, process_type pt);
 
         bool gpu_start_process(const std::string &filename,
-                                      int device_id, process_type pt, bool background);
+                               int device_id, process_type pt, bool background);
 
         bool has_process(int pid);
 
