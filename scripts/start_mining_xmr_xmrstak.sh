@@ -25,4 +25,4 @@ pool_option_str=${pool_list[0]}
 echo -e "\n##########################\nSTARTED XMR-STAK $(date +%Y-%m-%d_%H-%M-%S)\n##########################\n" >> ${LOGFILE}
 ${MINER_BINARY} --noCPU --cuda-devices ${device_id_cuda} \
 -o ${pool_option_str} -p ${pool_pass} -u ${wallet_address}.${worker_name}/${email} \
- --currency monero7 -i 0 -r "" --hash-logfile ${log_dir}/hash_log_XMR_${device_id}.txt &>> ${LOGFILE}
+ --currency monero -i 0 -r "" --hash-logfile ${log_dir}/hash_log_XMR_${device_id}.txt &>> ${LOGFILE}
