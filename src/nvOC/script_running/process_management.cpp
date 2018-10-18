@@ -17,7 +17,7 @@
 
 #include <unistd.h>
 #include <sys/wait.h>
-#include <bits/types/siginfo_t.h>
+#include <sys/types.h>
 
 #endif
 
