@@ -277,6 +277,7 @@ namespace frequency_scaling {
                 NULL,
                 &startup_info,
                 &pi)) {
+                CloseHandle(pi.hThread);
                 int dwPid = GetProcessId(pi.hProcess);
                 if (!is_kill) {
                     std::lock_guard<std::mutex> lock(all_processes_mutex_);
@@ -292,10 +293,9 @@ namespace frequency_scaling {
                     GetExitCodeProcess(pi.hProcess, &exit_code);
                     if (exit_code != 0) {
                         THROW_PROCESS_ERROR(
-                            "Process " + cmd + " returned invalid exit code: " + std::to_string(exit_code));
+                            "Process " + cmd + " returned nonzero exit code: " + std::to_string(exit_code));
                     }
                 }
-                CloseHandle(pi.hThread);
                 return dwPid;
             }
             else {
