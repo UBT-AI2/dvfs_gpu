@@ -69,7 +69,7 @@ namespace frequency_scaling {
             DWORD exit_code;
             GetExitCodeProcess(hProcess, &exit_code);
             VLOG_IF(0, exit_code != 0)
-            << "Process " << pid << " terminated with nonzero exit_code: " << exit_code << std::endl;
+            << "Background process " << pid << " terminated with nonzero exit_code: " << exit_code << std::endl;
             CloseHandle(hProcess);
         }
 #else
@@ -82,11 +82,11 @@ namespace frequency_scaling {
                 if (WIFEXITED(status)) {
                     int exit_code = WEXITSTATUS(status);
                     VLOG_IF(0, exit_code != 0)
-                    << "Process " << pid << " terminated with nonzero exit_code: " << exit_code << std::endl;
+                    << "Background process " << pid << " terminated with nonzero exit_code: " << exit_code << std::endl;
                 } else if (WIFSIGNALED(status)) {
                     int signal = WTERMSIG(status);
                     VLOG_IF(0, signal != SIGTERM)
-                    << "Process " << pid << " killed with nonstandard signal: " << signal << std::endl;
+                    << "Background process " << pid << " killed with nonstandard signal: " << signal << std::endl;
                 }
             }
         }
@@ -278,17 +278,16 @@ namespace frequency_scaling {
                 &startup_info,
                 &pi)) {
                 CloseHandle(pi.hThread);
-                int dwPid = GetProcessId(pi.hProcess);
+                int pid = GetProcessId(pi.hProcess);
                 if (!is_kill) {
                     std::lock_guard<std::mutex> lock(all_processes_mutex_);
-                    all_processes_.emplace_back(dwPid, background);
+                    all_processes_.emplace_back(pid, background);
                 }
-                VLOG(0) << "Started process: " << cmd << " (PID: " << dwPid << ")"
+                VLOG(0) << "Started process: " << cmd << " (PID: " << pid << ")"
                     << std::endl;
-                HANDLE hWait;
-                RegisterWaitForSingleObject(&hWait, pi.hProcess, &OnProcessExited, pi.hProcess, INFINITE, WT_EXECUTEONLYONCE);
                 if (!background) {
                     WaitForSingleObject(pi.hProcess, INFINITE);
+                    remove_pid(pid);
                     DWORD exit_code;
                     GetExitCodeProcess(pi.hProcess, &exit_code);
                     if (exit_code != 0) {
@@ -296,7 +295,12 @@ namespace frequency_scaling {
                             "Process " + cmd + " returned nonzero exit code: " + std::to_string(exit_code));
                     }
                 }
-                return dwPid;
+                else{
+                    HANDLE hWait;
+                    RegisterWaitForSingleObject(&hWait, pi.hProcess, &OnProcessExited, pi.hProcess,
+                        INFINITE, WT_EXECUTEONLYONCE);
+                }
+                return pid;
             }
             else {
                 THROW_PROCESS_ERROR("CreateProcess() failed: " + cmd);
@@ -320,7 +324,8 @@ namespace frequency_scaling {
                         << std::endl;
                 if (!background) {
                     siginfo_t info;
-                    waitid(P_PID, pid, &info, WEXITED | WNOWAIT);
+                    waitid(P_PID, pid, &info, WEXITED);
+                    remove_pid(pid);
                     if (info.si_code != CLD_EXITED)
                         THROW_PROCESS_ERROR("Process " + cmd + " terminated unnormally");
                     int exit_code = info.si_status;
