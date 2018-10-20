@@ -220,7 +220,7 @@ namespace frequency_scaling {
                             const miner_user_info &user_infos,
                             const std::map<currency_type, optimization_method_params> &opt_method_params,
                             int update_interval_ms, int online_bench_duration_ms,
-                            std::mutex &mutex, std::condition_variable &cond_var, const std::atomic_bool &terminate) {
+                            std::mutex &mutex, std::condition_variable &cond_var, const std::atomic<int> &terminate) {
         //start power monitoring and mining of best currency
         int device_id = profit_calc.getDci_().device_id_nvml_;
         bool pm_started = start_power_monitoring_script(device_id);
@@ -462,7 +462,7 @@ namespace frequency_scaling {
                                 const std::set<currency_type> &gpu_optimization_work,
                                 std::map<int, device_opt_result> &opt_results,
                                 gpu_group &group, std::mutex &all_mutex, std::condition_variable &cond_var,
-                                const std::atomic_bool &terminate,
+                                const std::atomic<int> &terminate,
                                 std::promise<std::pair<int, device_opt_result>> &&p) {
         try {
             if (gpu_optimization_work.empty()) {
@@ -606,9 +606,9 @@ namespace frequency_scaling {
         std::vector<std::future<std::pair<int, device_opt_result>>> futures;
         std::mutex mutex;
         extern std::condition_variable glob_cond_var;
-        extern std::atomic_bool glob_terminate;
+        extern std::atomic<int> glob_terminate;
         std::condition_variable &cond_var = glob_cond_var;
-        std::atomic_bool &terminate = glob_terminate;
+        std::atomic<int> &terminate = glob_terminate;
         for (const device_clock_info &gpu_dci : opt_config.dcis_) {
             std::promise<std::pair<int, device_opt_result>> promise;
             futures.push_back(promise.get_future());
@@ -629,7 +629,7 @@ namespace frequency_scaling {
         //wait for user to terminate
         std::string user_in = cli_get_string("Performing mining and monitoring...\nEnter q to stop.", "q");
         if (user_in == "q") {
-            terminate = true;
+            terminate = 1;
             cond_var.notify_all();
         }
         //join threads
@@ -661,11 +661,13 @@ namespace frequency_scaling {
         //always save to logdir
         save_optimization_result(log_utils::get_autosave_opt_result_monitorphase_filename(),
                                  opt_results_monitoringphase);
-        //save opt results dialog
-        user_in = cli_get_string("Save optimization results? [y/n]", "[yn]");
-        if (user_in == "y") {
-            user_in = cli_get_string("Enter filename:", "[\\w-.]+");
-            save_optimization_result(user_in, opt_results_monitoringphase);
+        //save opt results dialog if killed by stdin
+        if(terminate > 0) {
+            user_in = cli_get_string("Save optimization results? [y/n]", "[yn]");
+            if (user_in == "y") {
+                user_in = cli_get_string("Enter filename:", "[\\w-.]+");
+                save_optimization_result(user_in, opt_results_monitoringphase);
+            }
         }
     }
 
