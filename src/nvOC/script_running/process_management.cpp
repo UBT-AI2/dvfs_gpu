@@ -12,6 +12,7 @@
 #define WIN32_LEAN_AND_MEAN
 
 #include <windows.h>
+#include <psapi.h>
 
 #else
 
@@ -30,7 +31,7 @@
 namespace frequency_scaling {
 
     std::condition_variable glob_cond_var;
-    std::atomic<int> glob_terminate = ATOMIC_VAR_INIT(0);
+    std::atomic_bool glob_terminate = ATOMIC_VAR_INIT(false);
 
     namespace process_management {
 
@@ -55,7 +56,7 @@ namespace frequency_scaling {
                 exit(1);
             } else {
                 LOG(ERROR) << "Wait for program to terminate normally..." << std::endl;
-                glob_terminate = -1;
+                glob_terminate = true;
                 glob_cond_var.notify_all();
             }
         }
@@ -195,6 +196,18 @@ namespace frequency_scaling {
                 return true;
             }
             return false;
+
+            /*DWORD aProcesses[BUFFER_SIZE], cbNeeded;
+            if (!EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded)) {
+                return false;
+            }
+
+            DWORD numProcesses = cbNeeded / sizeof(DWORD);
+            for (int i = 0; i < numProcesses; i++) {
+                if (aProcesses[i] == pid)
+                    return true;
+            }
+            return false;*/
 #else
             return kill(pid, 0) == 0;
 #endif
@@ -229,12 +242,16 @@ namespace frequency_scaling {
                 start_process("taskkill //f //t //pid " + std::to_string(pid), false, true);
 #else
                 //use pkill to kill childs of process. DOES NOT KILL ROOT PROCESS WITH PID!!!
-                //start_process("pkill -P " + std::to_string(pid), false, true);
-                //kill process group
-                kill(-pid, SIGTERM);
+                start_process("pkill -P " + std::to_string(pid), false, true);
+                //kill root
+                kill(pid, SIGTERM);
 #endif
             }
             catch (const process_error &ex) {
+#ifndef _WIN32
+                //kill root (pkill fails if root has no children!!!)
+                kill(pid, SIGTERM);
+#endif
             }
             //ensure process terminated
             //siginfo_t info;
@@ -301,7 +318,6 @@ namespace frequency_scaling {
                 THROW_PROCESS_ERROR("fork() failed");
             } else if (pid == 0) {
                 //child
-                setpgid(0, 0);
                 execl("/bin/bash", "bash", "-c", cmd.c_str(), NULL);
                 //should not get here
                 _exit(127);
