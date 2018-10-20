@@ -3,6 +3,7 @@
 //
 #include "process_management.h"
 #include <signal.h>
+#include <thread>
 #include <condition_variable>
 #include <atomic>
 #include <glog/logging.h>
@@ -252,7 +253,13 @@ namespace frequency_scaling {
                 kill(pid, SIGTERM);
 #endif
             }
-            //
+            //ensure process terminated
+            //siginfo_t info;
+            //waitid(P_PID, pid, &info, WEXITED | WNOWAIT);
+            while(has_process(pid)){
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+            remove_pid(pid);
             VLOG(0) << "Killed process with pid " + std::to_string(pid) << std::endl;
         }
 

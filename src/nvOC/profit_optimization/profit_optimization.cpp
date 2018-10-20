@@ -161,6 +161,7 @@ namespace frequency_scaling {
         std::map<currency_type, measurement> energy_hash_infos;
         //start power monitoring
         bool pm_started = start_power_monitoring_script(dci.device_id_nvml_);
+        VLOG(0) << "PM_STARTED: " << pm_started << std::endl;
         //stops mining if its running!!!
         if (!bi.offline_)
             stop_mining_script(dci.device_id_nvml_);

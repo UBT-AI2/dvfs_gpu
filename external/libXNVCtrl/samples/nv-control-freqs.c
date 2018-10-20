@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
                valid_values.u.range.min, valid_values.u.range.max);
 
 		
-		if(graph_clock_offset < valid_values.u.range.min || mem_clock_offset > valid_values.u.range.max){
+		if(graph_clock_offset < valid_values.u.range.min || graph_clock_offset > valid_values.u.range.max){
 			fprintf(stderr, "Specified value %i for "
                     "NV_CTRL_GPU_NVCLOCK_OFFSET on GPU %i (%s) out of range\n",
                     graph_clock_offset, gpu, gpu_name);

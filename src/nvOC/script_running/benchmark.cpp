@@ -7,6 +7,7 @@
 #include <fstream>
 #include <algorithm>
 #include <list>
+#include <thread>
 #include <cuda.h>
 #include <glog/logging.h>
 #include "../nvapi/nvapiOC.h"
@@ -286,7 +287,11 @@ namespace frequency_scaling {
         char cmd[BUFFER_SIZE];
         snprintf(cmd, BUFFER_SIZE, "./gpu_power_monitor %i %i %s", device_id, interval_sleep_ms,
                  log_utils::get_logdir_name().c_str());
-        return process_management::gpu_start_process(cmd, device_id, process_type::POWER_MONITOR, true);
+        if(process_management::gpu_start_process(cmd, device_id, process_type::POWER_MONITOR, true)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(3*interval_sleep_ms));
+            return true;
+        }
+        return false;
     }
 
     bool stop_power_monitoring_script(int device_id) {
