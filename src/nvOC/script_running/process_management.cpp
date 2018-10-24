@@ -39,6 +39,7 @@ namespace frequency_scaling {
         static std::mutex all_processes_mutex_;
         static std::map<std::pair<int, process_type>, int> gpu_background_processes_;
         static std::mutex gpu_background_processes_mutex_;
+        static std::atomic_bool terminate_forced = ATOMIC_VAR_INIT(false);
 
         static int start_process(const std::string &cmd, bool background,
                                  bool is_kill);
@@ -50,6 +51,7 @@ namespace frequency_scaling {
             LOG(ERROR) << "Catched signal " << signo << std::endl;
             if (signo != SIGTERM) {
                 LOG(ERROR) << "Perform cleanup and exit..." << std::endl;
+                terminate_forced = true;
                 kill_all_processes(false);
                 nvapiUnload(1);
                 nvmlShutdown_(true);
@@ -264,6 +266,8 @@ namespace frequency_scaling {
         }
 
         int start_process(const std::string &cmd, bool background) {
+            if(terminate_forced)
+                return -1;
             return start_process(cmd, background, false);
         }
 

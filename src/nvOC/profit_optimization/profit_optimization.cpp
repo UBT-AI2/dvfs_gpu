@@ -512,26 +512,27 @@ namespace frequency_scaling {
                 }
                 VLOG(0)
                 << log_utils::gpu_log_prefix(gpu_dci.device_id_nvml_) << "Finished optimization phase..." << std::endl;
-                {
-                    std::unique_lock<std::mutex> lock_group(group.mutex_);
-                    group.set_member_complete(gpu_dci.device_id_nvml_);
-                    if (group.group_complete()) {
-                        {
-                            //exchange frequency configurations (equal gpus have same optimal frequency configurations)
-                            std::lock_guard<std::mutex> lock_all(all_mutex);
-                            complete_optimization_results(opt_results, group);
-                            //save intermediate result to logdir
-                            save_optimization_result(log_utils::get_autosave_opt_result_optphase_filename(),
-                                                     opt_results);
-                        }
-                        group.cond_var_.notify_all();
-                    } else {
-                        while (!group.group_complete() && !group.failed_) {
-                            group.cond_var_.wait(lock_group);
-                        }
+            }
+            {
+                std::unique_lock<std::mutex> lock_group(group.mutex_);
+                group.set_member_complete(gpu_dci.device_id_nvml_);
+                if (group.group_complete()) {
+                    {
+                        //exchange frequency configurations (equal gpus have same optimal frequency configurations)
+                        std::lock_guard<std::mutex> lock_all(all_mutex);
+                        complete_optimization_results(opt_results, group);
+                        //save intermediate result to logdir
+                        save_optimization_result(log_utils::get_autosave_opt_result_optphase_filename(),
+                                                 opt_results);
+                    }
+                    group.cond_var_.notify_all();
+                } else {
+                    while (!group.group_complete() && !group.failed_) {
+                        group.cond_var_.wait(lock_group);
                     }
                 }
             }
+
             if (group.failed_) {
                 LOG(ERROR) << log_utils::gpu_log_prefix(gpu_dci.device_id_nvml_)
                            << "Optimization incomplete: Group failure"
