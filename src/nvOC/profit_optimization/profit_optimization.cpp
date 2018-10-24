@@ -93,11 +93,11 @@ namespace frequency_scaling {
 
             int online_div = (!bi.start_values_.count(ct)) ? 1 : 2;
             const measurement &start_node = (!bi.start_values_.count(ct)) ? bi.bf_(ct, dci, dci.max_mem_oc_, 0) :
-                                            bi.bf_(ct, dci, bi.start_values_.at(ct).mem_oc,
-                                                   bi.start_values_.at(ct).nvml_graph_clock_idx);
+                                            bi.bf_(ct, dci, bi.start_values_.at(ct).mem_oc_,
+                                                   bi.start_values_.at(ct).nvml_graph_clock_idx_);
             double min_hashrate = -1.0;
             if (opt_params_ct.min_hashrate_pct > 0)
-                min_hashrate = (start_node.nvml_graph_clock_idx != 0 || start_node.mem_oc != dci.max_mem_oc_) ?
+                min_hashrate = (start_node.nvml_graph_clock_idx_ != 0 || start_node.mem_oc_ != dci.max_mem_oc_) ?
                                opt_params_ct.min_hashrate_pct * bi.bf_(ct, dci, dci.max_mem_oc_, 0).hashrate_ :
                                opt_params_ct.min_hashrate_pct * start_node.hashrate_;
 
@@ -161,7 +161,6 @@ namespace frequency_scaling {
         std::map<currency_type, measurement> energy_hash_infos;
         //start power monitoring
         bool pm_started = start_power_monitoring_script(dci.device_id_nvml_);
-        VLOG(0) << "PM_STARTED: " << pm_started << std::endl;
         //stops mining if its running!!!
         if (!bi.offline_)
             stop_mining_script(dci.device_id_nvml_);
@@ -192,8 +191,8 @@ namespace frequency_scaling {
                 << std::endl;
         //change frequencies at the end (danger to trigger nvml unknown error)
         const energy_hash_info &ehi = profit_calc.getEnergy_hash_info_().at(best_currency);
-        change_gpu_clocks(profit_calc.getDci_(), ehi.optimal_configuration_online_.mem_oc,
-                          ehi.optimal_configuration_online_.nvml_graph_clock_idx);
+        change_gpu_clocks(profit_calc.getDci_(), ehi.optimal_configuration_online_.mem_oc_,
+                          ehi.optimal_configuration_online_.nvml_graph_clock_idx_);
     }
 
     static bool monitoring_sanity_check(const profit_calculator &profit_calc, const miner_user_info &user_infos) {
@@ -297,8 +296,8 @@ namespace frequency_scaling {
                 //update config and change frequencies if optimization was successful
                 if (new_opt_config_online.first) {
                     profit_calc.update_opt_config_online(new_best_currency, new_opt_config_online.second);
-                    change_gpu_clocks(profit_calc.getDci_(), new_opt_config_online.second.mem_oc,
-                                      new_opt_config_online.second.nvml_graph_clock_idx);
+                    change_gpu_clocks(profit_calc.getDci_(), new_opt_config_online.second.mem_oc_,
+                                      new_opt_config_online.second.nvml_graph_clock_idx_);
                 }
             }
         }
@@ -422,23 +421,24 @@ namespace frequency_scaling {
                 temp.emplace_back(it_inner->second.optimal_configuration_online_);
                 temp.emplace_back(it_inner->second.optimal_configuration_profit_);
                 for (measurement &m : temp) {
-                    if (m.graph_clock_ < dci_to_check.nvml_graph_clocks_.back() ||
-                        m.graph_clock_ > dci_to_check.nvml_graph_clocks_.front() ||
-                        m.mem_oc < dci_to_check.min_mem_oc_ || m.mem_oc > dci_to_check.max_mem_oc_) {
+                    if (m.graph_oc_ < dci_to_check.min_graph_oc_ || m.graph_oc_ > dci_to_check.max_graph_oc_ ||
+                        m.mem_oc_ < dci_to_check.min_mem_oc_ || m.mem_oc_ > dci_to_check.max_mem_oc_) {
                         valid_freqs = false;
+                        VLOG(0) << log_utils::gpu_log_prefix(it_inner->first, dci_to_check.device_id_nvml_)
+                                << "Frequency out of range in opt_result" << std::endl;
                         break;
                     }
-                    if (m.nvml_graph_clock_idx >= 0 &&
-                        m.nvml_graph_clock_idx < dci_to_check.nvml_graph_clocks_.size() &&
-                        m.graph_clock_ == dci_to_check.nvml_graph_clocks_[m.nvml_graph_clock_idx])
+                    if (m.nvml_graph_clock_idx_ >= 0 &&
+                        m.nvml_graph_clock_idx_ < dci_to_check.nvml_graph_clocks_.size() &&
+                        m.graph_clock_ == dci_to_check.nvml_graph_clocks_[m.nvml_graph_clock_idx_])
                         continue;
                     //fix index
                     for (int i = 0; i < dci_to_check.nvml_graph_clocks_.size(); i++) {
                         int cur_val = dci_to_check.nvml_graph_clocks_[i];
                         if (cur_val <= m.graph_clock_) {
-                            m.nvml_graph_clock_idx = i;
+                            m.nvml_graph_clock_idx_ = i;
                             m.graph_clock_ = cur_val;
-                            m.graph_oc = m.graph_clock_ - dci_to_check.nvapi_default_graph_clock_;
+                            m.graph_oc_ = m.graph_clock_ - dci_to_check.nvapi_default_graph_clock_;
                             break;
                         }
                     }
@@ -693,9 +693,9 @@ namespace frequency_scaling {
                     pt_ehi.put("hashrate", config_type.second.hashrate_);
                     pt_ehi.put("energy_hash", config_type.second.energy_hash_);
                     pt_ehi.put("nvml_graph_clock_idx",
-                               config_type.second.nvml_graph_clock_idx);
-                    pt_ehi.put("mem_oc", config_type.second.mem_oc);
-                    pt_ehi.put("graph_oc", config_type.second.graph_oc);
+                               config_type.second.nvml_graph_clock_idx_);
+                    pt_ehi.put("mem_oc", config_type.second.mem_oc_);
+                    pt_ehi.put("graph_oc", config_type.second.graph_oc_);
                     pt_ehi.put("graph_clock", config_type.second.graph_clock_);
                     pt_ehi.put("mem_clock", config_type.second.mem_clock_);
                     pt_ehi.put("power_measure_dur_ms",
@@ -738,9 +738,9 @@ namespace frequency_scaling {
                     measurement opt_config;
                     opt_config.mem_clock_ = config_type.second.get<int>("mem_clock");
                     opt_config.graph_clock_ = config_type.second.get<int>("graph_clock");
-                    opt_config.mem_oc = config_type.second.get<int>("mem_oc");
-                    opt_config.graph_oc = config_type.second.get<int>("graph_oc");
-                    opt_config.nvml_graph_clock_idx = config_type.second.get<int>("nvml_graph_clock_idx");
+                    opt_config.mem_oc_ = config_type.second.get<int>("mem_oc");
+                    opt_config.graph_oc_ = config_type.second.get<int>("graph_oc");
+                    opt_config.nvml_graph_clock_idx_ = config_type.second.get<int>("nvml_graph_clock_idx");
                     opt_config.power_ = config_type.second.get<double>("power");
                     opt_config.hashrate_ = config_type.second.get<double>("hashrate");
                     opt_config.energy_hash_ = config_type.second.get<double>("energy_hash");

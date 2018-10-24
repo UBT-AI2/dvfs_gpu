@@ -103,9 +103,9 @@ namespace frequency_scaling {
         measurement m(mem_clock, graph_clock, power, hashrate);
         m.hashrate_measure_dur_ms_ = system_time_now_ms - system_time_start_ms;
         m.power_measure_dur_ms_ = system_time_now_ms - system_time_start_ms;
-        m.nvml_graph_clock_idx = nvml_graph_clock_idx;
-        m.mem_oc = mem_oc;
-        m.graph_oc = graph_clock - dci.nvapi_default_graph_clock_;
+        m.nvml_graph_clock_idx_ = nvml_graph_clock_idx;
+        m.mem_oc_ = mem_oc;
+        m.graph_oc_ = graph_clock - dci.nvapi_default_graph_clock_;
         //
         bool write_csv_header = !log_utils::check_file_existance(
                 log_utils::get_online_bench_filename(ct, dci.device_id_nvml_));

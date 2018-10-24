@@ -171,13 +171,13 @@ namespace frequency_scaling {
 
     measurement::measurement() : mem_clock_(0), graph_clock_(0), power_(0),
                                  hashrate_(0), energy_hash_(0),
-                                 nvml_graph_clock_idx(-1), mem_oc(0), graph_oc(0) {}
+                                 nvml_graph_clock_idx_(-1), mem_oc_(0), graph_oc_(0) {}
 
     measurement::measurement(int mem_clock, int graph_clock, double power, double hashrate) :
             mem_clock_(mem_clock), graph_clock_(graph_clock), power_(power),
             hashrate_(hashrate),
             energy_hash_((power == 0) ? std::numeric_limits<double>::lowest() : hashrate / power),
-            nvml_graph_clock_idx(-1), mem_oc(0), graph_oc(0) {}
+            nvml_graph_clock_idx_(-1), mem_oc_(0), graph_oc_(0) {}
 
 
     void measurement::update_power(double power, int power_measure_dur_ms) {
@@ -195,9 +195,9 @@ namespace frequency_scaling {
     void measurement::update_freq_config(const measurement &other) {
         mem_clock_ = other.mem_clock_;
         graph_clock_ = other.graph_clock_;
-        mem_oc = other.mem_oc;
-        graph_oc = other.graph_oc;
-        nvml_graph_clock_idx = other.nvml_graph_clock_idx;
+        mem_oc_ = other.mem_oc_;
+        graph_oc_ = other.graph_oc_;
+        nvml_graph_clock_idx_ = other.nvml_graph_clock_idx_;
     }
 
     bool measurement::self_check() const {
@@ -357,9 +357,9 @@ namespace frequency_scaling {
         int graph_clock = dci.nvml_graph_clocks_[nvml_graph_clock_idx];
         //run script_running
         measurement &&m = run_benchmark_script(ct, dci, graph_clock, mem_clock);
-        m.nvml_graph_clock_idx = nvml_graph_clock_idx;
-        m.mem_oc = mem_oc;
-        m.graph_oc = graph_clock - dci.nvapi_default_graph_clock_;
+        m.nvml_graph_clock_idx_ = nvml_graph_clock_idx;
+        m.mem_oc_ = mem_oc;
+        m.graph_oc_ = graph_clock - dci.nvapi_default_graph_clock_;
         return m;
     }
 }

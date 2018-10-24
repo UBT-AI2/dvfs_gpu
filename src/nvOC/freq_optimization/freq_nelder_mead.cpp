@@ -34,8 +34,8 @@ namespace frequency_scaling {
 
         int dimension_ = 1;
         vec_type1D init_guess(dimension_);
-        init_guess(0) = (graph) ? start_node.nvml_graph_clock_idx / (double) graph_idx_step :
-                        (start_node.mem_oc - dci.min_mem_oc_) / (double) mem_step;
+        init_guess(0) = (graph) ? start_node.nvml_graph_clock_idx_ / (double) graph_idx_step :
+                        (start_node.mem_oc_ - dci.min_mem_oc_) / (double) mem_step;
 
         // function to optimize
         measurement best_measurement = start_node;
@@ -45,8 +45,8 @@ namespace frequency_scaling {
                 min_hashrate, &num_func_evals, graph](
                 const vec_type1D &x) -> double {
             num_func_evals++;
-            int graph_idx = (graph) ? std::lround(x(0) * graph_idx_step) : start_node.nvml_graph_clock_idx;
-            int mem_oc = (!graph) ? dci.min_mem_oc_ + std::lround(x(0) * mem_step) : start_node.mem_oc;
+            int graph_idx = (graph) ? std::lround(x(0) * graph_idx_step) : start_node.nvml_graph_clock_idx_;
+            int mem_oc = (!graph) ? dci.min_mem_oc_ + std::lround(x(0) * mem_step) : start_node.mem_oc_;
             VLOG(2) << "NM function args: " << x(0) << std::endl;
             if (mem_oc > dci.max_mem_oc_ || mem_oc < dci.min_mem_oc_ ||
                 graph_idx >= dci.nvml_graph_clocks_.size() || graph_idx < 0) {
@@ -80,8 +80,8 @@ namespace frequency_scaling {
         VLOG(2) << "Nelder-mead number of function evaluations: " << num_func_evals << std::endl;
 
         //run script_running at proposed minimum
-        int graph_idx = (graph) ? std::lround(glob_minimum(0) * graph_idx_step) : start_node.nvml_graph_clock_idx;
-        int mem_oc = (!graph) ? dci.min_mem_oc_ + std::lround(glob_minimum(0) * mem_step) : start_node.mem_oc;
+        int graph_idx = (graph) ? std::lround(glob_minimum(0) * graph_idx_step) : start_node.nvml_graph_clock_idx_;
+        int mem_oc = (!graph) ? dci.min_mem_oc_ + std::lround(glob_minimum(0) * mem_step) : start_node.mem_oc_;
         measurement glob_min_measurement;
         glob_min_measurement.energy_hash_ = std::numeric_limits<double>::lowest();
         if (mem_oc <= dci.max_mem_oc_ && mem_oc >= dci.min_mem_oc_ &&
@@ -107,8 +107,8 @@ namespace frequency_scaling {
 
         int dimension_ = 2;
         vec_type2D init_guess(dimension_);
-        init_guess(0) = (start_node.mem_oc - dci.min_mem_oc_) / (double) mem_step;
-        init_guess(1) = start_node.nvml_graph_clock_idx / (double) graph_idx_step;
+        init_guess(0) = (start_node.mem_oc_ - dci.min_mem_oc_) / (double) mem_step;
+        init_guess(1) = start_node.nvml_graph_clock_idx_ / (double) graph_idx_step;
 
         // function to optimize
         measurement best_measurement = start_node;

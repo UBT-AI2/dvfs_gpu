@@ -40,8 +40,8 @@ namespace frequency_scaling {
 
         int mem_clock_, graph_clock_;
         double power_, hashrate_, energy_hash_;
-        int nvml_graph_clock_idx;
-        int mem_oc, graph_oc;
+        int nvml_graph_clock_idx_;
+        int mem_oc_, graph_oc_;
         int power_measure_dur_ms_ = 0, hashrate_measure_dur_ms_ = 0;
     };
 
