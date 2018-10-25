@@ -5,6 +5,6 @@
 
 namespace frequency_scaling {
 
-    const int BUFFER_SIZE = 4096;
+    const int BUFFER_SIZE = 1024;
 
 }

@@ -63,12 +63,12 @@ if (WIN32)
     set(NVML_LIB_NAME nvml)
 else (WIN32)
     #link nvml
-    #execute_process(
-    #        COMMAND bash -c "nvidia-smi | grep Driver | cut -f 3 -d' ' | cut -f 1 -d '.'"
-    #        OUTPUT_VARIABLE DRIVER-BRANCH
-    #)
-    #message(${DRIVER-BRANCH})
-    link_directories(/usr/lib/nvidia-387)
+    execute_process(
+            COMMAND bash -c "nvidia-smi | grep Driver | cut -f 3 -d' ' | cut -f 1 -d '.'"
+            OUTPUT_VARIABLE DRIVER-BRANCH
+    )
+    string(STRIP ${DRIVER-BRANCH} DRIVER-BRANCH)
+    link_directories(/usr/lib/nvidia-${DRIVER-BRANCH})
     #include and link XNVCtrl
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/libXNVCtrl)
     link_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/libXNVCtrl)
