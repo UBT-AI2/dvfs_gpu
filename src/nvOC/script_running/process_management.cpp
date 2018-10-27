@@ -12,7 +12,6 @@
 #define WIN32_LEAN_AND_MEAN
 
 #include <windows.h>
-#include <psapi.h>
 
 #else
 
@@ -198,18 +197,6 @@ namespace frequency_scaling {
                 return true;
             }
             return false;
-
-            /*DWORD aProcesses[BUFFER_SIZE], cbNeeded;
-            if (!EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded)) {
-                return false;
-            }
-
-            DWORD numProcesses = cbNeeded / sizeof(DWORD);
-            for (int i = 0; i < numProcesses; i++) {
-                if (aProcesses[i] == pid)
-                    return true;
-            }
-            return false;*/
 #else
             return kill(pid, 0) == 0;
 #endif

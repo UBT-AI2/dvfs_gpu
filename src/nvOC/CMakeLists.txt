@@ -37,7 +37,7 @@ add_library(nvapiOC_lib
         ${NVAPI_FILES})
 if (NOT WIN32)
     target_link_libraries(nvapiOC_lib
-            ${XNVCTRL_LIB_NAME}
+            ${XNVCTRL_LIBRARIES}
             Xext
             X11)
 endif ()
@@ -45,39 +45,28 @@ add_executable(nvapiOC
         nvapi/main.cpp)
 target_link_libraries(nvapiOC
         nvapiOC_lib
-        ${GLOG_LIB_NAME})
+        ${GLOG_LIBRARIES})
 
 #
 add_library(nvmlOC_lib
         ${NVML_FILES})
 target_link_libraries(nvmlOC_lib
-        ${NVML_LIB_NAME})
+        ${NVML_LIBRARIES})
 add_executable(nvmlOC
         nvml/main.cpp)
 target_link_libraries(nvmlOC
         nvmlOC_lib
-        ${GLOG_LIB_NAME})
+        ${GLOG_LIBRARIES})
 
 #
 add_library(script_running_lib
         ${SCRIPT_RUNNING_FILES})
-if (WIN32)
-    target_link_libraries(script_running_lib
+target_link_libraries(script_running_lib
             nvapiOC_lib
             nvmlOC_lib
-            cuda
+            ${CUDA_DRIVER_LIBRARIES}
             ${CURL_LIBRARIES}
-            ${GLOG_LIB_NAME}
-            psapi)
-else (WIN32)
-    target_link_libraries(script_running_lib
-            nvapiOC_lib
-            nvmlOC_lib
-            cuda
-            ${CURL_LIBRARIES}
-            ${GLOG_LIB_NAME})
-endif (WIN32)
-
+            ${GLOG_LIBRARIES})
 
 #
 add_library(freq_exhaustive_lib
@@ -115,7 +104,7 @@ add_executable(gpu_power_monitor
         utils/gpu_power_monitor.cpp)
 target_link_libraries(gpu_power_monitor
         nvmlOC_lib
-        ${GLOG_LIB_NAME})
+        ${GLOG_LIBRARIES})
 add_executable(hash-log-excavator
         utils/hash-log-excavator.cpp)
 
