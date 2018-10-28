@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  
+  <name>numerical_methods</name>
+  <version>0.0.1</version>
+  <description>Numerical methods</description>
+  <maintainer email="gabriel.agamennoni@mavt.ethz.ch">gabrieag</maintainer>
+  <license>BSD</license>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>catkin_simple</buildtool_depend>
+  
+  <build_depend>eigen_catkin</build_depend>
+  <build_depend>glog_catkin</build_depend>
+  
+</package>

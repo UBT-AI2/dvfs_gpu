@@ -38,13 +38,30 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
 find_library(CUDA_DRIVER_LIBRARIES cuda
-        PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64
-        NO_DEFAULT_PATH)
+        PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
 find_path(NUMERICAL_METHODS_INCLUDE_DIRS numerical-methods/common-definitions.h
         PATHS ${DEPENDENCY_DIR}/numerical_methods/include
         NO_DEFAULT_PATH)
 
 if(WIN32)
+    #if(NOT EXISTS ${CMAKE_BINARY_DIR}/boost_1_67_0.tar.gz)
+    #    file(DOWNLOAD https://sourceforge.net/projects/boost/files/boost/1.67.0/boost_1_67_0.tar.gz/download
+    #            ${CMAKE_BINARY_DIR}/boost_1_67_0.tar.gz SHOW_PROGRESS)
+    #endif()
+    #if(NOT EXISTS ${CMAKE_BINARY_DIR}/eigen-git-mirror-3.3.5.zip)
+    #    file(DOWNLOAD https://github.com/eigenteam/eigen-git-mirror/archive/3.3.5.zip
+    #            ${CMAKE_BINARY_DIR}/eigen-git-mirror-3.3.5.zip SHOW_PROGRESS)
+    #endif()
+    #
+    #execute_process(COMMAND tar xzf boost_1_67_0.tar.gz
+    #        COMMAND unzip eigen-git-mirror-3.3.5.zip
+    #        WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+    #execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory
+    #            boost_1_67_0 ${CMAKE_CURRENT_SOURCE_DIR}/external/boost_1_67_0
+    #        COMMAND ${CMAKE_COMMAND} -E copy_directory
+    #            eigen-git-mirror-3.3.5 ${CMAKE_CURRENT_SOURCE_DIR}/external/eigen3
+    #        WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
     find_path(Boost_INCLUDE_DIRS boost/version.hpp
             PATHS ${DEPENDENCY_DIR}/boost_1_67_0
             NO_DEFAULT_PATH)
@@ -88,8 +105,7 @@ else(WIN32)
     )
     string(STRIP ${DRIVER-BRANCH} DRIVER-BRANCH)
     find_library(NVML_LIBRARIES nvidia-ml
-            PATHS /usr/lib/nvidia-${DRIVER-BRANCH}
-            NO_DEFAULT_PATH)
+            PATHS /usr/lib/nvidia-${DRIVER-BRANCH})
     find_path(XNVCTRL_INCLUDE_DIRS NVCtrl.h
             PATHS ${DEPENDENCY_DIR}/libXNVCtrl
             NO_DEFAULT_PATH)

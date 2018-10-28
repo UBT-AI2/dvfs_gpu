@@ -1,0 +1,43 @@
+# Compiled object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Compiled dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Temporary editor files
+*~
+*.orig
+
+# Compiled Python files
+*.pyc
+
+# Eclipse files
+.project
+.cproject
+.settings
+
+# MatLab files
+*.mat
+*.asv
+
+# MacOS files
+.DS_Store
+
+# Other
+CATKIN_IGNORE
