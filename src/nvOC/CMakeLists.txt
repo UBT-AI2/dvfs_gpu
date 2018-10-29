@@ -109,9 +109,13 @@ add_executable(hash-log-excavator
         utils/hash-log-excavator.cpp)
 
 
-#Specify install target for executable
-#INSTALL(TARGETS ${EXECUTABLENAME} RUNTIME DESTINATION ${CMAKE_PROJECT_NAME}/bin)
 if (WIN32)
     file(COPY ${DEPENDENCY_DIR}/dlls/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
             FILES_MATCHING PATTERN "*.dll")
+    INSTALL(DIRECTORY ${DEPENDENCY_DIR}/dlls/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+            FILES_MATCHING PATTERN "*.dll")
 endif (WIN32)
+
+#Specify install target for executables
+INSTALL(TARGETS nvapiOC nvmlOC freq_exhaustive freq_optimization profit_optimization gpu_power_monitor hash-log-excavator
+        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
