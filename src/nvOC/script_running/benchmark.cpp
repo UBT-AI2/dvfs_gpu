@@ -70,7 +70,7 @@ namespace frequency_scaling {
                 device_id_nvapi_ << ", CUDA-Id=" << device_id_cuda_ << std::endl;
         //set default min and max frequencies
         //##############################
-        //get default clocks from nvml (no oc support requiered)
+        //get default clocks from nvml (no oc support required)
         nvapi_default_graph_clock_ = nvmlGetDefaultGraphClock(device_id_nvml);
         nvapi_default_mem_clock_ = nvmlGetDefaultMemClock(device_id_nvml);
         //

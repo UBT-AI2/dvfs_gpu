@@ -32,43 +32,43 @@ set(PROFIT_OPTIMIZATION_FILES
         profit_optimization/profit_optimization.h profit_optimization/profit_optimization.cpp
         ${COMMON_HEADER})
 
-#
+#NVAPI
 add_library(nvapiOC_lib
         ${NVAPI_FILES})
+target_link_libraries(nvapiOC_lib
+        ${GLOG_LIBRARIES})
 if (NOT WIN32)
     target_link_libraries(nvapiOC_lib
             ${XNVCTRL_LIBRARIES}
             Xext
             X11)
-endif ()
+endif (NOT WIN32)
 add_executable(nvapiOC
         nvapi/main.cpp)
 target_link_libraries(nvapiOC
-        nvapiOC_lib
-        ${GLOG_LIBRARIES})
+        nvapiOC_lib)
 
-#
+#NVML
 add_library(nvmlOC_lib
         ${NVML_FILES})
 target_link_libraries(nvmlOC_lib
-        ${NVML_LIBRARIES})
+        ${NVML_LIBRARIES}
+        ${GLOG_LIBRARIES})
 add_executable(nvmlOC
         nvml/main.cpp)
 target_link_libraries(nvmlOC
-        nvmlOC_lib
-        ${GLOG_LIBRARIES})
+        nvmlOC_lib)
 
-#
+#SCRIPT_RUNNING
 add_library(script_running_lib
         ${SCRIPT_RUNNING_FILES})
 target_link_libraries(script_running_lib
             nvapiOC_lib
             nvmlOC_lib
             ${CUDA_DRIVER_LIBRARIES}
-            ${CURL_LIBRARIES}
-            ${GLOG_LIBRARIES})
+            ${CURL_LIBRARIES})
 
-#
+#FREQ_EXHAUSTIVE
 add_library(freq_exhaustive_lib
         ${FREQ_EXHAUSTIVE_FILES})
 target_link_libraries(freq_exhaustive_lib
@@ -78,7 +78,7 @@ add_executable(freq_exhaustive
 target_link_libraries(freq_exhaustive
         freq_exhaustive_lib)
 
-#
+#FREQ_OPTIMIZATION
 add_library(freq_optimization_lib
         ${FREQ_OPTIMIZATION_FILES})
 target_link_libraries(freq_optimization_lib
@@ -88,7 +88,7 @@ add_executable(freq_optimization
 target_link_libraries(freq_optimization
         freq_optimization_lib)
 
-#
+#PROFIT_OPTIMIZATION
 add_library(profit_optimization_lib
         ${PROFIT_OPTIMIZATION_FILES})
 target_link_libraries(profit_optimization_lib
@@ -98,13 +98,12 @@ add_executable(profit_optimization
 target_link_libraries(profit_optimization
         profit_optimization_lib)
 
-
-#
+#POWER_MONITOR
 add_executable(gpu_power_monitor
         utils/gpu_power_monitor.cpp)
 target_link_libraries(gpu_power_monitor
-        nvmlOC_lib
-        ${GLOG_LIBRARIES})
+        nvmlOC_lib)
+#HASH_LOG_EXCAVATOR
 add_executable(hash-log-excavator
         utils/hash-log-excavator.cpp)
 
@@ -119,3 +118,6 @@ endif (WIN32)
 #Specify install target for executables
 INSTALL(TARGETS nvapiOC nvmlOC freq_exhaustive freq_optimization profit_optimization gpu_power_monitor hash-log-excavator
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+#Specify install target for libs
+INSTALL(TARGETS nvapiOC_lib nvmlOC_lib script_running_lib freq_exhaustive_lib freq_optimization_lib profit_optimization_lib
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
