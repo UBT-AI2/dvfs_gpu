@@ -88,7 +88,9 @@ else(WIN32)
             COMMAND bash -c "nvidia-smi | grep Driver | cut -f 3 -d' ' | cut -f 1 -d '.'"
             OUTPUT_VARIABLE DRIVER-BRANCH
     )
-    string(STRIP ${DRIVER-BRANCH} DRIVER-BRANCH)
+    if(${DRIVER-BRANCH})
+        string(STRIP ${DRIVER-BRANCH} DRIVER-BRANCH)
+    endif()
     find_library(NVML_LIBRARIES nvidia-ml
             PATHS /usr/lib/nvidia-${DRIVER-BRANCH})
     find_path(XNVCTRL_INCLUDE_DIRS NVCtrl.h

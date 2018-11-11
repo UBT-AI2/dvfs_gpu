@@ -169,6 +169,20 @@ namespace frequency_scaling {
         return max_mem_oc_ - min_mem_oc_ > 0;
     }
 
+    int device_clock_info::find_graph_idx(int graph_clock) const{
+        //sorted descending
+        for (int i = 0; i < nvml_graph_clocks_.size(); i++) {
+            if (nvml_graph_clocks_[i] <= graph_clock) {
+                return i;
+            }
+        }
+        return nvml_graph_clocks_.size()-1;
+    }
+
+    int device_clock_info::get_mem_oc(int mem_clock) const{
+        return mem_clock - nvapi_default_mem_clock_;
+    }
+
     measurement::measurement() : mem_clock_(0), graph_clock_(0), power_(0),
                                  hashrate_(0), energy_hash_(0),
                                  nvml_graph_clock_idx_(-1), mem_oc_(0), graph_oc_(0) {}

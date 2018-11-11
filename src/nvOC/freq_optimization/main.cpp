@@ -35,8 +35,8 @@ static bool cmd_arg_check(int argc, char **argv, std::map<std::string, std::stri
                                        "--max_iterations=<int>\t\tMaximum iterations of optimization algo.\n\t"
                                        "--mem_step_pct=<float>\t\tDefault memory clock step size of optimization algo in percentage of value range.\n\t"
                                        "--graph_idx_step_pct=<float>\tDefault core clock index step size of optimization algo in percentage of value range.\n\t"
-                                       "--start_mem_oc=<int>\t\tStart gpu memory overclock of optimization algo. Not possible when minimum hashrate is used\n\t"
-                                       "--start_graph_idx=<int>\t\tStart gpu core clock index of optimization algo. Not possible when minimum hashrate is used\n\t"
+                                       "--start_mem_clock=<int>\t\tStart gpu memory clock of optimization algo. Not possible when minimum hashrate is used\n\t"
+                                       "--start_graph_clock=<int>\t\tStart gpu core clock of optimization algo. Not possible when minimum hashrate is used\n\t"
                                        "--rand_start_clocks\t\tUse random start clocks for optimization algo. Overwritten by explicitly specified start clock. Not possible when minimum hashrate is used\n\t"
                                        "--min_mem_oc=<int>\t\tMinimum allowed gpu memory overclock.\n\t"
                                        "--max_mem_oc=<int>\t\tMaximum allowed gpu memory overclock.\n\t"
@@ -112,15 +112,15 @@ int main(int argc, char **argv) {
 
         //
         device_clock_info dci(device_id, min_mem_oc, min_graph_oc, max_mem_oc, max_graph_oc);
-        int start_mem_oc = (cmd_args.count("--start_mem_oc") && min_hashrate_pct < 0) ?
-                           std::stoi(cmd_args.at("--start_mem_oc")) : dci.max_mem_oc_;
-        int start_graph_idx = (cmd_args.count("--start_graph_idx") && min_hashrate_pct < 0) ?
-                              std::stoi(cmd_args.at("--start_graph_idx")) : 0;
+        int start_mem_oc = (cmd_args.count("--start_mem_clock") && min_hashrate_pct < 0) ?
+                           dci.get_mem_oc(std::stoi(cmd_args.at("--start_mem_clock"))) : dci.max_mem_oc_;
+        int start_graph_idx = (cmd_args.count("--start_graph_clock") && min_hashrate_pct < 0) ?
+                              dci.find_graph_idx(std::stoi(cmd_args.at("--start_graph_clock"))) : 0;
         if (cmd_args.count("--rand_start_clocks") && min_hashrate_pct < 0) {
             std::default_random_engine eng(std::chrono::high_resolution_clock::now().time_since_epoch().count());
-            if (!cmd_args.count("--start_mem_oc"))
+            if (!cmd_args.count("--start_mem_clock"))
                 start_mem_oc = std::uniform_int_distribution<int>(dci.min_mem_oc_, dci.max_mem_oc_)(eng);
-            if (!cmd_args.count("--start_graph_idx"))
+            if (!cmd_args.count("--start_graph_clock"))
                 start_graph_idx = std::uniform_int_distribution<int>(0, dci.nvml_graph_clocks_.size() - 1)(eng);
         }
         //check boundaries
