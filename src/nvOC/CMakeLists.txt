@@ -107,7 +107,7 @@ target_link_libraries(gpu_power_monitor
 add_executable(hash-log-excavator
         utils/hash-log-excavator.cpp)
 
-
+#INSTALL STUFF
 if (WIN32)
     file(COPY ${DEPENDENCY_DIR}/dlls/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
             FILES_MATCHING PATTERN "*.dll")
@@ -121,3 +121,11 @@ INSTALL(TARGETS nvapiOC nvmlOC freq_exhaustive freq_optimization profit_optimiza
 #Specify install target for libs
 INSTALL(TARGETS nvapiOC_lib nvmlOC_lib script_running_lib freq_exhaustive_lib freq_optimization_lib profit_optimization_lib
         ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+
+#Specify install target for headers
+set(HEADER_DIRS common_header freq_exhaustive freq_optimization nvapi nvml profit_optimization script_running)
+foreach (dir ${HEADER_DIRS})
+    INSTALL(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${dir}/
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/${dir}
+            FILES_MATCHING PATTERN "*.h")
+endforeach()
