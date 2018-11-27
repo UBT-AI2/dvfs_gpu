@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\freq_optimization\freq_simulated_annealing.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\freq_optimization\freq_nelder_mead.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\freq_optimization\freq_hill_climbing.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\freq_optimization\freq_simulated_annealing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\freq_optimization\freq_nelder_mead.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\freq_optimization\freq_hill_climbing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\common_header\constants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\common_header\exceptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\common_header\fullexpr_accum.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{4054FFFD-6F07-39C0-9507-0DC799E8C42D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{36144F44-A31E-3FA5-8F72-6625700EE284}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

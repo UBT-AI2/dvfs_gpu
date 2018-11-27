@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\script_running\currency_type.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\script_running\benchmark.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\script_running\mining.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\script_running\process_management.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\script_running\log_utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\script_running\network_requests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\script_running\optimization_config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\script_running\cli_utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\script_running\currency_type.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\script_running\benchmark.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\script_running\mining.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\script_running\process_management.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\script_running\log_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\script_running\network_requests.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\script_running\optimization_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\script_running\cli_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\common_header\constants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\common_header\exceptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\common_header\fullexpr_accum.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Alex\Desktop\mining\frequency-scaling\src\nvOC\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{4054FFFD-6F07-39C0-9507-0DC799E8C42D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{36144F44-A31E-3FA5-8F72-6625700EE284}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
