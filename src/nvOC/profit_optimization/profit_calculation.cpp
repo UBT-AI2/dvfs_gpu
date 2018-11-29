@@ -271,7 +271,8 @@ namespace frequency_scaling {
         double cur_hashrate = 0;
         if (current_mined_ct.has_avg_hashrate_api()) {
             cur_hashrate = __get_avg_pool_hashrate(current_mined_ct, user_info, period_ms);
-        } else if (current_mined_ct.has_current_hashrate_api()) {
+        } 	
+		if (cur_hashrate <= 0 && current_mined_ct.has_current_hashrate_api()) {
             cur_hashrate = __get_current_pool_hashrate(current_mined_ct, user_info, period_ms);
             if (cur_hashrate > 0) {
                 timespan_current_pool_hashrates_.at(current_mined_ct).emplace_back(system_time_now_ms, cur_hashrate);
@@ -284,7 +285,8 @@ namespace frequency_scaling {
                     }
                 cur_hashrate = (counter == 0) ? 0 : cur_hashrate / counter;
             }
-        } else {
+        } 
+		if(cur_hashrate <= 0){
             cur_hashrate = __get_avg_hashrate_online_log(current_mined_ct, dci_.device_id_nvml_,
                                                          system_time_start_ms, system_time_now_ms);
         }

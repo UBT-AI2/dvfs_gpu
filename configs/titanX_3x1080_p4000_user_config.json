@@ -1,0 +1,126 @@
+{
+  "energy_cost": "0.1",
+  "monitoring_interval": "3601",
+  "online_bench_duration": "120",
+  "skip_offline_phase": "false",
+  "email": "alexander.fiebig@uni-bayreuth.de",
+  "devices_to_use": [
+    {
+      "index": "0",
+      "name": "Quadro P4000",
+      "min_mem_oc": "1",
+      "min_graph_oc": "-1200",
+      "max_mem_oc": "-1",
+      "max_graph_oc": "100",
+      "worker_name": "DESKTOP-6817PNB_gpu0"
+    },
+	{
+      "index": "1",
+      "name": "GeForce GTX 1080",
+      "min_mem_oc": "1",
+      "min_graph_oc": "1",
+      "max_mem_oc": "-1",
+      "max_graph_oc": "100",
+      "worker_name": "DESKTOP-6817PNB_gpu1"
+    },
+    {
+      "index": "2",
+      "name": "TITAN X (Pascal)",
+      "min_mem_oc": "1",
+      "min_graph_oc": "1",
+      "max_mem_oc": "-1",
+      "max_graph_oc": "100",
+      "worker_name": "DESKTOP-6817PNB_gpu2"
+    },
+    {
+      "index": "3",
+      "name": "GeForce GTX 1080",
+      "min_mem_oc": "1",
+      "min_graph_oc": "1",
+      "max_mem_oc": "-1",
+      "max_graph_oc": "100",
+      "worker_name": "DESKTOP-6817PNB_gpu3"
+    },
+    {
+      "index": "4",
+      "name": "GeForce GTX 1080",
+      "min_mem_oc": "1",
+      "min_graph_oc": "1",
+      "max_mem_oc": "-1",
+      "max_graph_oc": "100",
+      "worker_name": "DESKTOP-6817PNB_gpu4"
+    }
+  ],
+  "currencies_to_use": {
+    "ETH": {
+      "wallet_address": "0x8291ca623a1f1a877fa189b594f6098c74aad0b3",
+      "opt_method_params": {
+        "method": "HC",
+        "min_hashrate": "-1",
+        "max_iterations": "6",
+        "mem_step": "0.15",
+        "graph_idx_step": "0.15"
+      }
+    },
+    "ZEC": {
+      "wallet_address": "t1Z8gLLGyxGRkjRFbNnJ2n6yvHb1Vo3pXKH",
+      "opt_method_params": {
+        "method": "SA",
+        "min_hashrate": "-1",
+        "max_iterations": "6",
+        "mem_step": "0.15",
+        "graph_idx_step": "0.15"
+      }
+    },
+    "XMR": {
+      "wallet_address": "49obKYMTctj2owFCjjPwmDELGNCc7kz3WBVLGgpF1MC3cWYH3psdpyV8rBdZUycYPr3qU9ChEmj4ZMFLLf2gN2bcFEzNPpv",
+      "opt_method_params": {
+        "method": "HC",
+        "min_hashrate": "-1",
+        "max_iterations": "6",
+        "mem_step": "0.15",
+        "graph_idx_step": "0.15"
+      }
+    },
+    "LUX": {
+      "wallet_address": "LUM85Kvt2Ex4sdCbLxJZUmWiP7akPHNTsW",
+      "opt_method_params": {
+        "method": "NM",
+        "min_hashrate": "-1",
+        "max_iterations": "8",
+        "mem_step": "0.15",
+        "graph_idx_step": "0.15"
+      }
+    },
+    "BTX": {
+      "wallet_address": "2QjLfa8gmcF5WDjYgeQUi2EbMtn5oE3UNj",
+      "opt_method_params": {
+        "method": "NM",
+        "min_hashrate": "-1",
+        "max_iterations": "8",
+        "mem_step": "0.15",
+        "graph_idx_step": "0.15"
+      }
+    },
+    "VTC": {
+      "wallet_address": "VpGMpfWuQxR4rWJp3i8Qc7wqwf4yLQtdLd",
+      "opt_method_params": {
+        "method": "NM",
+        "min_hashrate": "-1",
+        "max_iterations": "8",
+        "mem_step": "0.15",
+        "graph_idx_step": "0.15"
+      }
+    },
+    "RVN": {
+      "wallet_address": "RKNJZyAAzbPT3Nvrujzp2m5HLB7eA1MZZS",
+      "opt_method_params": {
+        "method": "NM",
+        "min_hashrate": "-1",
+        "max_iterations": "8",
+        "mem_step": "0.15",
+        "graph_idx_step": "0.15"
+      }
+    }
+  }
+}
