@@ -38,10 +38,10 @@ static bool cmd_arg_check(int argc, char **argv, std::map<std::string, std::stri
                                        "--start_mem_clock=<int>\t\tStart gpu memory clock of optimization algo. Not possible when minimum hashrate is used\n\t"
                                        "--start_graph_clock=<int>\t\tStart gpu core clock of optimization algo. Not possible when minimum hashrate is used\n\t"
                                        "--rand_start_clocks\t\tUse random start clocks for optimization algo. Overwritten by explicitly specified start clock. Not possible when minimum hashrate is used\n\t"
-                                       "--min_mem_oc=<int>\t\tMinimum allowed gpu memory overclock.\n\t"
-                                       "--max_mem_oc=<int>\t\tMaximum allowed gpu memory overclock.\n\t"
-                                       "--min_graph_oc=<int>\t\tMinimum allowed gpu core overclock.\n\t"
-                                       "--max_graph_oc=<int>\t\tMaximum allowed gpu core overclock.\n\t"
+                                       "--min_mem_clock=<int>\t\tMinimum allowed gpu memory clock.\n\t"
+                                       "--max_mem_clock=<int>\t\tMaximum allowed gpu memory clock.\n\t"
+                                       "--min_graph_clock=<int>\t\tMinimum allowed gpu core clock.\n\t"
+                                       "--max_graph_clock=<int>\t\tMaximum allowed gpu core clock.\n\t"
                                        "--help\t\t\t\tShows this message.\n\t" << std::endl;
         return false;
     }
@@ -87,10 +87,10 @@ int main(int argc, char **argv) {
         double graph_idx_step_pct = (cmd_args.count("--graph_idx_step_pct")) ? std::stod(
                 cmd_args.at("--graph_idx_step_pct"))
                                                                              : 0.15;
-        int min_mem_oc = (cmd_args.count("--min_mem_oc")) ? std::stoi(cmd_args.at("--min_mem_oc")) : 1;
-        int max_mem_oc = (cmd_args.count("--max_mem_oc")) ? std::stoi(cmd_args.at("--max_mem_oc")) : -1;
-        int min_graph_oc = (cmd_args.count("--min_graph_oc")) ? std::stoi(cmd_args.at("--min_graph_oc")) : 1;
-        int max_graph_oc = (cmd_args.count("--max_graph_oc")) ? std::stoi(cmd_args.at("--max_graph_oc")) : -1;
+        int min_mem_clock = (cmd_args.count("--min_mem_clock")) ? std::stoi(cmd_args.at("--min_mem_clock")) : -1;
+        int max_mem_clock = (cmd_args.count("--max_mem_clock")) ? std::stoi(cmd_args.at("--max_mem_clock")) : -1;
+        int min_graph_clock = (cmd_args.count("--min_graph_clock")) ? std::stoi(cmd_args.at("--min_graph_clock")) : -1;
+        int max_graph_clock = (cmd_args.count("--max_graph_clock")) ? std::stoi(cmd_args.at("--max_graph_clock")) : -1;
         //online bench stuff
         bool online_bench = cmd_args.count("--use_online_bench") != 0;
         miner_user_info mui;
@@ -111,7 +111,8 @@ int main(int argc, char **argv) {
                                                   : benchmark_func(&run_benchmark_mining_offline);
 
         //
-        device_clock_info dci(device_id, min_mem_oc, min_graph_oc, max_mem_oc, max_graph_oc);
+        const device_clock_info &dci = device_clock_info::create_dci(device_id, min_mem_clock, max_mem_clock,
+                                                                     min_graph_clock, max_graph_clock);
         int start_mem_oc = (cmd_args.count("--start_mem_clock") && min_hashrate_pct < 0) ?
                            dci.get_mem_oc(std::stoi(cmd_args.at("--start_mem_clock"))) : dci.max_mem_oc_;
         int start_graph_idx = (cmd_args.count("--start_graph_clock") && min_hashrate_pct < 0) ?

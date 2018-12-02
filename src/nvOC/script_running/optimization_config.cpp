@@ -86,7 +86,7 @@ namespace frequency_scaling {
             user_in = cli_get_string(user_msg, "[yn]");
             if (user_in != "y")
                 continue;
-            opt_config.dcis_.emplace_back(device_id);
+            opt_config.dcis_.emplace_back(device_clock_info::create_dci(device_id));
             opt_config.miner_user_infos_.worker_names_.emplace(device_id, getworker_name(device_id));
         }
         if (opt_config.dcis_.empty())
@@ -139,10 +139,10 @@ namespace frequency_scaling {
             pt::ptree pt_device;
             pt_device.put("index", dci.device_id_nvml_);
             pt_device.put("name", nvmlGetDeviceName(dci.device_id_nvml_));
-            pt_device.put("min_mem_oc", dci.min_mem_oc_);
-            pt_device.put("min_graph_oc", dci.min_graph_oc_);
-            pt_device.put("max_mem_oc", dci.max_mem_oc_);
-            pt_device.put("max_graph_oc", dci.max_graph_oc_);
+            pt_device.put("min_mem_clock", dci.nvapi_default_mem_clock_ + dci.min_mem_oc_);
+            pt_device.put("min_graph_clock", dci.nvapi_default_graph_clock_ + dci.min_graph_oc_);
+            pt_device.put("max_mem_clock", dci.nvapi_default_mem_clock_ + dci.max_mem_oc_);
+            pt_device.put("max_graph_clock", dci.nvapi_default_graph_clock_ + dci.max_graph_oc_);
             pt_device.put("worker_name", opt_config.miner_user_infos_.worker_names_.at(dci.device_id_nvml_));
             devices_to_use.push_back(std::make_pair("", pt_device));
         }
@@ -194,15 +194,16 @@ namespace frequency_scaling {
                 continue;
             }
             if (pt_device.get<std::string>("name") == nvmlGetDeviceName(device_id)) {
-                opt_config.dcis_.emplace_back(device_id, pt_device.get<int>("min_mem_oc", 1),
-                                              pt_device.get<int>("min_graph_oc", 1),
-                                              pt_device.get<int>("max_mem_oc", -1),
-                                              pt_device.get<int>("max_graph_oc", -1));
+                opt_config.dcis_.emplace_back(device_clock_info::create_dci(device_id,
+                        pt_device.get<int>("min_mem_clock", -1),
+                        pt_device.get<int>("max_mem_clock", -1),
+                        pt_device.get<int>("min_graph_clock", -1),
+                        pt_device.get<int>("max_graph_clock", -1)));
             } else {
                 LOG(WARNING) << "Invalid opt_config: GPU " << device_id
                              << " has different type. Creating default dci..."
                              << std::endl;
-                opt_config.dcis_.emplace_back(device_id);
+                opt_config.dcis_.emplace_back(device_clock_info::create_dci(device_id));
             }
             opt_config.miner_user_infos_.worker_names_.emplace(device_id,
                                                                pt_device.get<std::string>("worker_name"));

@@ -25,10 +25,10 @@ static bool cmd_arg_check(int argc, char **argv, std::map<std::string, std::stri
                                        "--currency_config=<filename>\tCurrency configuration to use.\n\t"
                                        "--mem_step=<int>\t\tDefault memory clock step size.\n\t"
                                        "--graph_idx_step=<int>\tDefault core clock index step size.\n\t"
-                                       "--min_mem_oc=<int>\t\tMinimum allowed gpu memory overclock.\n\t"
-                                       "--max_mem_oc=<int>\t\tMaximum allowed gpu memory overclock.\n\t"
-                                       "--min_graph_oc=<int>\t\tMinimum allowed gpu core overclock.\n\t"
-                                       "--max_graph_oc=<int>\t\tMaximum allowed gpu core overclock.\n\t"
+                                       "--min_mem_clock=<int>\t\tMinimum allowed gpu memory clock.\n\t"
+                                       "--max_mem_clock=<int>\t\tMaximum allowed gpu memory clock.\n\t"
+                                       "--min_graph_clock=<int>\t\tMinimum allowed gpu core clock.\n\t"
+                                       "--max_graph_clock=<int>\t\tMaximum allowed gpu core clock.\n\t"
                                        "--help\t\t\t\tShows this message.\n\t" << std::endl;
         return false;
     }
@@ -67,10 +67,10 @@ int main(int argc, char **argv) {
         const currency_type &ct = available_currencies.at(boost::algorithm::to_upper_copy(cmd_args.at("-c")));
         int mem_step = (cmd_args.count("--mem_step")) ? std::stoi(cmd_args.at("--mem_step")) : 100;
         int graph_idx_step = (cmd_args.count("--graph_idx_step")) ? std::stoi(cmd_args.at("--graph_idx_step")) : 6;
-        int min_mem_oc = (cmd_args.count("--min_mem_oc")) ? std::stoi(cmd_args.at("--min_mem_oc")) : 1;
-        int max_mem_oc = (cmd_args.count("--max_mem_oc")) ? std::stoi(cmd_args.at("--max_mem_oc")) : -1;
-        int min_graph_oc = (cmd_args.count("--min_graph_oc")) ? std::stoi(cmd_args.at("--min_graph_oc")) : 1;
-        int max_graph_oc = (cmd_args.count("--max_graph_oc")) ? std::stoi(cmd_args.at("--max_graph_oc")) : -1;
+        int min_mem_clock = (cmd_args.count("--min_mem_clock")) ? std::stoi(cmd_args.at("--min_mem_clock")) : -1;
+        int max_mem_clock = (cmd_args.count("--max_mem_clock")) ? std::stoi(cmd_args.at("--max_mem_clock")) : -1;
+        int min_graph_clock = (cmd_args.count("--min_graph_clock")) ? std::stoi(cmd_args.at("--min_graph_clock")) : -1;
+        int max_graph_clock = (cmd_args.count("--max_graph_clock")) ? std::stoi(cmd_args.at("--max_graph_clock")) : -1;
         //online bench stuff
         bool online_bench = cmd_args.count("--use_online_bench") != 0;
         miner_user_info mui;
@@ -82,7 +82,8 @@ int main(int argc, char **argv) {
                     cmd_args.at("--online_bench_duration")) : 120;
         }
         //
-        device_clock_info dci(device_id, min_mem_oc, min_graph_oc, max_mem_oc, max_graph_oc);
+        const device_clock_info &dci = device_clock_info::create_dci(device_id, min_mem_clock, max_mem_clock,
+                                                                     min_graph_clock, max_graph_clock);
         //start power monitoring and mining
         start_power_monitoring_script(device_id);
         if (online_bench)

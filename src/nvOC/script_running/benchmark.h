@@ -7,10 +7,19 @@
 namespace frequency_scaling {
 
     struct device_clock_info {
+    private:
         explicit device_clock_info(int device_id_nvml);
 
-        device_clock_info(int device_id_nvml, int min_mem_oc, int min_graph_oc,
-                          int max_mem_oc, int max_graph_oc);
+        device_clock_info(int device_id_nvml, int min_mem_oc, int max_mem_oc,
+                          int min_graph_oc, int max_graph_oc);
+
+        device_clock_info(int device_id_nvml, int default_mem_clock, int default_graph_clock,
+                          int min_mem_oc, int max_mem_oc, int min_graph_oc, int max_graph_oc, int default_min_flag,
+                          int default_max_flag);
+
+    public:
+        static device_clock_info create_dci(int device_id_nvml, int min_mem_clock=-1, int max_mem_clock=-1,
+                          int min_graph_clock=-1, int max_graph_clock=-1);
 
         bool is_graph_oc_supported() const;
 

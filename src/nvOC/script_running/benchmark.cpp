@@ -25,14 +25,23 @@ namespace frequency_scaling {
         }
     }
 
-    device_clock_info::device_clock_info(int device_id_nvml) : device_clock_info(device_id_nvml, 1, 1, -1, -1) {}
+    device_clock_info::device_clock_info(int device_id_nvml) : device_clock_info(device_id_nvml, 1, -1, 1, -1) {}
 
-    device_clock_info::device_clock_info(int device_id_nvml, int min_mem_oc,
-                                         int min_graph_oc, int max_mem_oc,
-                                         int max_graph_oc) : device_id_nvml_(device_id_nvml),
-                                                             device_name_(nvmlGetDeviceName(device_id_nvml)),
-                                                             min_mem_oc_(min_mem_oc), min_graph_oc_(min_graph_oc),
-                                                             max_mem_oc_(max_mem_oc), max_graph_oc_(max_graph_oc) {
+    device_clock_info::device_clock_info(int device_id_nvml, int min_mem_oc, int max_mem_oc,
+                                         int min_graph_oc, int max_graph_oc) : device_clock_info(device_id_nvml,
+                                                                                                 nvmlGetDefaultMemClock(
+                                                                                                         device_id_nvml),
+                                                                                                 nvmlGetDefaultGraphClock(
+                                                                                                         device_id_nvml),
+                                                                                                 min_mem_oc, max_mem_oc,
+                                                                                                 min_graph_oc,
+                                                                                                 max_graph_oc, 1, -1) {}
+
+    device_clock_info::device_clock_info(int device_id_nvml, int default_mem_clock, int default_graph_clock,
+                                         int min_mem_oc, int max_mem_oc, int min_graph_oc, int max_graph_oc,
+                                         int default_min_flag, int default_max_flag) :
+            device_id_nvml_(device_id_nvml), device_name_(nvmlGetDeviceName(device_id_nvml)),
+            nvapi_default_mem_clock_(default_mem_clock), nvapi_default_graph_clock_(default_graph_clock) {
         CUresult res = cuDeviceGetByPCIBusId(&device_id_cuda_, nvmlGetBusIdString(device_id_nvml).c_str());
         if (res == CUDA_ERROR_NOT_INITIALIZED) {
             cuInit(0);
@@ -70,10 +79,7 @@ namespace frequency_scaling {
                 device_id_nvapi_ << ", CUDA-Id=" << device_id_cuda_ << std::endl;
         //set default min and max frequencies
         //##############################
-        //get default clocks from nvml (no oc support required)
-        nvapi_default_graph_clock_ = nvmlGetDefaultGraphClock(device_id_nvml);
-        nvapi_default_mem_clock_ = nvmlGetDefaultMemClock(device_id_nvml);
-        //
+
         int min_mem_border = 0, max_mem_border = 0;
         int min_graph_border = 0, max_graph_border = 0;
         if (nvml_supported_)
@@ -82,30 +88,31 @@ namespace frequency_scaling {
             nvapi_register_gpu(device_id_nvapi_);
             const nvapi_clock_info &nvapi_ci_mem = nvapiGetMemClockInfo(device_id_nvapi_);
             min_mem_border = nvapi_ci_mem.min_oc_;
-            max_mem_border = (max_mem_oc == -1) ? std::min(900, nvapi_ci_mem.max_oc_) : nvapi_ci_mem.max_oc_;
+            max_mem_border = (max_mem_oc == default_max_flag) ? std::min(900, nvapi_ci_mem.max_oc_) : nvapi_ci_mem.max_oc_;
             //determine min_mem_oc
-            min_mem_oc_ = (min_mem_oc == 1) ? min_mem_border :
+            min_mem_oc_ = (min_mem_oc == default_min_flag) ? min_mem_border :
                           std::min(std::max(min_mem_oc, min_mem_border), max_mem_border);
             //determine max_mem_oc
-            max_mem_oc_ = (max_mem_oc == -1) ? max_mem_border :
+            max_mem_oc_ = (max_mem_oc == default_max_flag) ? max_mem_border :
                           std::min(std::max(max_mem_oc, min_mem_border), max_mem_border);
 
             const nvapi_clock_info &nvapi_ci_graph = nvapiGetGraphClockInfo(device_id_nvapi_);
             min_graph_border = (!nvml_supported_) ? nvapi_ci_graph.min_oc_ :
                                nvmlGetAvailableGraphClocks(device_id_nvml).back() - nvapi_default_graph_clock_;
-            max_graph_border = (max_graph_oc == -1) ? std::min(100, nvapi_ci_graph.max_oc_) : nvapi_ci_graph.max_oc_;
+            max_graph_border = (max_graph_oc == default_max_flag) ? std::min(100, nvapi_ci_graph.max_oc_)
+                                                                  : nvapi_ci_graph.max_oc_;
             //determine min_graph_oc
-            min_graph_oc_ = (min_graph_oc == 1) ? min_graph_border :
+            min_graph_oc_ = (min_graph_oc == default_min_flag) ? min_graph_border :
                             std::min(std::max(min_graph_oc, min_graph_border), max_graph_border);
             //determine max_graph_oc
-            max_graph_oc_ = (max_graph_oc == -1) ? max_graph_border :
+            max_graph_oc_ = (max_graph_oc == default_max_flag) ? max_graph_border :
                             std::min(std::max(max_graph_oc, min_graph_border), max_graph_border);
         } else {
             min_graph_border = (!nvml_supported_) ? 0 :
                                nvmlGetAvailableGraphClocks(device_id_nvml).back() - nvapi_default_graph_clock_;
             min_mem_oc_ = max_mem_oc_ = 0;
             max_graph_oc_ = 0;
-            min_graph_oc_ = (min_graph_oc == 1) ? min_graph_border :
+            min_graph_oc_ = (min_graph_oc == default_min_flag) ? min_graph_border :
                             std::min(std::max(min_graph_oc, min_graph_border), max_graph_border);
         }
         //should not happen
@@ -117,9 +124,10 @@ namespace frequency_scaling {
         VLOG(0)
         << log_utils::gpu_log_prefix(device_id_nvml) << "Default clocks: mem=" << nvapi_default_mem_clock_ << ",graph="
         << nvapi_default_graph_clock_ << std::endl;
-        VLOG(0) << log_utils::gpu_log_prefix(device_id_nvml) << "Used OC range: min_mem=" << min_mem_oc_ << ",max_mem="
-                << max_mem_oc_ <<
-                ",min_graph=" << min_graph_oc_ << ",max_graph=" << max_graph_oc_ << std::endl;
+        VLOG(0) << log_utils::gpu_log_prefix(device_id_nvml) << "Used clock range: min_mem="
+        << nvapi_default_mem_clock_ + min_mem_oc_ << ",max_mem=" << nvapi_default_mem_clock_ + max_mem_oc_ <<
+                ",min_graph=" << nvapi_default_graph_clock_ + min_graph_oc_ <<
+                ",max_graph=" << nvapi_default_graph_clock_ + max_graph_oc_ << std::endl;
         //fill frequency vectors
         //###############################
         int oc_interval = 15;
@@ -161,6 +169,19 @@ namespace frequency_scaling {
         }
     }
 
+    device_clock_info device_clock_info::create_dci(int device_id_nvml, int min_mem_clock, int max_mem_clock,
+                                        int min_graph_clock, int max_graph_clock){
+        //get default clocks from nvml (no oc support required)
+        int default_graph_clock = nvmlGetDefaultGraphClock(device_id_nvml);
+        int default_mem_clock = nvmlGetDefaultMemClock(device_id_nvml);
+        int min_mem_oc = (min_mem_clock < 0) ? std::numeric_limits<int>::max() : min_mem_clock - default_mem_clock;
+        int min_graph_oc = (min_graph_clock < 0) ? std::numeric_limits<int>::max() : min_graph_clock - default_graph_clock;
+        int max_mem_oc = (max_mem_clock < 0) ? std::numeric_limits<int>::min() : max_mem_clock - default_mem_clock;
+        int max_graph_oc = (max_graph_clock < 0) ? std::numeric_limits<int>::min() : max_graph_clock - default_graph_clock;
+        return device_clock_info(device_id_nvml, default_mem_clock, default_graph_clock, min_mem_oc, max_mem_oc,
+                min_graph_oc, max_graph_oc, std::numeric_limits<int>::max(), std::numeric_limits<int>::min());
+    }
+
     bool device_clock_info::is_graph_oc_supported() const {
         return max_graph_oc_ - min_graph_oc_ > 0;
     }
@@ -169,17 +190,17 @@ namespace frequency_scaling {
         return max_mem_oc_ - min_mem_oc_ > 0;
     }
 
-    int device_clock_info::find_graph_idx(int graph_clock) const{
+    int device_clock_info::find_graph_idx(int graph_clock) const {
         //sorted descending
         for (int i = 0; i < nvml_graph_clocks_.size(); i++) {
             if (nvml_graph_clocks_[i] <= graph_clock) {
                 return i;
             }
         }
-        return nvml_graph_clocks_.size()-1;
+        return nvml_graph_clocks_.size() - 1;
     }
 
-    int device_clock_info::get_mem_oc(int mem_clock) const{
+    int device_clock_info::get_mem_oc(int mem_clock) const {
         return mem_clock - nvapi_default_mem_clock_;
     }
 
@@ -301,8 +322,8 @@ namespace frequency_scaling {
         char cmd[BUFFER_SIZE];
         snprintf(cmd, BUFFER_SIZE, "./gpu_power_monitor %i %i %s", device_id, interval_sleep_ms,
                  log_utils::get_logdir_name().c_str());
-        if(process_management::gpu_start_process(cmd, device_id, process_type::POWER_MONITOR, true)) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(3*interval_sleep_ms));
+        if (process_management::gpu_start_process(cmd, device_id, process_type::POWER_MONITOR, true)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(3 * interval_sleep_ms));
             return true;
         }
         return false;

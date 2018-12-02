@@ -7,10 +7,10 @@
   "devices_to_use": [
     {
       "index": "0",
-      "min_mem_oc": "-500",
-      "min_graph_oc": "-90",
-      "max_mem_oc": "500",
-      "max_graph_oc": "200",
+      "min_mem_clock": "-1",
+      "min_graph_clock": "-1",
+      "max_mem_clock": "-1",
+      "max_graph_clock": "-1",
       "worker_name": "DESKTOPALEX_gpu0"
     }
   ],
