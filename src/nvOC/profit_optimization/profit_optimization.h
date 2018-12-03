@@ -1,9 +1,9 @@
 #pragma once
 
 #include <string>
-#include "../script_running/benchmark.h"
-#include "../script_running/mining.h"
-#include "../script_running/optimization_config.h"
+#include "../freq_core/benchmark.h"
+#include "../freq_core/mining.h"
+#include "../freq_core/optimization_config.h"
 #include "profit_calculation.h"
 
 namespace frequency_scaling {

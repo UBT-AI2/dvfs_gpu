@@ -18,8 +18,8 @@ namespace frequency_scaling {
                           int default_max_flag);
 
     public:
-        static device_clock_info create_dci(int device_id_nvml, int min_mem_clock=-1, int max_mem_clock=-1,
-                          int min_graph_clock=-1, int max_graph_clock=-1);
+        static device_clock_info create_dci(int device_id_nvml, int min_mem_clock = -1, int max_mem_clock = -1,
+                                            int min_graph_clock = -1, int max_graph_clock = -1);
 
         bool is_graph_oc_supported() const;
 

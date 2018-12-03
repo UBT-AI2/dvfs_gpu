@@ -15,11 +15,11 @@
 #include "../freq_optimization/freq_hill_climbing.h"
 #include "../freq_optimization/freq_simulated_annealing.h"
 #include "../nvml/nvmlOC.h"
-#include "../script_running/process_management.h"
+#include "../freq_core/process_management.h"
 #include "../common_header/constants.h"
 #include "../common_header/exceptions.h"
-#include "../script_running/cli_utils.h"
-#include "../script_running/log_utils.h"
+#include "../freq_core/cli_utils.h"
+#include "../freq_core/log_utils.h"
 
 namespace frequency_scaling {
 

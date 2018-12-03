@@ -18,6 +18,10 @@ namespace frequency_scaling {
         }
     }
 
+    bool currency_type::has_any_api_option() const {
+        return has_avg_hashrate_api() || has_current_hashrate_api() || has_approximated_earnings_api();
+    }
+
     bool currency_type::has_avg_hashrate_api() const {
         return !pool_avg_hashrate_api_address_.empty() && !pool_avg_hashrate_json_path_worker_array_.empty() &&
                !pool_avg_hashrate_json_path_worker_name_.empty() &&
@@ -34,7 +38,8 @@ namespace frequency_scaling {
     }
 
     bool currency_type::has_approximated_earnings_api() const {
-        return !pool_approximated_earnings_api_address_.empty() && !pool_approximated_earnings_json_path_.empty() &&
+        return !pool_approximated_earnings_api_address_.empty() &&
+               !pool_approximated_earnings_json_path_earnings_.empty() &&
                pool_approximated_earnings_api_unit_factor_hashrate_ > 0 &&
                pool_approximated_earnings_api_unit_factor_period_ > 0;
     }
@@ -79,7 +84,7 @@ namespace frequency_scaling {
             ct_eth.pool_avg_hashrate_api_unit_factor_hashrate_ = 1e6;
             ct_eth.pool_avg_hashrate_api_unit_factor_period_ = 3600 * 1000;
             ct_eth.pool_approximated_earnings_api_address_ = "https://api.nanopool.org/v1/eth/approximated_earnings/%s";
-            ct_eth.pool_approximated_earnings_json_path_ = "data.hour.coins";
+            ct_eth.pool_approximated_earnings_json_path_earnings_ = "data.hour.coins";
             ct_eth.pool_approximated_earnings_api_unit_factor_hashrate_ = 1e6;
             ct_eth.pool_approximated_earnings_api_unit_factor_period_ = 1;
             res.emplace(ct_eth.currency_name_, ct_eth);
@@ -89,7 +94,10 @@ namespace frequency_scaling {
             currency_type ct_zec("ZEC", false);
             ct_zec.bench_script_path_ = "../scripts/run_benchmark_zec_excavator.sh";
             ct_zec.mining_script_path_ = "../scripts/start_mining_zec_excavator.sh";
-            ct_zec.pool_addresses_ = {"zec-eu2.nanopool.org:6666"};
+            ct_zec.pool_addresses_ = {"zec-eu1.nanopool.org:6666", "zec-eu2.nanopool.org:6666",
+                                      "zec-au1.nanopool.org:6666","zec-jp1.nanopool.org:6666",
+                                      "zec-us-west1.nanopool.org:6666", "zec-us-east1.nanopool.org:6666",
+                                      "zec-asia1.nanopool.org:6666"};
             ct_zec.whattomine_coin_id_ = 166;
             ct_zec.cryptocompare_fsym_ = "ZEC";
             ct_zec.pool_avg_hashrate_api_address_ = "https://api.nanopool.org/v1/zec/avghashrateworkers/%s/%s";
@@ -99,7 +107,7 @@ namespace frequency_scaling {
             ct_zec.pool_avg_hashrate_api_unit_factor_hashrate_ = 1;
             ct_zec.pool_avg_hashrate_api_unit_factor_period_ = 3600 * 1000;
             ct_zec.pool_approximated_earnings_api_address_ = "https://api.nanopool.org/v1/zec/approximated_earnings/%s";
-            ct_zec.pool_approximated_earnings_json_path_ = "data.hour.coins";
+            ct_zec.pool_approximated_earnings_json_path_earnings_ = "data.hour.coins";
             ct_zec.pool_approximated_earnings_api_unit_factor_hashrate_ = 1;
             ct_zec.pool_approximated_earnings_api_unit_factor_period_ = 1;
 #else
@@ -121,7 +129,10 @@ namespace frequency_scaling {
             currency_type ct_xmr("XMR", false);
             ct_xmr.bench_script_path_ = "../scripts/run_benchmark_xmr_xmrstak.sh";
             ct_xmr.mining_script_path_ = "../scripts/start_mining_xmr_xmrstak.sh";
-            ct_xmr.pool_addresses_ = {"xmr-eu2.nanopool.org:14444"};
+            ct_xmr.pool_addresses_ = {"xmr-eu1.nanopool.org:14444", "xmr-eu2.nanopool.org:14444",
+                                      "xmr-au1.nanopool.org:14444", "xmr-jp1.nanopool.org:14444",
+                                      "xmr-us-west1.nanopool.org:14444", "xmr-us-east1.nanopool.org:14444",
+                                      "xmr-asia1.nanopool.org:14444"};
             ct_xmr.whattomine_coin_id_ = 101;
             ct_xmr.cryptocompare_fsym_ = "XMR";
             ct_xmr.pool_avg_hashrate_api_address_ = "https://api.nanopool.org/v1/xmr/avghashrateworkers/%s/%s";
@@ -131,7 +142,7 @@ namespace frequency_scaling {
             ct_xmr.pool_avg_hashrate_api_unit_factor_hashrate_ = 1;
             ct_xmr.pool_avg_hashrate_api_unit_factor_period_ = 3600 * 1000;
             ct_xmr.pool_approximated_earnings_api_address_ = "https://api.nanopool.org/v1/xmr/approximated_earnings/%s";
-            ct_xmr.pool_approximated_earnings_json_path_ = "data.hour.coins";
+            ct_xmr.pool_approximated_earnings_json_path_earnings_ = "data.hour.coins";
             ct_xmr.pool_approximated_earnings_api_unit_factor_hashrate_ = 1;
             ct_xmr.pool_approximated_earnings_api_unit_factor_period_ = 1;
             res.emplace(ct_xmr.currency_name_, ct_xmr);
@@ -222,36 +233,52 @@ namespace frequency_scaling {
             ct.whattomine_coin_id_ = pt_currency_type.get<int>("whattomine_coin_id");
             //optional fields
             ct.cryptocompare_fsym_ = pt_currency_type.get<std::string>("cryptocompare_fsym", ct.currency_name_);
-            ct.pool_avg_hashrate_api_address_ = pt_currency_type.get<std::string>("pool_avg_hashrate_api_address",
-                                                                                  "");
-            ct.pool_avg_hashrate_json_path_worker_array_ = pt_currency_type.get<std::string>(
-                    "pool_avg_hashrate_json_path_worker_array", "");
-            ct.pool_avg_hashrate_json_path_worker_name_ = pt_currency_type.get<std::string>(
-                    "pool_avg_hashrate_json_path_worker_name", "");
-            ct.pool_avg_hashrate_json_path_hashrate_ = pt_currency_type.get<std::string>(
-                    "pool_avg_hashrate_json_path_hashrate", "");
-            ct.pool_avg_hashrate_api_unit_factor_hashrate_ = pt_currency_type.get<double>(
-                    "pool_avg_hashrate_api_unit_factor_hashrate", -1);
-            ct.pool_avg_hashrate_api_unit_factor_period_ = pt_currency_type.get<double>(
-                    "pool_avg_hashrate_api_unit_factor_period", -1);
-            ct.pool_current_hashrate_api_address_ = pt_currency_type.get<std::string>(
-                    "pool_current_hashrate_api_address", "");
-            ct.pool_current_hashrate_json_path_worker_array_ = pt_currency_type.get<std::string>(
-                    "pool_current_hashrate_json_path_worker_array", "");
-            ct.pool_current_hashrate_json_path_worker_name_ = pt_currency_type.get<std::string>(
-                    "pool_current_hashrate_json_path_worker_name", "");
-            ct.pool_current_hashrate_json_path_hashrate_ = pt_currency_type.get<std::string>(
-                    "pool_current_hashrate_json_path_hashrate", "");
-            ct.pool_current_hashrate_api_unit_factor_hashrate_ = pt_currency_type.get<double>(
-                    "pool_current_hashrate_api_unit_factor_hashrate", -1);
-            ct.pool_approximated_earnings_api_address_ = pt_currency_type.get<std::string>(
-                    "pool_approximated_earnings_api_address", "");
-            ct.pool_approximated_earnings_json_path_ = pt_currency_type.get<std::string>(
-                    "pool_approximated_earnings_json_path", "");
-            ct.pool_approximated_earnings_api_unit_factor_hashrate_ = pt_currency_type.get<double>(
-                    "pool_approximated_earnings_api_unit_factor_hashrate", -1);
-            ct.pool_approximated_earnings_api_unit_factor_period_ = pt_currency_type.get<double>(
-                    "pool_approximated_earnings_api_unit_factor_period", -1);
+            if (pt_currency_type.count("pool_api_options")) {
+                const boost::property_tree::ptree &pt_api_options = pt_currency_type.get_child("pool_api_options");
+                if (pt_api_options.count("avg_hashrate")) {
+                    const boost::property_tree::ptree &pt_api_option_avg_hashrate = pt_api_options.get_child(
+                            "avg_hashrate");
+                    ct.pool_avg_hashrate_api_address_ = pt_api_option_avg_hashrate.get<std::string>("api_address", "");
+                    ct.pool_avg_hashrate_json_path_worker_array_ = pt_api_option_avg_hashrate.get<std::string>(
+                            "json_path_worker_array", "");
+                    ct.pool_avg_hashrate_json_path_worker_name_ = pt_api_option_avg_hashrate.get<std::string>(
+                            "json_path_worker_name", "");
+                    ct.pool_avg_hashrate_json_path_hashrate_ = pt_api_option_avg_hashrate.get<std::string>(
+                            "json_path_hashrate", "");
+                    ct.pool_avg_hashrate_api_unit_factor_hashrate_ = pt_api_option_avg_hashrate.get<double>(
+                            "api_unit_factor_hashrate", -1);
+                    ct.pool_avg_hashrate_api_unit_factor_period_ = pt_api_option_avg_hashrate.get<double>(
+                            "api_unit_factor_period", -1);
+                }
+                //
+                if (pt_api_options.count("current_hashrate")) {
+                    const boost::property_tree::ptree &pt_api_option_current_hashrate = pt_api_options.get_child(
+                            "current_hashrate");
+                    ct.pool_current_hashrate_api_address_ = pt_api_option_current_hashrate.get<std::string>(
+                            "api_address", "");
+                    ct.pool_current_hashrate_json_path_worker_array_ = pt_api_option_current_hashrate.get<std::string>(
+                            "json_path_worker_array", "");
+                    ct.pool_current_hashrate_json_path_worker_name_ = pt_api_option_current_hashrate.get<std::string>(
+                            "json_path_worker_name", "");
+                    ct.pool_current_hashrate_json_path_hashrate_ = pt_api_option_current_hashrate.get<std::string>(
+                            "json_path_hashrate", "");
+                    ct.pool_current_hashrate_api_unit_factor_hashrate_ = pt_api_option_current_hashrate.get<double>(
+                            "api_unit_factor_hashrate", -1);
+                }
+                //
+                if (pt_api_options.count("approximated_earnings")) {
+                    const boost::property_tree::ptree &pt_api_option_approximated_earnings = pt_api_options.get_child(
+                            "approximated_earnings");
+                    ct.pool_approximated_earnings_api_address_ = pt_api_option_approximated_earnings.get<std::string>(
+                            "api_address", "");
+                    ct.pool_approximated_earnings_json_path_earnings_ = pt_api_option_approximated_earnings.get<std::string>(
+                            "json_path_earnings", "");
+                    ct.pool_approximated_earnings_api_unit_factor_hashrate_ = pt_api_option_approximated_earnings.get<double>(
+                            "api_unit_factor_hashrate", -1);
+                    ct.pool_approximated_earnings_api_unit_factor_period_ = pt_api_option_approximated_earnings.get<double>(
+                            "api_unit_factor_period", -1);
+                }
+            }
             currency_config.emplace(ct.currency_name_, ct);
         }
         //write to logdir
@@ -284,32 +311,47 @@ namespace frequency_scaling {
             pt_currency_type.put("whattomine_coin_id", ct.whattomine_coin_id_);
             //optional fields
             pt_currency_type.put("cryptocompare_fsym", ct.cryptocompare_fsym_);
-            pt_currency_type.put("pool_avg_hashrate_api_address", ct.pool_avg_hashrate_api_address_);
-            pt_currency_type.put("pool_avg_hashrate_json_path_worker_array",
-                                 ct.pool_avg_hashrate_json_path_worker_array_);
-            pt_currency_type.put("pool_avg_hashrate_json_path_worker_name",
-                                 ct.pool_avg_hashrate_json_path_worker_name_);
-            pt_currency_type.put("pool_avg_hashrate_json_path_hashrate", ct.pool_avg_hashrate_json_path_hashrate_);
-            pt_currency_type.put("pool_avg_hashrate_api_unit_factor_hashrate",
-                                 ct.pool_avg_hashrate_api_unit_factor_hashrate_);
-            pt_currency_type.put("pool_avg_hashrate_api_unit_factor_period",
-                                 ct.pool_avg_hashrate_api_unit_factor_period_);
-            pt_currency_type.put("pool_current_hashrate_api_address", ct.pool_current_hashrate_api_address_);
-            pt_currency_type.put("pool_current_hashrate_json_path_worker_array",
-                                 ct.pool_current_hashrate_json_path_worker_array_);
-            pt_currency_type.put("pool_current_hashrate_json_path_worker_name",
-                                 ct.pool_current_hashrate_json_path_worker_name_);
-            pt_currency_type.put("pool_current_hashrate_json_path_hashrate",
-                                 ct.pool_current_hashrate_json_path_hashrate_);
-            pt_currency_type.put("pool_current_hashrate_api_unit_factor_hashrate",
-                                 ct.pool_current_hashrate_api_unit_factor_hashrate_);
-            pt_currency_type.put("pool_approximated_earnings_api_address",
-                                 ct.pool_approximated_earnings_api_address_);
-            pt_currency_type.put("pool_approximated_earnings_json_path", ct.pool_approximated_earnings_json_path_);
-            pt_currency_type.put("pool_approximated_earnings_api_unit_factor_hashrate",
-                                 ct.pool_approximated_earnings_api_unit_factor_hashrate_);
-            pt_currency_type.put("pool_approximated_earnings_api_unit_factor_period",
-                                 ct.pool_approximated_earnings_api_unit_factor_period_);
+            //
+            pt::ptree pt_api_options;
+            pt::ptree pt_api_option_avg_hashrate;
+            pt_api_option_avg_hashrate.put("api_address", ct.pool_avg_hashrate_api_address_);
+            pt_api_option_avg_hashrate.put("json_path_worker_array",
+                                           ct.pool_avg_hashrate_json_path_worker_array_);
+            pt_api_option_avg_hashrate.put("json_path_worker_name",
+                                           ct.pool_avg_hashrate_json_path_worker_name_);
+            pt_api_option_avg_hashrate.put("json_path_hashrate",
+                                           ct.pool_avg_hashrate_json_path_hashrate_);
+            pt_api_option_avg_hashrate.put("api_unit_factor_hashrate",
+                                           ct.pool_avg_hashrate_api_unit_factor_hashrate_);
+            pt_api_option_avg_hashrate.put("api_unit_factor_period",
+                                           ct.pool_avg_hashrate_api_unit_factor_period_);
+            pt_api_options.add_child("avg_hashrate", pt_api_option_avg_hashrate);
+            //
+            pt::ptree pt_api_option_current_hashrate;
+            pt_api_option_current_hashrate.put("api_address",
+                                               ct.pool_current_hashrate_api_address_);
+            pt_api_option_current_hashrate.put("json_path_worker_array",
+                                               ct.pool_current_hashrate_json_path_worker_array_);
+            pt_api_option_current_hashrate.put("json_path_worker_name",
+                                               ct.pool_current_hashrate_json_path_worker_name_);
+            pt_api_option_current_hashrate.put("json_path_hashrate",
+                                               ct.pool_current_hashrate_json_path_hashrate_);
+            pt_api_option_current_hashrate.put("api_unit_factor_hashrate",
+                                               ct.pool_current_hashrate_api_unit_factor_hashrate_);
+            pt_api_options.add_child("current_hashrate", pt_api_option_current_hashrate);
+            //
+            pt::ptree pt_api_option_approximated_earnings;
+            pt_api_option_approximated_earnings.put("api_address",
+                                                    ct.pool_approximated_earnings_api_address_);
+            pt_api_option_approximated_earnings.put("json_path_earnings",
+                                                    ct.pool_approximated_earnings_json_path_earnings_);
+            pt_api_option_approximated_earnings.put("api_unit_factor_hashrate",
+                                                    ct.pool_approximated_earnings_api_unit_factor_hashrate_);
+            pt_api_option_approximated_earnings.put("api_unit_factor_period",
+                                                    ct.pool_approximated_earnings_api_unit_factor_period_);
+            pt_api_options.add_child("approximated_earnings", pt_api_option_approximated_earnings);
+            pt_currency_type.add_child("pool_api_options", pt_api_options);
+            //
             pt_available_currencies.push_back(std::make_pair("", pt_currency_type));
         }
         root.add_child("available_currencies", pt_available_currencies);

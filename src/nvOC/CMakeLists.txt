@@ -9,15 +9,15 @@ set(NVAPI_FILES
 set(NVML_FILES
         nvml/nvmlOC.h nvml/nvmlOC.cpp
         ${COMMON_HEADER})
-set(SCRIPT_RUNNING_FILES
-        script_running/currency_type.h script_running/currency_type.cpp
-        script_running/benchmark.h script_running/benchmark.cpp
-        script_running/mining.h script_running/mining.cpp
-        script_running/process_management.h script_running/process_management.cpp
-        script_running/log_utils.h script_running/log_utils.cpp
-        script_running/network_requests.h script_running/network_requests.cpp
-        script_running/optimization_config.h script_running/optimization_config.cpp
-        script_running/cli_utils.h script_running/cli_utils.cpp
+set(FREQ_CORE_FILES
+        freq_core/currency_type.h freq_core/currency_type.cpp
+        freq_core/benchmark.h freq_core/benchmark.cpp
+        freq_core/mining.h freq_core/mining.cpp
+        freq_core/process_management.h freq_core/process_management.cpp
+        freq_core/log_utils.h freq_core/log_utils.cpp
+        freq_core/network_requests.h freq_core/network_requests.cpp
+        freq_core/optimization_config.h freq_core/optimization_config.cpp
+        freq_core/cli_utils.h freq_core/cli_utils.cpp
         ${COMMON_HEADER})
 set(FREQ_EXHAUSTIVE_FILES
         freq_exhaustive/freq_exhaustive.h freq_exhaustive/freq_exhaustive.cpp
@@ -59,20 +59,20 @@ add_executable(nvmlOC
 target_link_libraries(nvmlOC
         nvmlOC_lib)
 
-#SCRIPT_RUNNING
-add_library(script_running_lib
-        ${SCRIPT_RUNNING_FILES})
-target_link_libraries(script_running_lib
-            nvapiOC_lib
-            nvmlOC_lib
-            ${CUDA_DRIVER_LIBRARIES}
-            ${CURL_LIBRARIES})
+#FREQ_CORE
+add_library(freq_core_lib
+        ${FREQ_CORE_FILES})
+target_link_libraries(freq_core_lib
+        nvapiOC_lib
+        nvmlOC_lib
+        ${CUDA_DRIVER_LIBRARIES}
+        ${CURL_LIBRARIES})
 
 #FREQ_EXHAUSTIVE
 add_library(freq_exhaustive_lib
         ${FREQ_EXHAUSTIVE_FILES})
 target_link_libraries(freq_exhaustive_lib
-        script_running_lib)
+        freq_core_lib)
 add_executable(freq_exhaustive
         freq_exhaustive/main.cpp)
 target_link_libraries(freq_exhaustive
@@ -82,7 +82,7 @@ target_link_libraries(freq_exhaustive
 add_library(freq_optimization_lib
         ${FREQ_OPTIMIZATION_FILES})
 target_link_libraries(freq_optimization_lib
-        script_running_lib)
+        freq_core_lib)
 add_executable(freq_optimization
         freq_optimization/main.cpp)
 target_link_libraries(freq_optimization
@@ -119,13 +119,13 @@ endif (WIN32)
 INSTALL(TARGETS nvapiOC nvmlOC freq_exhaustive freq_optimization profit_optimization gpu_power_monitor hash-log-excavator
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 #Specify install target for libs
-INSTALL(TARGETS nvapiOC_lib nvmlOC_lib script_running_lib freq_exhaustive_lib freq_optimization_lib profit_optimization_lib
+INSTALL(TARGETS nvapiOC_lib nvmlOC_lib freq_core_lib freq_exhaustive_lib freq_optimization_lib profit_optimization_lib
         ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
 #Specify install target for headers
-set(HEADER_DIRS common_header freq_exhaustive freq_optimization nvapi nvml profit_optimization script_running)
+set(HEADER_DIRS common_header freq_exhaustive freq_optimization nvapi nvml profit_optimization freq_core)
 foreach (dir ${HEADER_DIRS})
     INSTALL(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${dir}/
             DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/${dir}
             FILES_MATCHING PATTERN "*.h")
-endforeach()
+endforeach ()

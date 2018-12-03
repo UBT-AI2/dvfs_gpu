@@ -1,7 +1,7 @@
 #include "freq_exhaustive.h"
 #include <fstream>
 #include <limits>
-#include "../script_running/log_utils.h"
+#include "../freq_core/log_utils.h"
 #include "../common_header/exceptions.h"
 
 namespace frequency_scaling {

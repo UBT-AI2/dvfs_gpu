@@ -3,7 +3,7 @@
 //
 #pragma once
 
-#include "../script_running/benchmark.h"
+#include "../freq_core/benchmark.h"
 
 namespace frequency_scaling {
 

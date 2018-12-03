@@ -3,11 +3,11 @@
 #include "../common_header/fullexpr_accum.h"
 #include "../nvapi/nvapiOC.h"
 #include "../nvml/nvmlOC.h"
-#include "../script_running/benchmark.h"
-#include "../script_running/process_management.h"
-#include "../script_running/optimization_config.h"
-#include "../script_running/cli_utils.h"
-#include "../script_running/log_utils.h"
+#include "../freq_core/benchmark.h"
+#include "../freq_core/process_management.h"
+#include "../freq_core/optimization_config.h"
+#include "../freq_core/cli_utils.h"
+#include "../freq_core/log_utils.h"
 #include "freq_exhaustive.h"
 
 using namespace frequency_scaling;

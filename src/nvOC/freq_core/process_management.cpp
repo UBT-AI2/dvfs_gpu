@@ -63,8 +63,8 @@ namespace frequency_scaling {
         }
 
 #ifdef _WIN32
-        static void CALLBACK OnProcessExited(void* context, BOOLEAN isTimeOut)
-        {
+
+        static void CALLBACK OnProcessExited(void *context, BOOLEAN isTimeOut) {
             HANDLE hProcess = context;
             int pid = GetProcessId(hProcess);
             remove_pid(pid);
@@ -74,6 +74,7 @@ namespace frequency_scaling {
             << "Background process " << pid << " terminated with nonzero exit_code: " << exit_code << std::endl;
             CloseHandle(hProcess);
         }
+
 #else
 
         static void sig_child_handler(int sig) {
@@ -110,7 +111,7 @@ namespace frequency_scaling {
 #endif
             for (int sig : {SIGINT, SIGABRT, SIGTERM, SIGSEGV}) {
 #ifdef _WIN32
-                if(signal(sig, &sig_shutdown_handler) == SIG_ERR)
+                if (signal(sig, &sig_shutdown_handler) == SIG_ERR)
                     LOG(ERROR) << "Failed to register handler for signal " << sig << std::endl;
 #else
                 struct sigaction sa;
@@ -186,7 +187,7 @@ namespace frequency_scaling {
         bool has_process(int pid) {
 #ifdef _WIN32
 
-            if (HANDLE h = OpenProcess(SYNCHRONIZE, FALSE, pid)){
+            if (HANDLE h = OpenProcess(SYNCHRONIZE, FALSE, pid)) {
                 // do a wait, if the handle is signaled: not running
                 DWORD wait = WaitForSingleObject(h, 0);
                 if (wait == WAIT_OBJECT_0) {
@@ -245,7 +246,7 @@ namespace frequency_scaling {
             //ensure process terminated
             //siginfo_t info;
             //waitid(P_PID, pid, &info, WEXITED | WNOWAIT);
-            while(has_process(pid)){
+            while (has_process(pid)) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
             remove_pid(pid);
@@ -253,7 +254,7 @@ namespace frequency_scaling {
         }
 
         int start_process(const std::string &cmd, bool background) {
-            if(terminate_forced)
+            if (terminate_forced)
                 return -1;
             return start_process(cmd, background, false);
         }
@@ -261,20 +262,20 @@ namespace frequency_scaling {
         static int start_process(const std::string &cmd, bool background,
                                  bool is_kill) {
 #ifdef _WIN32
-            STARTUPINFO startup_info = { sizeof(startup_info) };
+            STARTUPINFO startup_info = {sizeof(startup_info)};
             PROCESS_INFORMATION pi;
             std::string full_cmd = "bash -c '" + cmd + "'";
 
             if (CreateProcess(NULL,
-                &full_cmd[0],
-                NULL,
-                NULL,
-                FALSE,
-                0,
-                NULL,
-                NULL,
-                &startup_info,
-                &pi)) {
+                              &full_cmd[0],
+                              NULL,
+                              NULL,
+                              FALSE,
+                              0,
+                              NULL,
+                              NULL,
+                              &startup_info,
+                              &pi)) {
                 CloseHandle(pi.hThread);
                 int pid = GetProcessId(pi.hProcess);
                 if (!is_kill) {
@@ -282,7 +283,7 @@ namespace frequency_scaling {
                     all_processes_.emplace_back(pid, background);
                 }
                 VLOG(0) << "Started process: " << cmd << " (PID: " << pid << ")"
-                    << std::endl;
+                        << std::endl;
                 if (!background) {
                     WaitForSingleObject(pi.hProcess, INFINITE);
                     remove_pid(pid);
@@ -290,17 +291,15 @@ namespace frequency_scaling {
                     GetExitCodeProcess(pi.hProcess, &exit_code);
                     if (exit_code != 0) {
                         THROW_PROCESS_ERROR(
-                            "Process " + cmd + " returned nonzero exit code: " + std::to_string(exit_code));
+                                "Process " + cmd + " returned nonzero exit code: " + std::to_string(exit_code));
                     }
-                }
-                else{
+                } else {
                     HANDLE hWait;
                     RegisterWaitForSingleObject(&hWait, pi.hProcess, &OnProcessExited, pi.hProcess,
-                        INFINITE, WT_EXECUTEONLYONCE);
+                                                INFINITE, WT_EXECUTEONLYONCE);
                 }
                 return pid;
-            }
-            else {
+            } else {
                 THROW_PROCESS_ERROR("CreateProcess() failed: " + cmd);
             }
 #else

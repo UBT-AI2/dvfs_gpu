@@ -195,10 +195,10 @@ namespace frequency_scaling {
             }
             if (pt_device.get<std::string>("name") == nvmlGetDeviceName(device_id)) {
                 opt_config.dcis_.emplace_back(device_clock_info::create_dci(device_id,
-                        pt_device.get<int>("min_mem_clock", -1),
-                        pt_device.get<int>("max_mem_clock", -1),
-                        pt_device.get<int>("min_graph_clock", -1),
-                        pt_device.get<int>("max_graph_clock", -1)));
+                                                                            pt_device.get<int>("min_mem_clock", -1),
+                                                                            pt_device.get<int>("max_mem_clock", -1),
+                                                                            pt_device.get<int>("min_graph_clock", -1),
+                                                                            pt_device.get<int>("max_graph_clock", -1)));
             } else {
                 LOG(WARNING) << "Invalid opt_config: GPU " << device_id
                              << " has different type. Creating default dci..."

@@ -102,7 +102,7 @@ namespace frequency_scaling {
             boost::property_tree::ptree root;
             boost::property_tree::json_parser::read_json(is, root);
             //api return unit: coins of mined currency
-            return root.get<double>(ct.pool_approximated_earnings_json_path_) *
+            return root.get<double>(ct.pool_approximated_earnings_json_path_earnings_) *
                    ct.pool_approximated_earnings_api_unit_factor_period_ * get_current_stock_price_cryptocompare(ct);
         }
 

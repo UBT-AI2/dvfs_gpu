@@ -9,6 +9,8 @@ namespace frequency_scaling {
     struct currency_type {
         explicit currency_type(const std::string &currency_name, bool use_ccminer);
 
+        bool has_any_api_option() const;
+
         bool has_avg_hashrate_api() const;
 
         bool has_current_hashrate_api() const;
@@ -52,7 +54,7 @@ namespace frequency_scaling {
         //#########################################################################
         //printf format string: hashrate
         std::string pool_approximated_earnings_api_address_;
-        std::string pool_approximated_earnings_json_path_;
+        std::string pool_approximated_earnings_json_path_earnings_;
         //target unit H/s | target unit hours
         double pool_approximated_earnings_api_unit_factor_hashrate_ = -1, pool_approximated_earnings_api_unit_factor_period_ = -1;
     };

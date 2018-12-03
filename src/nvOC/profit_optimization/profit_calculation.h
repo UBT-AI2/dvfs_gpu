@@ -3,9 +3,9 @@
 #include <map>
 #include <set>
 #include <mutex>
-#include "../script_running/benchmark.h"
-#include "../script_running/mining.h"
-#include "../script_running/network_requests.h"
+#include "../freq_core/benchmark.h"
+#include "../freq_core/mining.h"
+#include "../freq_core/network_requests.h"
 
 namespace frequency_scaling {
 

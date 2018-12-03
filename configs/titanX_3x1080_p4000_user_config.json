@@ -14,7 +14,7 @@
       "max_graph_clock": "-1",
       "worker_name": "DESKTOP-6817PNB_gpu0"
     },
-	{
+    {
       "index": "1",
       "name": "GeForce GTX 1080",
       "min_mem_clock": "-1",

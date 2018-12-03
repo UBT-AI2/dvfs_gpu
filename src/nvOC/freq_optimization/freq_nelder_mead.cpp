@@ -170,10 +170,11 @@ namespace frequency_scaling {
         return res;
     }
 
-    measurement freq_nelder_mead(const benchmark_func &benchmarkFunc, const currency_type& ct, const device_clock_info &dci,
-                                 int max_iterations,
-                                 double mem_step_pct, double graph_idx_step_pct,
-                                 double min_hashrate_pct) {
+    measurement
+    freq_nelder_mead(const benchmark_func &benchmarkFunc, const currency_type &ct, const device_clock_info &dci,
+                     int max_iterations,
+                     double mem_step_pct, double graph_idx_step_pct,
+                     double min_hashrate_pct) {
 
         //initial guess at maximum frequencies
         const measurement &start_node = benchmarkFunc(ct, dci, dci.max_mem_oc_, 0);
@@ -183,9 +184,10 @@ namespace frequency_scaling {
                                 min_hashrate);
     }
 
-    measurement freq_nelder_mead(const benchmark_func &benchmarkFunc, const currency_type& ct, const device_clock_info &dci,
-                                 const measurement &start_node, int max_iterations,
-                                 double mem_step_pct, double graph_idx_step_pct, double min_hashrate) {
+    measurement
+    freq_nelder_mead(const benchmark_func &benchmarkFunc, const currency_type &ct, const device_clock_info &dci,
+                     const measurement &start_node, int max_iterations,
+                     double mem_step_pct, double graph_idx_step_pct, double min_hashrate) {
         int mem_step = std::lround(mem_step_pct * (dci.max_mem_oc_ - dci.min_mem_oc_));
         int graph_idx_step = std::lround(std::max(graph_idx_step_pct * dci.nvml_graph_clocks_.size(), 1.0));
         nm_specific_options nm_opt(std::min(1, max_iterations), std::make_pair(1.5, 2.5),
