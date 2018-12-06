@@ -13,8 +13,8 @@ WALLET_MAP[RVN]=RKNJZyAAzbPT3Nvrujzp2m5HLB7eA1MZZS
 gpu=$1
 mem_step=$2
 graph_step=$3
-max_mem_oc=$4
-max_graph_oc=$5
+max_mem_clock=$4
+max_graph_clock=$5
 
 function save_call_command {
 	"$@"
@@ -37,11 +37,11 @@ function optimization_test {
 			if [[ online -eq 0 ]];
 			then
 				save_call_command ./freq_optimization -d $DEVICE_ID -c $CURRENCY -a $OPT_ALGO \
-					--max_mem_oc=$max_mem_oc --max_graph_oc=$max_graph_oc --currency_config=$CURRENCY_CONFIG
+					--max_mem_clock=$max_mem_clock --max_graph_clock=$max_graph_clock --currency_config=$CURRENCY_CONFIG
 				mv offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat opt_bench_result_gpu${DEVICE_ID}_${CURRENCY}_${OPT_ALGO}_offline.dat
 			else
 				save_call_command ./freq_optimization -d $DEVICE_ID -c $CURRENCY -a $OPT_ALGO --use_online_bench=${WALLET_MAP[$CURRENCY]} \
-					--max_mem_oc=$max_mem_oc --max_graph_oc=$max_graph_oc --currency_config=$CURRENCY_CONFIG
+					--max_mem_clock=$max_mem_clock --max_graph_clock=$max_graph_clock --currency_config=$CURRENCY_CONFIG
 				mv online_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat opt_bench_result_gpu${DEVICE_ID}_${CURRENCY}_${OPT_ALGO}_online.dat
 			fi
             sleep 60
@@ -60,11 +60,11 @@ function optimization_min_hashrate_test {
 			if [[ online -eq 0 ]];
 			then
 				save_call_command ./freq_optimization -d $DEVICE_ID -c $CURRENCY -a $OPT_ALGO --min_hashrate=$min_hashrate \
-					--max_mem_oc=$max_mem_oc --max_graph_oc=$max_graph_oc --currency_config=$CURRENCY_CONFIG
+					--max_mem_clock=$max_mem_clock --max_graph_clock=$max_graph_clock --currency_config=$CURRENCY_CONFIG
 				mv offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat opt_bench_result_gpu${DEVICE_ID}_${CURRENCY}_${OPT_ALGO}_mh_offline.dat
 			else
 				save_call_command ./freq_optimization -d $DEVICE_ID -c $CURRENCY -a $OPT_ALGO --min_hashrate=$min_hashrate --use_online_bench=${WALLET_MAP[$CURRENCY]} \
-					--max_mem_oc=$max_mem_oc --max_graph_oc=$max_graph_oc --currency_config=$CURRENCY_CONFIG
+					--max_mem_clock=$max_mem_clock --max_graph_clock=$max_graph_clock --currency_config=$CURRENCY_CONFIG
 				mv online_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat opt_bench_result_gpu${DEVICE_ID}_${CURRENCY}_${OPT_ALGO}_mh_online.dat
 			fi
             sleep 60
@@ -80,11 +80,11 @@ function exhaustive_test {
 		if [[ online -eq 0 ]];
 		then
 			save_call_command ./freq_exhaustive -d $DEVICE_ID -c $CURRENCY \
-				--mem_step=$mem_step --graph_idx_step=$graph_step --max_mem_oc=$max_mem_oc --max_graph_oc=$max_graph_oc --currency_config=$CURRENCY_CONFIG
+				--mem_step=$mem_step --graph_idx_step=$graph_step --max_mem_clock=$max_mem_clock --max_graph_clock=$max_graph_clock --currency_config=$CURRENCY_CONFIG
 			mv offline_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat exhaustive_bench_result_gpu${DEVICE_ID}_${CURRENCY}_offline.dat
 		else
 			save_call_command ./freq_exhaustive -d $DEVICE_ID -c $CURRENCY --use_online_bench=${WALLET_MAP[$CURRENCY]} \
-				--mem_step=$mem_step --graph_idx_step=$graph_step --max_mem_oc=$max_mem_oc --max_graph_oc=$max_graph_oc --currency_config=$CURRENCY_CONFIG
+				--mem_step=$mem_step --graph_idx_step=$graph_step --max_mem_clock=$max_mem_clock --max_graph_clock=$max_graph_clock --currency_config=$CURRENCY_CONFIG
 			mv online_bench_result_gpu${DEVICE_ID}_${CURRENCY}.dat exhaustive_bench_result_gpu${DEVICE_ID}_${CURRENCY}_online.dat
 		fi
 		sleep 60
