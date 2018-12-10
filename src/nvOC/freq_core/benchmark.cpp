@@ -112,9 +112,10 @@ namespace frequency_scaling {
             min_graph_border = (!nvml_supported_) ? 0 :
                                nvmlGetAvailableGraphClocks(device_id_nvml).back() - nvapi_default_graph_clock_;
             min_mem_oc_ = max_mem_oc_ = 0;
-            max_graph_oc_ = 0;
             min_graph_oc_ = (min_graph_oc == default_min_flag) ? min_graph_border :
                             std::min(std::max(min_graph_oc, min_graph_border), max_graph_border);
+			max_graph_oc_ = (max_graph_oc == default_max_flag) ? max_graph_border :
+				std::min(std::max(max_graph_oc, min_graph_border), max_graph_border);
         }
         //should not happen
         if (min_mem_oc_ > max_mem_oc_)
@@ -187,7 +188,7 @@ namespace frequency_scaling {
     }
 
     bool device_clock_info::is_graph_oc_supported() const {
-        return max_graph_oc_ - min_graph_oc_ > 0;
+        return nvml_graph_clocks_.size() > 1;
     }
 
     bool device_clock_info::is_mem_oc_supported() const {

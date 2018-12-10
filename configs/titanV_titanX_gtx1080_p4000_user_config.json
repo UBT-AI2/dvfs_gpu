@@ -35,10 +35,10 @@
     {
       "index": "3",
       "name": "TITAN V",
-      "min_mem_clock": "-1",
+      "min_mem_clock": "850",
       "min_graph_clock": "300",
       "max_mem_clock": "850",
-      "max_graph_clock": "850",
+      "max_graph_clock": "-1",
       "worker_name": "DESKTOP-6817PNB_gpu3"
     }
   ],
