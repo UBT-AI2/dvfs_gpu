@@ -3,10 +3,10 @@
 if [[ "$OSTYPE" == "msys" ]]
 then
 #MINGW
-MINER_BINARY=../../miner/binaries/windows/ccminer-build/ccminer.exe
+MINER_BINARY=./miner/binaries/windows/ccminer-build/ccminer.exe
 else
 #Linux
-MINER_BINARY=../../miner/binaries/linux/ccminer-build/ccminer
+MINER_BINARY=./miner/binaries/linux/ccminer-build/ccminer
 fi
 ######################################################################################################
 source $(dirname $(readlink -f $0))/util_functions.sh

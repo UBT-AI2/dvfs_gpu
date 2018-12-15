@@ -11,7 +11,7 @@ pool_pass=$8
 if [[ "$OSTYPE" == "msys" ]]
 then
 #MINGW
-MINER_BINARY=../../miner/binaries/windows/excavator_v1.1.0a_Win64/excavator.exe
+MINER_BINARY=./miner/binaries/windows/excavator_v1.1.0a_Win64/excavator.exe
 LOGFILE=${log_dir}/mining_log_excavator_gpu${device_id}.txt
 else
 #Linux

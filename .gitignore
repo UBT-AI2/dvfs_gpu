@@ -3,3 +3,5 @@
 /cmake-build*
 /CMakeSettings.json
 /install
+
+.idea

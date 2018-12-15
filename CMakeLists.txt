@@ -7,7 +7,7 @@ project(freq_scaling)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 #Specify where to put the executable
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     message(WARNING "No install directory was given using default: ${CMAKE_SOURCE_DIR}/install")

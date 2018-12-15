@@ -13,8 +13,8 @@ namespace frequency_scaling {
     currency_type::currency_type(const std::string &currency_name, bool use_ccminer) :
             currency_name_(currency_name), use_ccminer_(use_ccminer) {
         if (use_ccminer_) {
-            bench_script_path_ = "../scripts/run_benchmark_generic_ccminer.sh";
-            mining_script_path_ = "../scripts/start_mining_generic_ccminer.sh";
+            bench_script_path_ = "./scripts/run_benchmark_generic_ccminer.sh";
+            mining_script_path_ = "./scripts/start_mining_generic_ccminer.sh";
         }
     }
 
@@ -69,8 +69,8 @@ namespace frequency_scaling {
         std::map<std::string, currency_type> res;
         {
             currency_type ct_eth("ETH", false);
-            ct_eth.bench_script_path_ = "../scripts/run_benchmark_eth_ethminer.sh";
-            ct_eth.mining_script_path_ = "../scripts/start_mining_eth_ethminer.sh";
+            ct_eth.bench_script_path_ = "./scripts/run_benchmark_eth_ethminer.sh";
+            ct_eth.mining_script_path_ = "./scripts/start_mining_eth_ethminer.sh";
             ct_eth.pool_addresses_ = {"eth-eu1.nanopool.org:9999", "eth-eu2.nanopool.org:9999",
                                       "eth-au1.nanopool.org:9999", "eth-jp1.nanopool.org:9999",
                                       "eth-us-west1.nanopool.org:9999", "eth-us-east1.nanopool.org:9999",
@@ -92,8 +92,8 @@ namespace frequency_scaling {
         {
 #ifdef _WIN32
             currency_type ct_zec("ZEC", false);
-            ct_zec.bench_script_path_ = "../scripts/run_benchmark_zec_excavator.sh";
-            ct_zec.mining_script_path_ = "../scripts/start_mining_zec_excavator.sh";
+            ct_zec.bench_script_path_ = "./scripts/run_benchmark_zec_excavator.sh";
+            ct_zec.mining_script_path_ = "./scripts/start_mining_zec_excavator.sh";
             ct_zec.pool_addresses_ = {"zec-eu1.nanopool.org:6666", "zec-eu2.nanopool.org:6666",
                                       "zec-au1.nanopool.org:6666","zec-jp1.nanopool.org:6666",
                                       "zec-us-west1.nanopool.org:6666", "zec-us-east1.nanopool.org:6666",
@@ -127,8 +127,8 @@ namespace frequency_scaling {
         }
         {
             currency_type ct_xmr("XMR", false);
-            ct_xmr.bench_script_path_ = "../scripts/run_benchmark_xmr_xmrstak.sh";
-            ct_xmr.mining_script_path_ = "../scripts/start_mining_xmr_xmrstak.sh";
+            ct_xmr.bench_script_path_ = "./scripts/run_benchmark_xmr_xmrstak.sh";
+            ct_xmr.mining_script_path_ = "./scripts/start_mining_xmr_xmrstak.sh";
             ct_xmr.pool_addresses_ = {"xmr-eu1.nanopool.org:14444", "xmr-eu2.nanopool.org:14444",
                                       "xmr-au1.nanopool.org:14444", "xmr-jp1.nanopool.org:14444",
                                       "xmr-us-west1.nanopool.org:14444", "xmr-us-east1.nanopool.org:14444",

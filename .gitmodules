@@ -1,0 +1,9 @@
+[submodule "miner/ccminer"]
+	path = miner/ccminer
+	url = https://github.com/tpruvot/ccminer.git
+[submodule "miner/ethminer"]
+	path = miner/ethminer
+	url = https://github.com/ethereum-mining/ethminer.git
+[submodule "miner/xmr-stak"]
+	path = miner/xmr-stak
+	url = https://github.com/fireice-uk/xmr-stak.git

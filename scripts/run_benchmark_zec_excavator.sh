@@ -9,7 +9,7 @@ log_dir=$5
 if [[ "$OSTYPE" == "msys" ]]
 then
 #MINGW
-MINER_BINARY=../../miner/binaries/windows/excavator_v1.1.0a_Win64/excavator.exe
+MINER_BINARY=./miner/binaries/windows/excavator_v1.1.0a_Win64/excavator.exe
 else
 #Linux
 echo "exavator not available on linux"

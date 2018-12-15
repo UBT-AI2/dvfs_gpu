@@ -107,14 +107,18 @@ target_link_libraries(gpu_power_monitor
 add_executable(hash-log-excavator
         utils/hash-log-excavator.cpp)
 
-#INSTALL STUFF
+#COPY NECESSARY FILES TO BINARY DIR
+file(COPY ${CMAKE_SOURCE_DIR}/scripts DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 if (WIN32)
+    file(COPY ${CMAKE_SOURCE_DIR}/miner/binaries/windows DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/miner/binaries)
     file(COPY ${DEPENDENCY_DIR}/dlls/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
             FILES_MATCHING PATTERN "*.dll")
-    INSTALL(DIRECTORY ${DEPENDENCY_DIR}/dlls/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-            FILES_MATCHING PATTERN "*.dll")
-endif (WIN32)
+else(WIN32)
+    file(COPY ${CMAKE_SOURCE_DIR}/miner/binaries/linux DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/miner/binaries)
+endif(WIN32)
 
+
+#INSTALL STUFF
 #Specify install target for executables
 INSTALL(TARGETS nvapiOC nvmlOC freq_exhaustive freq_optimization profit_optimization gpu_power_monitor hash-log-excavator
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
@@ -129,3 +133,13 @@ foreach (dir ${HEADER_DIRS})
             DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/${dir}
             FILES_MATCHING PATTERN "*.h")
 endforeach ()
+
+#install necessary files
+INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/scripts DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+if (WIN32)
+    INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/miner/binaries/windows DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/miner/binaries)
+    INSTALL(DIRECTORY ${DEPENDENCY_DIR}/dlls/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+            FILES_MATCHING PATTERN "*.dll")
+else(WIN32)
+    INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/miner/binaries/linux DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/miner/binaries)
+endif (WIN32)

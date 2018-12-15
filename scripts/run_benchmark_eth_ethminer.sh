@@ -9,10 +9,10 @@ log_dir=$5
 if [[ "$OSTYPE" == "msys" ]]
 then
 #MINGW
-MINER_BINARY=../../miner/binaries/windows/ethminer-build/ethminer.exe
+MINER_BINARY=./miner/binaries/windows/ethminer-build/ethminer.exe
 else
 #Linux
-MINER_BINARY=../../miner/binaries/linux/ethminer-build/ethminer
+MINER_BINARY=./miner/binaries/linux/ethminer-build/ethminer
 fi
 #################################################################################
 

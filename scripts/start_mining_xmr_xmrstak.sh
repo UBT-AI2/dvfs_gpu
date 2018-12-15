@@ -11,10 +11,10 @@ pool_pass=$8
 if [[ "$OSTYPE" == "msys" ]]
 then
 #MINGW
-MINER_BINARY=../../miner/binaries/windows/xmr-stak-build/xmr-stak.exe
+MINER_BINARY=./miner/binaries/windows/xmr-stak-build/xmr-stak.exe
 else
 #Linux
-MINER_BINARY=../../miner/binaries/linux/xmr-stak-build/xmr-stak
+MINER_BINARY=./miner/binaries/linux/xmr-stak-build/xmr-stak
 fi
 LOGFILE=${log_dir}/mining_log_xmr-stak_gpu${device_id}.txt
 #################################################################################

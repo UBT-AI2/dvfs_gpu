@@ -1,0 +1,463 @@
+diff --git a/bench.cpp b/bench.cpp
+index 894fd8a..7215633 100644
+--- a/bench.cpp
++++ b/bench.cpp
+@@ -24,17 +24,26 @@ static int device_mem_free[MAX_GPUS] = { 0 };
+ static pthread_barrier_t miner_barr;
+ static pthread_barrier_t algo_barr;
+ static pthread_mutex_t bench_lock = PTHREAD_MUTEX_INITIALIZER;
++static bool all_bench;
+ 
+ extern double thr_hashrates[MAX_GPUS];
+ 
+ void bench_init(int threads)
+ {
+-	bench_algo = opt_algo = (enum sha_algos) 0; /* first */
++	if (opt_algo == ALGO_AUTO) {
++		bench_algo = opt_algo = (enum sha_algos) 0; /* first */
++		all_bench = true;
++	}
++	else {
++		bench_algo = opt_algo;
++		all_bench = false;
++	}
+ 	applog(LOG_BLUE, "Starting benchmark mode with %s", algo_names[opt_algo]);
++
+ 	pthread_barrier_init(&miner_barr, NULL, threads);
+ 	pthread_barrier_init(&algo_barr, NULL, threads);
+ 	// required for usage of first algo.
+-	for (int n=0; n < opt_n_threads; n++) {
++	for (int n = 0; n < opt_n_threads; n++) {
+ 		device_mem_free[n] = cuda_available_memory(n);
+ 	}
+ }
+@@ -120,7 +129,7 @@ void algo_free_all(int thr_id)
+ // benchmark all algos (called once per mining thread)
+ bool bench_algo_switch_next(int thr_id)
+ {
+-	int algo = (int) opt_algo;
++	int algo = (int)opt_algo;
+ 	int prev_algo = algo;
+ 	int dev_id = device_map[thr_id % MAX_GPUS];
+ 	int mfree, mused;
+@@ -128,33 +137,36 @@ bool bench_algo_switch_next(int thr_id)
+ 	// after some algo switchs
+ 	bool need_reset = (gpu_threads == 1);
+ 
+-	algo++;
+-
+-	// skip some duplicated algos
+-	if (algo == ALGO_C11) algo++; // same as x11
+-	if (algo == ALGO_DMD_GR) algo++; // same as groestl
+-	if (algo == ALGO_HEAVY) algo++; // dead
+-	if (algo == ALGO_MJOLLNIR) algo++; // same as heavy
+-	if (algo == ALGO_KECCAKC) algo++; // same as keccak
+-	if (algo == ALGO_WHIRLCOIN) algo++; // same as whirlpool
+-	if (algo == ALGO_WHIRLPOOLX) algo++; // disabled
+-	// todo: algo switch from RPC 2.0
+-	if (algo == ALGO_CRYPTOLIGHT) algo++;
+-	if (algo == ALGO_CRYPTONIGHT) algo++;
+-	if (algo == ALGO_WILDKECCAK) algo++;
+-	if (algo == ALGO_QUARK) algo++; // to fix
+-	if (algo == ALGO_LBRY && CUDART_VERSION < 7000) algo++;
+-
+-	if (device_sm[dev_id] && device_sm[dev_id] < 300) {
+-		// incompatible SM 2.1 kernels...
+-		if (algo == ALGO_GROESTL) algo++;
+-		if (algo == ALGO_MYR_GR) algo++;
+-		if (algo == ALGO_NEOSCRYPT) algo++;
+-		if (algo == ALGO_WHIRLPOOLX) algo++;
++	if (all_bench) {
++		algo++;
++
++		// skip some duplicated algos
++		if (algo == ALGO_C11) algo++; // same as x11
++		if (algo == ALGO_DMD_GR) algo++; // same as groestl
++		if (algo == ALGO_HEAVY) algo++; // dead
++		if (algo == ALGO_MJOLLNIR) algo++; // same as heavy
++		if (algo == ALGO_KECCAKC) algo++; // same as keccak
++		if (algo == ALGO_WHIRLCOIN) algo++; // same as whirlpool
++		if (algo == ALGO_WHIRLPOOLX) algo++; // disabled
++		// todo: algo switch from RPC 2.0
++		if (algo == ALGO_CRYPTOLIGHT) algo++;
++		if (algo == ALGO_CRYPTONIGHT) algo++;
++		if (algo == ALGO_WILDKECCAK) algo++;
++		if (algo == ALGO_QUARK) algo++; // to fix
++		if (algo == ALGO_LBRY && CUDART_VERSION < 7000) algo++;
++
++		if (device_sm[dev_id] && device_sm[dev_id] < 300) {
++			// incompatible SM 2.1 kernels...
++			if (algo == ALGO_GROESTL) algo++;
++			if (algo == ALGO_MYR_GR) algo++;
++			if (algo == ALGO_NEOSCRYPT) algo++;
++			if (algo == ALGO_WHIRLPOOLX) algo++;
++		}
++		// and unwanted ones...
++		if (algo == ALGO_SCRYPT) algo++;
++		if (algo == ALGO_SCRYPT_JANE) algo++;
++
+ 	}
+-	// and unwanted ones...
+-	if (algo == ALGO_SCRYPT) algo++;
+-	if (algo == ALGO_SCRYPT_JANE) algo++;
+ 
+ 	// free current algo memory and track mem usage
+ 	mused = cuda_available_memory(thr_id);
+@@ -173,10 +185,10 @@ bool bench_algo_switch_next(int thr_id)
+ 		pthread_barrier_wait(&miner_barr);
+ 	}
+ 
+-	char rate[32] = { 0 };
++	//char rate[32] = { 0 };
+ 	double hashrate = stats_get_speed(thr_id, thr_hashrates[thr_id]);
+-	format_hashrate(hashrate, rate);
+-	gpulog(LOG_NOTICE, thr_id, "%s hashrate = %s", algo_names[prev_algo], rate);
++	//format_hashrate(hashrate, rate);
++	gpulog(LOG_NOTICE, thr_id, "%s hashrate = %f H/s", algo_names[prev_algo], hashrate);
+ 
+ 	// ensure memory leak is still real after the barrier
+ 	if (device_mem_free[thr_id] > mfree) {
+@@ -203,7 +215,7 @@ bool bench_algo_switch_next(int thr_id)
+ 		pthread_barrier_wait(&algo_barr);
+ 	}
+ 
+-	if (algo == ALGO_AUTO)
++	if (algo == ALGO_AUTO || !all_bench)
+ 		return false; // all algos done
+ 
+ 	// mutex primary used for the stats purge
+@@ -224,6 +236,7 @@ bool bench_algo_switch_next(int thr_id)
+ 	return true;
+ }
+ 
++
+ void bench_set_throughput(int thr_id, uint32_t throughput)
+ {
+ 	algo_throughput[thr_id][opt_algo] = throughput;
+@@ -231,15 +244,15 @@ void bench_set_throughput(int thr_id, uint32_t throughput)
+ 
+ void bench_display_results()
+ {
+-	for (int n=0; n < opt_n_threads; n++)
++	for (int n = 0; n < opt_n_threads; n++)
+ 	{
+ 		int dev_id = device_map[n];
+ 		applog(LOG_BLUE, "Benchmark results for GPU #%d - %s:", dev_id, device_name[dev_id]);
+-		for (int i=0; i < ALGO_COUNT-1; i++) {
++		for (int i = 0; i < ALGO_COUNT - 1; i++) {
+ 			double rate = algo_hashrates[n][i];
+ 			if (rate == 0.0) continue;
+-			applog(LOG_INFO, "%12s : %12.1f kH/s, %5d MB, %8u thr.", algo_names[i],
+-				rate / 1024., algo_mem_used[n][i], algo_throughput[n][i]);
++			applog(LOG_INFO, "%12s : %12.1f H/s, %5d MB, %8u thr.", algo_names[i],
++				rate, algo_mem_used[n][i], algo_throughput[n][i]);
+ 		}
+ 	}
+ }
+diff --git a/ccminer.cpp b/ccminer.cpp
+index c2b34f8..f83da06 100644
+--- a/ccminer.cpp
++++ b/ccminer.cpp
+@@ -65,6 +65,17 @@ BOOL WINAPI ConsoleHandler(DWORD);
+ nvml_handle *hnvml = NULL;
+ #endif
+ 
++FILE _iob[] = { *stdin, *stdout, *stderr };
++static FILE* hash_logfile = NULL;
++static const char* hash_logfile_name = NULL;
++static pthread_t bench_exit_thread;
++static int mining_duration = -1;
++
++extern "C" FILE * __cdecl __iob_func(void)
++{
++	return _iob;
++}
++
+ enum workio_commands {
+ 	WC_GET_WORK,
+ 	WC_SUBMIT_WORK,
+@@ -80,6 +91,7 @@ struct workio_cmd {
+ 	int pooln;
+ };
+ 
++
+ bool opt_debug = false;
+ bool opt_debug_diff = false;
+ bool opt_debug_threads = false;
+@@ -116,7 +128,7 @@ int opt_timeout = 300; // curl
+ int opt_scantime = 10;
+ static json_t *opt_config;
+ static const bool opt_time = true;
+-volatile enum sha_algos opt_algo = ALGO_AUTO;
++volatile sha_algos opt_algo = ALGO_AUTO;
+ int opt_n_threads = 0;
+ int gpu_threads = 1;
+ int64_t opt_affinity = -1L;
+@@ -377,6 +389,8 @@ Options:\n\
+       --hide-diff       hide submitted block and net difficulty (old mode)\n\
+   -B, --background      run the miner in the background\n\
+       --benchmark       run in offline benchmark mode\n\
++      --mining-duration=N  stop mining after N seconds\n\
++      --hash-log=FILE   log hashrates to specified file\n\
+       --cputest         debug hashes from cpu algorithms\n\
+   -c, --config=FILE     load a JSON-format configuration file\n\
+   -V, --version         display version information and exit\n\
+@@ -402,6 +416,8 @@ struct option options[] = {
+ 	{ "api-mcast-des", 1, NULL, 1037 },
+ 	{ "background", 0, NULL, 'B' },
+ 	{ "benchmark", 0, NULL, 1005 },
++	{ "mining-duration", 1, NULL, 1099},
++	{ "hash-log", 1, NULL, 1098 },
+ 	{ "cert", 1, NULL, 1001 },
+ 	{ "config", 1, NULL, 'c' },
+ 	{ "cputest", 0, NULL, 1006 },
+@@ -514,6 +530,14 @@ struct work _ALIGN(64) g_work;
+ volatile time_t g_work_time;
+ pthread_mutex_t g_work_lock;
+ 
++void* mining_exit_func(void* arg) {
++	applog(LOG_BLUE, "Started mining exit timer: %is", mining_duration);
++	sleep(mining_duration);
++	proper_exit(0);
++	return NULL;
++}
++
++
+ // get const array size (defined in ccminer.cpp)
+ int options_count()
+ {
+@@ -1899,6 +1923,9 @@ static void *miner_thread(void *userdata)
+ 
+ 	gpu_led_off(dev_id);
+ 
++	if (mining_duration > 0)
++		pthread_create(&bench_exit_thread, NULL, &mining_exit_func, NULL);
++
+ 	while (!abort_flag) {
+ 		struct timeval tv_start, tv_end, diff;
+ 		unsigned long hashes_done;
+@@ -2090,7 +2117,7 @@ static void *miner_thread(void *userdata)
+ 		// --benchmark [-a all]
+ 		if (opt_benchmark && bench_algo >= 0) {
+ 			//gpulog(LOG_DEBUG, thr_id, "loop %d", loopcnt);
+-			if (loopcnt >= 3) {
++			if (loopcnt >= 2) {
+ 				if (!bench_algo_switch_next(thr_id) && thr_id == 0)
+ 				{
+ 					bench_display_results();
+@@ -2347,9 +2374,6 @@ static void *miner_thread(void *userdata)
+ 			pthread_cond_signal(&cgpu->monitor.sampling_signal);
+ 		}
+ 
+-		hashes_done = 0;
+-		gettimeofday(&tv_start, NULL);
+-
+ 		// check (and reset) previous errors
+ 		cudaError_t err = cudaGetLastError();
+ 		if (err != cudaSuccess && !opt_quiet)
+@@ -2357,6 +2381,9 @@ static void *miner_thread(void *userdata)
+ 
+ 		work.valid_nonces = 0;
+ 
++		hashes_done = 0;
++		gettimeofday(&tv_start, NULL);
++
+ 		/* scan nonces for a proof-of-work hash */
+ 		switch (opt_algo) {
+ 
+@@ -2577,6 +2604,49 @@ static void *miner_thread(void *userdata)
+ 			goto out;
+ 		}
+ 
++		/* record scanhash elapsed time */
++		gettimeofday(&tv_end, NULL);
++		timeval_subtract(&diff, &tv_end, &tv_start);
++		if (diff.tv_usec || diff.tv_sec) {
++			double dtime = (double)diff.tv_sec + 1e-6 * diff.tv_usec;
++
++			/* hashrate factors for some algos */
++			double rate_factor = 1.0;
++			switch (opt_algo) {
++			case ALGO_JACKPOT:
++			case ALGO_QUARK:
++				// to stay comparable to other ccminer forks or pools
++				rate_factor = 0.5;
++				break;
++			}
++
++			/* store thread hashrate */
++			if (dtime > 0.0) {
++				pthread_mutex_lock(&stats_lock);
++				thr_hashrates[thr_id] = hashes_done / dtime;
++				thr_hashrates[thr_id] *= rate_factor;
++				if (loopcnt > 2) // ignore first (init time)
++					stats_remember_speed(thr_id, hashes_done, thr_hashrates[thr_id], (uint8_t)rc, work.height);
++				//log hashrate with system time
++				if (hash_logfile_name) {
++					double hashrate = 0;
++					for (int i = 0; i < opt_n_threads; i++) {
++						hashrate += stats_get_speed(i, thr_hashrates[i]);
++					}
++					if (!hash_logfile)
++						hash_logfile = fopen(hash_logfile_name, "a");
++					struct timeval tv;
++					gettimeofday(&tv, NULL);
++					unsigned long long millisecondsSinceEpoch =
++						(unsigned long long)(tv.tv_sec) * 1000 +
++						(unsigned long long)(tv.tv_usec) / 1000;
++					fprintf(hash_logfile, "%llu %f\n", millisecondsSinceEpoch, hashrate);
++					fflush(hash_logfile);
++				}
++				pthread_mutex_unlock(&stats_lock);
++			}
++		}
++
+ 		if (opt_led_mode == LED_MODE_MINING)
+ 			gpu_led_off(dev_id);
+ 
+@@ -2586,9 +2656,6 @@ static void *miner_thread(void *userdata)
+ 		if (work_restart[thr_id].restart)
+ 			continue;
+ 
+-		/* record scanhash elapsed time */
+-		gettimeofday(&tv_end, NULL);
+-
+ 		switch (opt_algo) {
+ 			// algos to migrate to replace pdata[21] by work.nonces[]
+ 			case ALGO_HEAVY:
+@@ -2611,36 +2678,11 @@ static void *miner_thread(void *userdata)
+ 		if (rc > 1 && opt_debug)
+ 			applog(LOG_NOTICE, CL_CYN "found => %08x" CL_GRN " %08x", work.nonces[1], swab32(work.nonces[1]));
+ 
+-		timeval_subtract(&diff, &tv_end, &tv_start);
+ 
+ 		if (cgpu && diff.tv_sec) { // stop monitoring
+ 			cgpu->monitor.sampling_flag = false;
+ 		}
+ 
+-		if (diff.tv_usec || diff.tv_sec) {
+-			double dtime = (double) diff.tv_sec + 1e-6 * diff.tv_usec;
+-
+-			/* hashrate factors for some algos */
+-			double rate_factor = 1.0;
+-			switch (opt_algo) {
+-				case ALGO_JACKPOT:
+-				case ALGO_QUARK:
+-					// to stay comparable to other ccminer forks or pools
+-					rate_factor = 0.5;
+-					break;
+-			}
+-
+-			/* store thread hashrate */
+-			if (dtime > 0.0) {
+-				pthread_mutex_lock(&stats_lock);
+-				thr_hashrates[thr_id] = hashes_done / dtime;
+-				thr_hashrates[thr_id] *= rate_factor;
+-				if (loopcnt > 2) // ignore first (init time)
+-					stats_remember_speed(thr_id, hashes_done, thr_hashrates[thr_id], (uint8_t) rc, work.height);
+-				pthread_mutex_unlock(&stats_lock);
+-			}
+-		}
+-
+ 		if (rc > 0)
+ 			work.scanned_to = work.nonces[0];
+ 		if (rc > 1)
+@@ -2671,7 +2713,7 @@ static void *miner_thread(void *userdata)
+ 		if (firstwork_time && thr_id == (opt_n_threads - 1)) {
+ 			double hashrate = 0.;
+ 			pthread_mutex_lock(&stats_lock);
+-			for (int i = 0; i < opt_n_threads && thr_hashrates[i]; i++)
++			for (int i = 0; i < opt_n_threads; i++)
+ 				hashrate += stats_get_speed(i, thr_hashrates[i]);
+ 			pthread_mutex_unlock(&stats_lock);
+ 			if (opt_benchmark && bench_algo == -1 && loopcnt > 2) {
+@@ -3604,6 +3646,12 @@ void parse_arg(int key, char *arg)
+ 		want_stratum = false;
+ 		have_stratum = false;
+ 		break;
++	case 1099:
++		mining_duration = atoi(arg);
++		break;
++	case 1098:
++		hash_logfile_name = arg;
++		break;
+ 	case 1006:
+ 		print_hash_tests();
+ 		proper_exit(EXIT_CODE_OK);
+@@ -4146,7 +4194,7 @@ int main(int argc, char *argv[])
+ 	// generally doesn't work well...
+ 	gpu_threads = max(gpu_threads, opt_n_threads / active_gpus);
+ 
+-	if (opt_benchmark && opt_algo == ALGO_AUTO) {
++	if (opt_benchmark /*&& opt_algo == ALGO_AUTO*/) {
+ 		bench_init(opt_n_threads);
+ 		for (int n=0; n < MAX_GPUS; n++) {
+ 			gpus_intensity[n] = 0; // use default
+diff --git a/equi/equihash.cpp b/equi/equihash.cpp
+index c9ac1fc..bbb0d8e 100644
+--- a/equi/equihash.cpp
++++ b/equi/equihash.cpp
+@@ -200,7 +200,7 @@ extern "C" int scanhash_equihash(int thr_id, struct work *work, uint32_t max_non
+ 	work->valid_nonces = 0;
+ 
+ 	do {
+-
++		
+ 		try {
+ 
+ 			valid_sols[thr_id] = 0;
+diff --git a/miner.h b/miner.h
+index f866cd9..42b6596 100644
+--- a/miner.h
++++ b/miner.h
+@@ -272,7 +272,6 @@ void sha256d(unsigned char *hash, const unsigned char *data, int len);
+ #define HAVE_SHA256_8WAY 0
+ 
+ struct work;
+-
+ extern int scanhash_allium(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
+ extern int scanhash_bastion(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
+ extern int scanhash_blake256(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done, int8_t blakerounds);
+diff --git a/neoscrypt/cuda_neoscrypt.cu b/neoscrypt/cuda_neoscrypt.cu
+index 59d73b7..385a7d7 100644
+--- a/neoscrypt/cuda_neoscrypt.cu
++++ b/neoscrypt/cuda_neoscrypt.cu
+@@ -176,10 +176,10 @@ static void shift256R4(uint32_t* ret, const uint8 &vec4, const uint32_t shift2)
+ }
+ 
+ #define BLAKE_G(idx0, idx1, a, b, c, d, key) { \
+-	idx = BLAKE2S_SIGMA[idx0][idx1]; a += key[idx]; \
++	idx = BLAKE2S_SIGMA[idx0][(idx1)]; a += key[idx]; \
+ 	a += b; d = rotateL(d^a, 16); \
+ 	c += d; b = rotateR(b^c, 12); \
+-	idx = BLAKE2S_SIGMA[idx0][idx1 + 1]; a += key[idx]; \
++	idx = BLAKE2S_SIGMA[idx0][(idx1)+1]; a += key[idx]; \
+ 	a += b; d = rotateR(d^a, 8); \
+ 	c += d; b = rotateR(b^c, 7); \
+ }
+@@ -389,10 +389,10 @@ void Blake2S(uint32_t *out, const uint32_t* const __restrict__  inout, const  ui
+ #if __CUDA_ARCH__ >= 500
+ 
+ #define BLAKE_G(idx0, idx1, a, b, c, d, key) { \
+-	idx = BLAKE2S_SIGMA[idx0][idx1]; a += key[idx]; \
++	idx = BLAKE2S_SIGMA[idx0][(idx1)]; a += key[idx]; \
+ 	a += b; d = __byte_perm(d^a, 0, 0x1032); \
+ 	c += d; b = rotateR(b^c, 12); \
+-	idx = BLAKE2S_SIGMA[idx0][idx1 + 1]; a += key[idx]; \
++	idx = BLAKE2S_SIGMA[idx0][(idx1)+1]; a += key[idx]; \
+ 	a += b; d = __byte_perm(d^a, 0, 0x0321); \
+ 	c += d; b = rotateR(b^c, 7); \
+ }
+@@ -1257,10 +1257,10 @@ uint32_t fastkdf32_v3(uint32_t thread, const uint32_t nonce, uint32_t* const sal
+ 
+ 
+ #define BLAKE_Ghost(idx0, idx1, a, b, c, d, key) { \
+-	idx = BLAKE2S_SIGMA_host[idx0][idx1]; a += key[idx]; \
++	idx = BLAKE2S_SIGMA_host[idx0][(idx1)]; a += key[idx]; \
+ 	a += b; d = ROTR32(d^a,16); \
+ 	c += d; b = ROTR32(b^c, 12); \
+-	idx = BLAKE2S_SIGMA_host[idx0][idx1 + 1]; a += key[idx]; \
++	idx = BLAKE2S_SIGMA_host[idx0][(idx1)+1]; a += key[idx]; \
+ 	a += b; d = ROTR32(d^a,8); \
+ 	c += d; b = ROTR32(b^c, 7); \
+ }
