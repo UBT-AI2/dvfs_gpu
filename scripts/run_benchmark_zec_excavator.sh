@@ -17,7 +17,7 @@ exit 1
 fi
 #################################################################################
 
-source $(dirname $(readlink -f $0))/util_functions.sh
+source ./scripts/util_functions.sh
 generic_bench ZEC \
 '${MINER_BINARY} -b -a equihash -cd ${device_id_cuda}' \
 'grep -oP "Total measured:\s*\K[+-]?[0-9]+([.][0-9]+)?"'

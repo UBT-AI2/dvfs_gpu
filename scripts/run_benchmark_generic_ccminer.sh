@@ -9,5 +9,5 @@ currency_name=$6
 algo=$7
 #################################################################################
 
-source $(dirname $(readlink -f $0))/ccminer_generic.sh
+source ./scripts/ccminer_generic.sh
 ccminer_run_benchmark ${currency_name} ${algo}

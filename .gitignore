@@ -1,3 +1,4 @@
+/frequency-scaling
 /bin
 /build
 /cmake-build*
@@ -5,3 +6,4 @@
 /install
 
 .idea
+.vs

@@ -9,7 +9,7 @@ else
 MINER_BINARY=./miner/binaries/linux/ccminer-build/ccminer
 fi
 ######################################################################################################
-source $(dirname $(readlink -f $0))/util_functions.sh
+source ./scripts/util_functions.sh
 
 function ccminer_run_benchmark {
     currency=$1
