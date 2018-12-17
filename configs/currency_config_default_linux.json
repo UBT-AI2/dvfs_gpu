@@ -4,8 +4,8 @@
       "currency_name": "BTX",
       "use_ccminer": "true",
       "ccminer_algo": "bitcore",
-      "bench_script_path": "..\/scripts\/run_benchmark_generic_ccminer.sh",
-      "mining_script_path": "..\/scripts\/start_mining_generic_ccminer.sh",
+      "bench_script_path": ".\/scripts\/run_benchmark_generic_ccminer.sh",
+      "mining_script_path": ".\/scripts\/start_mining_generic_ccminer.sh",
       "pool_addresses": [
         "bitcore.mine.zpool.ca:3556"
       ],
@@ -40,8 +40,8 @@
       "currency_name": "ETH",
       "use_ccminer": "false",
       "ccminer_algo": "",
-      "bench_script_path": "..\/scripts\/run_benchmark_eth_ethminer.sh",
-      "mining_script_path": "..\/scripts\/start_mining_eth_ethminer.sh",
+      "bench_script_path": ".\/scripts\/run_benchmark_eth_ethminer.sh",
+      "mining_script_path": ".\/scripts\/start_mining_eth_ethminer.sh",
       "pool_addresses": [
         "eth-eu1.nanopool.org:9999",
         "eth-eu2.nanopool.org:9999",
@@ -82,8 +82,8 @@
       "currency_name": "LUX",
       "use_ccminer": "true",
       "ccminer_algo": "phi2",
-      "bench_script_path": "..\/scripts\/run_benchmark_generic_ccminer.sh",
-      "mining_script_path": "..\/scripts\/start_mining_generic_ccminer.sh",
+      "bench_script_path": ".\/scripts\/run_benchmark_generic_ccminer.sh",
+      "mining_script_path": ".\/scripts\/start_mining_generic_ccminer.sh",
       "pool_addresses": [
         "phi2.mine.zpool.ca:8332"
       ],
@@ -118,8 +118,8 @@
       "currency_name": "RVN",
       "use_ccminer": "true",
       "ccminer_algo": "x16r",
-      "bench_script_path": "..\/scripts\/run_benchmark_generic_ccminer.sh",
-      "mining_script_path": "..\/scripts\/start_mining_generic_ccminer.sh",
+      "bench_script_path": ".\/scripts\/run_benchmark_generic_ccminer.sh",
+      "mining_script_path": ".\/scripts\/start_mining_generic_ccminer.sh",
       "pool_addresses": [
         "x16r.mine.zpool.ca:3636"
       ],
@@ -154,8 +154,8 @@
       "currency_name": "VTC",
       "use_ccminer": "true",
       "ccminer_algo": "lyra2v2",
-      "bench_script_path": "..\/scripts\/run_benchmark_generic_ccminer.sh",
-      "mining_script_path": "..\/scripts\/start_mining_generic_ccminer.sh",
+      "bench_script_path": ".\/scripts\/run_benchmark_generic_ccminer.sh",
+      "mining_script_path": ".\/scripts\/start_mining_generic_ccminer.sh",
       "pool_addresses": [
         "lyra2v2.mine.zpool.ca:4533"
       ],
@@ -190,8 +190,8 @@
       "currency_name": "XMR",
       "use_ccminer": "false",
       "ccminer_algo": "",
-      "bench_script_path": "..\/scripts\/run_benchmark_xmr_xmrstak.sh",
-      "mining_script_path": "..\/scripts\/start_mining_xmr_xmrstak.sh",
+      "bench_script_path": ".\/scripts\/run_benchmark_xmr_xmrstak.sh",
+      "mining_script_path": ".\/scripts\/start_mining_xmr_xmrstak.sh",
       "pool_addresses": [
         "xmr-eu1.nanopool.org:14444",
         "xmr-eu2.nanopool.org:14444",
@@ -232,8 +232,8 @@
       "currency_name": "ZEC",
       "use_ccminer": "true",
       "ccminer_algo": "equihash",
-      "bench_script_path": "..\/scripts\/run_benchmark_generic_ccminer.sh",
-      "mining_script_path": "..\/scripts\/start_mining_generic_ccminer.sh",
+      "bench_script_path": ".\/scripts\/run_benchmark_generic_ccminer.sh",
+      "mining_script_path": ".\/scripts\/start_mining_generic_ccminer.sh",
       "pool_addresses": [
         "eu1-zcash.flypool.org:13333",
         "us1-zcash.flypool.org:13333",
