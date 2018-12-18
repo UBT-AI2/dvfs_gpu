@@ -1,13 +1,13 @@
 #!/bin/bash
 
 #1) stop running x
-if [ -x "$(command -v rcxdm)" ]; then
+if [ -x "$(sudo -s command -v rcxdm)" ]; then
 	#suse
 	sudo rcxdm stop
-elif [ -x "$(command -v lightdm)" ]; then
+elif [ -x "$(sudo -s command -v lightdm)" ]; then
 	#ubuntu 16.04
 	sudo service lightdm stop
-elif [ -x "$(command -v gdm3)" ]; then
+elif [ -x "$(sudo -s command -v gdm3)" ]; then
 	#ubuntu 18.04
 	sudo service gdm3 stop
 else
@@ -15,8 +15,8 @@ else
 	exit 1
 fi
 
-#2) start new x on remote display
-sudo nohup X -nolisten tcp :0 &
-
-#3) set display environment variable
+#2) set display environment variable
 export DISPLAY=:0
+
+#3) start new x on remote display
+sudo nohup X -nolisten tcp :0 &
