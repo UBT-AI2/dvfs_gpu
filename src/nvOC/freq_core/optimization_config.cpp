@@ -108,8 +108,8 @@ namespace frequency_scaling {
             optimization_method opt_method = string_to_opt_method(user_in);
             //choose min_hashrate
             user_msg = "Enter min_hashrate or -1 if no min_hashrate constraint should be used:";
-            int min_hashrate = cli_get_int(user_msg);
-            opt_config.opt_method_params_.emplace(ct, optimization_method_params(opt_method, min_hashrate));
+            double min_hashrate_pct = cli_get_float(user_msg);
+            opt_config.opt_method_params_.emplace(ct, optimization_method_params(opt_method, min_hashrate_pct));
         }
         if (opt_config.miner_user_infos_.wallet_addresses_.empty())
             THROW_RUNTIME_ERROR("No currency selected");
