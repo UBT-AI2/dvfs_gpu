@@ -7,9 +7,10 @@
   "devices_to_use": [
     {
       "index": "0",
+      "name": "GeForce GTX 960",
       "min_mem_clock": "-1",
       "min_graph_clock": "-1",
-      "max_mem_clock": "-1",
+      "max_mem_clock": "4005",
       "max_graph_clock": "-1",
       "worker_name": "DESKTOPALEX_gpu0"
     }
