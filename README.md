@@ -7,7 +7,7 @@ An autotuning framework using DVFS on GPUs for the mining of cryptocurrencies. A
 * **nvapiOC:** Setting of frequencies on a specified GPU using the NVAPI (Windows) or NV-Control X (Linux) library. An usage message is displayed when executing `nvapiOC`.
 
 # Usage notes
-To be able to change GPU frequencies the framework requires root (Linux) or administrator (Windows) privileges. **Please note that overclocking frequencies too much can damage your hardware. Usage is at your own risk.**
+To be able to change GPU frequencies the framework requires root (Linux) or administrator (Windows) privileges. **Please note that overclocking frequencies too much can damage your hardware. Usage is at your own risk.**<br/>
 When using the framework under Linux the coolbits option in the X-Configuration (/etc/X11/xorg.conf) has to be set for each GPU to use (see [here](https://gist.github.com/bsodmike/369f8a202c5a5c97cfbd481264d549e9)). Moreover, when the Linux computer is used remotely over `ssh` the script `start_remote_X.sh` (folder utils) has to be executed with the `source` command before program start. This script stops the running X-Server and starts a new one on the display of the remote computer.
 
 # Add new currency
