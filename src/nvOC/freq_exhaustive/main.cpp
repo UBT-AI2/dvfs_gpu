@@ -24,7 +24,7 @@ static bool cmd_arg_check(int argc, char **argv, std::map<std::string, std::stri
                                        "--online_bench_duration=<int>\tDuration of an online benchmark in seconds.\n\t"
                                        "--currency_config=<filename>\tCurrency configuration to use.\n\t"
                                        "--mem_step=<int>\t\tDefault memory clock step size.\n\t"
-                                       "--graph_idx_step=<int>\tDefault core clock index step size.\n\t"
+                                       "--graph_idx_step=<int>\t\tDefault core clock index step size.\n\t"
                                        "--min_mem_clock=<int>\t\tMinimum allowed gpu memory clock.\n\t"
                                        "--max_mem_clock=<int>\t\tMaximum allowed gpu memory clock.\n\t"
                                        "--min_graph_clock=<int>\t\tMinimum allowed gpu core clock.\n\t"
