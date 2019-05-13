@@ -36,10 +36,10 @@ set(PROFIT_OPTIMIZATION_FILES
 add_library(nvapiOC_lib
         ${NVAPI_FILES})
 target_link_libraries(nvapiOC_lib
-        ${GLOG_LIBRARIES})
+        CONAN_PKG::glog)
 if (NOT WIN32)
     target_link_libraries(nvapiOC_lib
-            ${XNVCTRL_LIBRARIES}
+            CONAN_PKG::libXNVCtrl
             Xext
             X11)
 endif (NOT WIN32)
@@ -53,7 +53,7 @@ add_library(nvmlOC_lib
         ${NVML_FILES})
 target_link_libraries(nvmlOC_lib
         ${NVML_LIBRARIES}
-        ${GLOG_LIBRARIES})
+        CONAN_PKG::glog)
 add_executable(nvmlOC
         nvml/main.cpp)
 target_link_libraries(nvmlOC
@@ -66,7 +66,7 @@ target_link_libraries(freq_core_lib
         nvapiOC_lib
         nvmlOC_lib
         ${CUDA_DRIVER_LIBRARIES}
-        ${CURL_LIBRARIES})
+        CONAN_PKG::libcurl)
 
 #FREQ_EXHAUSTIVE
 add_library(freq_exhaustive_lib
@@ -112,15 +112,6 @@ file(COPY ${CMAKE_SOURCE_DIR}/scripts DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTO
 file(COPY ${CMAKE_SOURCE_DIR}/configs DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 if (WIN32)
     file(COPY ${CMAKE_SOURCE_DIR}/miner/binaries/windows DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/miner/binaries)
-    file(COPY ${DEPENDENCY_DIR}/curl-7.60.0/bin/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-            FILES_MATCHING PATTERN "*.dll")
-    if(MSVC)
-        file(COPY ${DEPENDENCY_DIR}/glog/msvc/bin/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-                FILES_MATCHING PATTERN "*.dll")
-    else(MSVC)
-        file(COPY ${DEPENDENCY_DIR}/glog/mingw/bin/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-                FILES_MATCHING PATTERN "*.dll")
-    endif(MSVC)
 else(WIN32)
     file(COPY ${CMAKE_SOURCE_DIR}/miner/binaries/linux DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/miner/binaries)
 endif(WIN32)
@@ -149,16 +140,11 @@ INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/scripts DESTINATION ${CMAKE_INSTALL_PREFIX
 if (WIN32)
     INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/miner/binaries/windows DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/miner/binaries
             USE_SOURCE_PERMISSIONS)
-    INSTALL(DIRECTORY ${DEPENDENCY_DIR}/curl-7.60.0/bin/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+	INSTALL(DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
             USE_SOURCE_PERMISSIONS FILES_MATCHING PATTERN "*.dll")
-    if(MSVC)
-        INSTALL(DIRECTORY ${DEPENDENCY_DIR}/glog/msvc/bin/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-                USE_SOURCE_PERMISSIONS FILES_MATCHING PATTERN "*.dll")
-    else(MSVC)
-        INSTALL(DIRECTORY ${DEPENDENCY_DIR}/glog/mingw/bin/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-                USE_SOURCE_PERMISSIONS FILES_MATCHING PATTERN "*.dll")
-    endif(MSVC)
 else(WIN32)
     INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/miner/binaries/linux DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/miner/binaries
             USE_SOURCE_PERMISSIONS)
+	INSTALL(DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+            USE_SOURCE_PERMISSIONS FILES_MATCHING PATTERN "*.so*")
 endif (WIN32)

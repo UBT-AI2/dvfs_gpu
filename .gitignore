@@ -2,7 +2,7 @@
 /documents
 
 /bin
-/build
+/build*
 /cmake-build*
 /CMakeSettings.json
 /install

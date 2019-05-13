@@ -31,59 +31,38 @@ if (DEBUG)
     add_definitions(-DDEBUG)
 endif (DEBUG)
 
-set(DEPENDENCY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external)
+
+# Download automatically, you can also just copy the conan.cmake file
+if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
+   message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
+   file(DOWNLOAD "https://github.com/conan-io/cmake-conan/raw/v0.14/conan.cmake"
+                 "${CMAKE_BINARY_DIR}/conan.cmake")
+endif()
+
+include(${CMAKE_BINARY_DIR}/conan.cmake)
+conan_add_remote(NAME mining INDEX 1
+            URL https://api.bintray.com/conan/alexfiebig15/mining)
+conan_cmake_run(CONANFILE conan/conanfile.py
+                BASIC_SETUP CMAKE_TARGETS
+                BUILD missing)
+
+#execute_process(COMMAND bash ${CMAKE_SOURCE_DIR}/conan/conan_install.sh ${CMAKE_SOURCE_DIR}/conan)
+#include(${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/conanbuildinfo.cmake)
+#conan_basic_setup(TARGETS)
 
 #find required libs
 find_package(CUDA 9.0 REQUIRED)
-find_package(Threads REQUIRED)
-find_package(OpenMP REQUIRED)
 
-#set OpenMP flags
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-
+#find cuda driver lib
 find_library(CUDA_DRIVER_LIBRARIES cuda
         PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
-find_path(Boost_INCLUDE_DIRS boost/version.hpp
-        PATHS ${DEPENDENCY_DIR}/boost_1_67_0
-        NO_DEFAULT_PATH)
-find_path(EIGEN3_INCLUDE_DIR Eigen/Dense
-        PATHS ${DEPENDENCY_DIR}/eigen3
-        NO_DEFAULT_PATH)
-find_path(NUMERICAL_METHODS_INCLUDE_DIRS numerical-methods/common-definitions.h
-        PATHS ${DEPENDENCY_DIR}/numerical_methods/include
-        NO_DEFAULT_PATH)
 
+#find nvml lib
 if(WIN32)
-    find_path(CURL_INCLUDE_DIRS curl/curl.h
-            PATHS ${DEPENDENCY_DIR}/curl-7.60.0/include
-            NO_DEFAULT_PATH)
-    find_library(CURL_LIBRARIES libcurl
-            PATHS ${DEPENDENCY_DIR}/curl-7.60.0/lib
-            NO_DEFAULT_PATH)
-    if(MSVC)
-        find_path(GLOG_INCLUDE_DIRS glog/logging.h
-                PATHS ${DEPENDENCY_DIR}/glog/msvc/include
-                NO_DEFAULT_PATH)
-        find_library(GLOG_LIBRARIES glog
-                PATHS ${DEPENDENCY_DIR}/glog/msvc/lib
-                NO_DEFAULT_PATH)
-    else(MSVC)
-        find_path(GLOG_INCLUDE_DIRS glog/logging.h
-                PATHS ${DEPENDENCY_DIR}/glog/mingw/include
-                NO_DEFAULT_PATH)
-        find_library(GLOG_LIBRARIES libglog
-                PATHS ${DEPENDENCY_DIR}/glog/mingw/lib
-                NO_DEFAULT_PATH)
-    endif(MSVC)
     find_library(NVML_LIBRARIES nvml
             PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64
             NO_DEFAULT_PATH)
 else(WIN32)
-    find_package(CURL REQUIRED)
-    find_path(GLOG_INCLUDE_DIRS glog/logging.h)
-    find_library(GLOG_LIBRARIES glog)
-    #link nvml
     execute_process(
             COMMAND bash -c "nvidia-smi | grep Driver | cut -f 3 -d' ' | cut -f 1 -d '.'"
             OUTPUT_VARIABLE DRIVER-BRANCH
@@ -93,25 +72,12 @@ else(WIN32)
     endif()
     find_library(NVML_LIBRARIES nvidia-ml
             PATHS /usr/lib/nvidia-${DRIVER-BRANCH})
-    find_path(XNVCTRL_INCLUDE_DIRS NVCtrl.h
-            PATHS ${DEPENDENCY_DIR}/libXNVCtrl
-            NO_DEFAULT_PATH)
-    find_library(XNVCTRL_LIBRARIES XNVCtrl
-            PATHS ${DEPENDENCY_DIR}/libXNVCtrl
-            NO_DEFAULT_PATH)
 endif(WIN32)
 
 
 #include and link cuda toolkit headers/libs
 include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
-include_directories(${Boost_INCLUDE_DIRS})
-include_directories(${EIGEN3_INCLUDE_DIR})
-include_directories(${CURL_INCLUDE_DIRS})
-include_directories(${GLOG_INCLUDE_DIRS})
-include_directories(${NUMERICAL_METHODS_INCLUDE_DIRS})
-if (NOT WIN32)
-    include_directories(${XNVCTRL_INCLUDE_DIRS})
-endif(NOT WIN32)
+include_directories(${CONAN_INCLUDE_DIRS})
 
 
 
