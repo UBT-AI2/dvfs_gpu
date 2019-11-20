@@ -28,6 +28,7 @@ TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 
 #else
 
+#include <map>
 #include <X11/Xlib.h>
 #include <NVCtrl.h>
 #include <NVCtrlLib.h>
@@ -384,6 +385,39 @@ namespace frequency_scaling {
         }
     }
 
+    static unsigned int NVCLOCK_OFFSET_attribute(){
+        //NV_CTRL_GPU_NVCLOCK_OFFSET_ALL_PERFORMANCE_LEVELS available for cc_major >= 6
+        return NV_CTRL_GPU_NVCLOCK_OFFSET;
+    }
+
+    static unsigned int MEM_TRANSFER_RATE_OFFSET_attribute(){
+        //NV_CTRL_GPU_MEM_TRANSFER_RATE_OFFSET_ALL_PERFORMANCE_LEVELS available for cc_major >= 6
+        return NV_CTRL_GPU_MEM_TRANSFER_RATE_OFFSET;
+    }
+
+    static int get_max_perf_mode(int device_id_nvapi){
+        static std::map<int, int> max_perf_map;
+        if(max_perf_map.count(device_id_nvapi))
+            return max_perf_map.at(device_id_nvapi);
+
+        char *perf_mode_info;
+        safeXNVCTRLCall(XNVCTRLQueryTargetStringAttribute(dpy,
+                                                          NV_CTRL_TARGET_TYPE_GPU,
+                                                          device_id_nvapi, // target_id
+                                                          0, // display_mask
+                                                          NV_CTRL_STRING_PERFORMANCE_MODES,
+                                                          &perf_mode_info),
+                                                                  "Failed to query gpu performance mode info");
+        int count = 0;
+        for(int i = 0; i < strlen(perf_mode_info); i++)
+            if(perf_mode_info[i] == ';')
+                count++;
+        XFree(perf_mode_info);
+        max_perf_map.emplace(device_id_nvapi, count);
+        VLOG(0) << "Max performance mode for GPU " << device_id_nvapi << ": " << count << std::endl;
+        return count;
+    }
+
     void nvapiInit() {
         VLOG(0) << "XNVCTRL initialization..." << std::endl;
         if (!XInitThreads()) {
@@ -476,8 +510,8 @@ namespace frequency_scaling {
         safeXNVCTRLCall(XNVCTRLQueryValidTargetAttributeValues(dpy,
                                                                NV_CTRL_TARGET_TYPE_GPU,
                                                                device_id_nvapi,
-                                                               3,//performance level
-                                                               NV_CTRL_GPU_MEM_TRANSFER_RATE_OFFSET,
+                                                               get_max_perf_mode(device_id_nvapi),//performance level
+                                                               MEM_TRANSFER_RATE_OFFSET_attribute(),
                                                                &valid_values),
                         "Unable to query the valid range of values for "
                         "NV_CTRL_GPU_MEM_TRANSFER_RATE_OFFSET on GPU " +
@@ -485,8 +519,8 @@ namespace frequency_scaling {
         safeXNVCTRLCall(XNVCTRLQueryTargetAttribute(dpy,
                                                     NV_CTRL_TARGET_TYPE_GPU,
                                                     device_id_nvapi,
-                                                    3,//performance level
-                                                    NV_CTRL_GPU_MEM_TRANSFER_RATE_OFFSET,
+                                                    get_max_perf_mode(device_id_nvapi),//performance level
+                                                    MEM_TRANSFER_RATE_OFFSET_attribute(),
                                                     &current_oc), "Unable to query the current value for "
                                                                   "NV_CTRL_GPU_MEM_TRANSFER_RATE_OFFSET on GPU " +
                                                                   std::to_string(device_id_nvapi));
@@ -514,8 +548,8 @@ namespace frequency_scaling {
         safeXNVCTRLCall(XNVCTRLQueryValidTargetAttributeValues(dpy,
                                                                NV_CTRL_TARGET_TYPE_GPU,
                                                                device_id_nvapi,
-                                                               3,//performance level
-                                                               NV_CTRL_GPU_NVCLOCK_OFFSET,
+                                                               get_max_perf_mode(device_id_nvapi),//performance level
+                                                               NVCLOCK_OFFSET_attribute(),
                                                                &valid_values),
                         "Unable to query the valid range of values for "
                         "NV_CTRL_GPU_NVCLOCK_OFFSET on GPU " +
@@ -523,8 +557,8 @@ namespace frequency_scaling {
         safeXNVCTRLCall(XNVCTRLQueryTargetAttribute(dpy,
                                                     NV_CTRL_TARGET_TYPE_GPU,
                                                     device_id_nvapi,
-                                                    3,//performance level
-                                                    NV_CTRL_GPU_NVCLOCK_OFFSET,
+                                                    get_max_perf_mode(device_id_nvapi),//performance level
+                                                    NVCLOCK_OFFSET_attribute(),
                                                     &current_oc), "Unable to query the current value for "
                                                                   "NV_CTRL_GPU_NVCLOCK_OFFSET on GPU " +
                                                                   std::to_string(device_id_nvapi));
@@ -558,8 +592,8 @@ namespace frequency_scaling {
         safeXNVCTRLCall(XNVCTRLSetTargetAttributeAndGetStatus(dpy,
                                                               NV_CTRL_TARGET_TYPE_GPU,
                                                               device_id_nvapi,
-                                                              3,//performance level
-                                                              NV_CTRL_GPU_MEM_TRANSFER_RATE_OFFSET,
+                                                              get_max_perf_mode(device_id_nvapi),//performance level
+                                                              MEM_TRANSFER_RATE_OFFSET_attribute(),
                                                               memOCMHz * 2),
                         "Unable to set value " + std::to_string(memOCMHz) +
                         " for NV_CTRL_GPU_MEM_TRANSFER_RATE_OFFSET on GPU " +
@@ -568,8 +602,8 @@ namespace frequency_scaling {
         safeXNVCTRLCall(XNVCTRLSetTargetAttributeAndGetStatus(dpy,
                                                               NV_CTRL_TARGET_TYPE_GPU,
                                                               device_id_nvapi,
-                                                              3,//performance level
-                                                              NV_CTRL_GPU_NVCLOCK_OFFSET,
+                                                              get_max_perf_mode(device_id_nvapi),//performance level
+                                                              NVCLOCK_OFFSET_attribute(),
                                                               graphOCMHz),
                         "Unable to set value " + std::to_string(graphOCMHz) +
                         " for NV_CTRL_GPU_NVCLOCK_OFFSET on GPU " +

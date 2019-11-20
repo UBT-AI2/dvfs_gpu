@@ -5,7 +5,7 @@
 /build*
 /cmake-build*
 /CMakeSettings.json
-/install
+/install*
 
 .idea
 .vs
