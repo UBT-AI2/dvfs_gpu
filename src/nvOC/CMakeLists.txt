@@ -103,9 +103,6 @@ add_executable(gpu_power_monitor
         utils/gpu_power_monitor.cpp)
 target_link_libraries(gpu_power_monitor
         nvmlOC_lib)
-#HASH_LOG_EXCAVATOR
-add_executable(hash-log-excavator
-        utils/hash-log-excavator.cpp)
 
 #COPY NECESSARY FILES TO BINARY DIR
 file(COPY ${CMAKE_SOURCE_DIR}/scripts DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
@@ -119,7 +116,7 @@ endif(WIN32)
 
 #INSTALL STUFF
 #Specify install target for executables
-INSTALL(TARGETS nvapiOC nvmlOC freq_exhaustive freq_optimization profit_optimization gpu_power_monitor hash-log-excavator
+INSTALL(TARGETS nvapiOC nvmlOC freq_exhaustive freq_optimization profit_optimization gpu_power_monitor
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 #Specify install target for libs
 INSTALL(TARGETS nvapiOC_lib nvmlOC_lib freq_core_lib freq_exhaustive_lib freq_optimization_lib profit_optimization_lib

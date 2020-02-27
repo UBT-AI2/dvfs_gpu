@@ -1,0 +1,107 @@
+diff --git a/ethminer/main.cpp b/ethminer/main.cpp
+index 71bb97323..8d42f220b 100644
+--- a/ethminer/main.cpp
++++ b/ethminer/main.cpp
+@@ -353,6 +353,10 @@ public:
+ 
+         app.add_option("-L,--dag-load-mode", m_FarmSettings.dagLoadMode, "", true)->check(CLI::Range(1));
+ 
++        app.add_option("--mining-duration", m_mining_duration, "", false);
++
++        app.add_option("--hash-logfile", m_FarmSettings.m_hash_logfile , "", false);
++
+         bool cl_miner = false;
+         app.add_flag("-G,--opencl", cl_miner, "");
+ 
+@@ -1056,6 +1060,8 @@ public:
+                  << "                        128 to log time for solution submission" << endl
+                  << "                        256 to log program flow" << endl
+ #endif
++                 << "    --mining-duration <seconds> Stop mining after specified number of seconds." << endl
++                 << "    --hash-logfile <filename> Log hashrates to specified file." << endl
+                  << endl;
+         }
+ 
+@@ -1207,6 +1213,17 @@ private:
+     void doMiner()
+     {
+ 
++        if (m_mining_duration > 0)
++        {
++            std::thread([this]() {
++                std::cout << "STARTED KILL TIMER. " << m_mining_duration << " seconds left..."<< std::endl;
++                std::this_thread::sleep_for(std::chrono::seconds(m_mining_duration));
++                std::cout << "KILL MINER..." << std::endl;
++                raise(SIGTERM);
++                
++            }).detach();
++        }
++
+         new PoolManager(m_PoolSettings);
+         if (m_mode != OperationMode::Simulation)
+             for (auto conn : m_PoolSettings.connections)
+@@ -1289,6 +1306,8 @@ private:
+ #if ETH_DBUS
+     DBusInt dbusint;
+ #endif
++
++    int m_mining_duration = -1;
+ };
+ 
+ int main(int argc, char** argv)
+diff --git a/libethcore/Farm.cpp b/libethcore/Farm.cpp
+index 92478cf64..5d95930e5 100644
+--- a/libethcore/Farm.cpp
++++ b/libethcore/Farm.cpp
+@@ -646,6 +646,19 @@ void Farm::collectData(const boost::system::error_code& ec)
+         miner->TriggerHashRateUpdate();
+     }
+ 
++    // log hashrate to file
++    if (!m_Settings.m_hash_logfile.empty())
++    {
++        if (!m_hash_logfile.is_open())
++            m_hash_logfile.open(m_Settings.m_hash_logfile, std::ofstream::app);
++        if (m_hash_logfile)
++        {
++            long long int system_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
++                std::chrono::system_clock::now().time_since_epoch()).count();
++            m_hash_logfile << system_time_ms << " " << static_cast<int>(farm_hr) << std::endl; 
++        }
++    }
++
+     // Resubmit timer for another loop
+     m_collectTimer.expires_from_now(boost::posix_time::milliseconds(m_collectInterval));
+     m_collectTimer.async_wait(
+diff --git a/libethcore/Farm.h b/libethcore/Farm.h
+index 03b875aa3..9ec9c50af 100644
+--- a/libethcore/Farm.h
++++ b/libethcore/Farm.h
+@@ -56,6 +56,7 @@ struct FarmSettings
+     unsigned ergodicity = 0;   // 0=default, 1=per session, 2=per job
+     unsigned tempStart = 40;   // Temperature threshold to restart mining (if paused)
+     unsigned tempStop = 0;     // Temperature threshold to pause mining (overheating)
++    std::string m_hash_logfile;
+ };
+ 
+ /**
+@@ -305,6 +306,7 @@ private:
+ 
+     static Farm* m_this;
+     std::map<std::string, DeviceDescriptor>& m_DevicesCollection;
++    std::ofstream m_hash_logfile;
+ };
+ 
+ }  // namespace eth
+diff --git a/libpoolprotocols/testing/SimulateClient.cpp b/libpoolprotocols/testing/SimulateClient.cpp
+index 9dc7d264e..3e469228c 100644
+--- a/libpoolprotocols/testing/SimulateClient.cpp
++++ b/libpoolprotocols/testing/SimulateClient.cpp
+@@ -36,6 +36,7 @@ void SimulateClient::disconnect()
+     cnote << "Simulation results : " << EthWhiteBold << "Max "
+           << dev::getFormattedHashes((double)hr_max, ScaleSuffix::Add, 6) << " Mean "
+           << dev::getFormattedHashes((double)hr_mean, ScaleSuffix::Add, 6) << EthReset;
++    std::cout << "Hashrate: " << static_cast<int>(hr_mean) << std::endl;
+     
+     m_conn->addDuration(m_session->duration());
+     m_session = nullptr;

@@ -90,27 +90,6 @@ namespace frequency_scaling {
             res.emplace(ct_eth.currency_name_, ct_eth);
         }
         {
-#ifdef _WIN32
-            currency_type ct_zec("ZEC", false);
-            ct_zec.bench_script_path_ = "./scripts/run_benchmark_zec_excavator.sh";
-            ct_zec.mining_script_path_ = "./scripts/start_mining_zec_excavator.sh";
-            ct_zec.pool_addresses_ = {"zec-eu1.nanopool.org:6666", "zec-eu2.nanopool.org:6666",
-                                      "zec-au1.nanopool.org:6666","zec-jp1.nanopool.org:6666",
-                                      "zec-us-west1.nanopool.org:6666", "zec-us-east1.nanopool.org:6666",
-                                      "zec-asia1.nanopool.org:6666"};
-            ct_zec.whattomine_coin_id_ = 166;
-            ct_zec.cryptocompare_fsym_ = "ZEC";
-            ct_zec.pool_avg_hashrate_api_address_ = "https://api.nanopool.org/v1/zec/avghashrateworkers/%s/%s";
-            ct_zec.pool_avg_hashrate_json_path_worker_array_ = "data";
-            ct_zec.pool_avg_hashrate_json_path_worker_name_ = "worker";
-            ct_zec.pool_avg_hashrate_json_path_hashrate_ = "hashrate";
-            ct_zec.pool_avg_hashrate_api_unit_factor_hashrate_ = 1;
-            ct_zec.pool_avg_hashrate_api_unit_factor_period_ = 3600 * 1000;
-            ct_zec.pool_approximated_earnings_api_address_ = "https://api.nanopool.org/v1/zec/approximated_earnings/%s";
-            ct_zec.pool_approximated_earnings_json_path_earnings_ = "data.hour.coins";
-            ct_zec.pool_approximated_earnings_api_unit_factor_hashrate_ = 1;
-            ct_zec.pool_approximated_earnings_api_unit_factor_period_ = 1;
-#else
             currency_type ct_zec("ZEC", true);
             ct_zec.ccminer_algo_ = "equihash";
             ct_zec.pool_addresses_ = {"eu1-zcash.flypool.org:13333", "us1-zcash.flypool.org:13333",
@@ -122,7 +101,6 @@ namespace frequency_scaling {
             ct_zec.pool_current_hashrate_json_path_worker_name_ = "worker";
             ct_zec.pool_current_hashrate_json_path_hashrate_ = "currentHashrate";
             ct_zec.pool_current_hashrate_api_unit_factor_hashrate_ = 1;
-#endif
             res.emplace(ct_zec.currency_name_, ct_zec);
         }
         {

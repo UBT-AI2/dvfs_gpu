@@ -18,7 +18,7 @@ fi
 
 source ./scripts/util_functions.sh
 generic_bench ETH \
-'${MINER_BINARY} -U -M --benchmark-trials 1 --benchmark-warmup 15 --cuda-devices ${device_id_cuda}' \
-'grep -oP "Hashrate 1:\s*\K[+-]?[0-9]+([.][0-9]+)?"'
+'${MINER_BINARY} -U -M 7 --cuda-devices ${device_id_cuda} --mining-duration 30' \
+'grep -oP "Hashrate:\s*\K[+-]?[0-9]+([.][0-9]+)?"'
 
 

@@ -18,5 +18,5 @@ fi
 
 source ./scripts/util_functions.sh
 generic_bench XMR \
-'${MINER_BINARY} --noCPU --benchmark 8 --benchwait 5 --benchwork 10 --cuda-devices ${device_id_cuda} --currency monero' \
+'${MINER_BINARY} --noCPU --benchmark 8 --benchwait 5 --benchwork 10 --cuda-devices ${device_id_cuda} --currency cryptonight_v8' \
 'grep -oP "Benchmark Total:\s*\K[+-]?[0-9]+([.][0-9]+)?"'

@@ -1,0 +1,603 @@
+diff --git a/bench.cpp b/bench.cpp
+index d3c7701..11861fd 100644
+--- a/bench.cpp
++++ b/bench.cpp
+@@ -24,17 +24,26 @@ static int device_mem_free[MAX_GPUS] = { 0 };
+ static pthread_barrier_t miner_barr;
+ static pthread_barrier_t algo_barr;
+ static pthread_mutex_t bench_lock = PTHREAD_MUTEX_INITIALIZER;
++static bool all_bench;
+ 
+ extern double thr_hashrates[MAX_GPUS];
+ 
+ void bench_init(int threads)
+ {
+-	bench_algo = opt_algo = (enum sha_algos) 0; /* first */
++	if (opt_algo == ALGO_AUTO) {
++		bench_algo = opt_algo = (enum sha_algos) 0; /* first */
++		all_bench = true;
++	}
++	else {
++		bench_algo = opt_algo;
++		all_bench = false;
++	}
+ 	applog(LOG_BLUE, "Starting benchmark mode with %s", algo_names[opt_algo]);
++
+ 	pthread_barrier_init(&miner_barr, NULL, threads);
+ 	pthread_barrier_init(&algo_barr, NULL, threads);
+ 	// required for usage of first algo.
+-	for (int n=0; n < opt_n_threads; n++) {
++	for (int n = 0; n < opt_n_threads; n++) {
+ 		device_mem_free[n] = cuda_available_memory(n);
+ 	}
+ }
+@@ -124,7 +133,7 @@ void algo_free_all(int thr_id)
+ // benchmark all algos (called once per mining thread)
+ bool bench_algo_switch_next(int thr_id)
+ {
+-	int algo = (int) opt_algo;
++	int algo = (int)opt_algo;
+ 	int prev_algo = algo;
+ 	int dev_id = device_map[thr_id % MAX_GPUS];
+ 	int mfree, mused;
+@@ -132,33 +141,36 @@ bool bench_algo_switch_next(int thr_id)
+ 	// after some algo switchs
+ 	bool need_reset = (gpu_threads == 1);
+ 
+-	algo++;
+-
+-	// skip some duplicated algos
+-	if (algo == ALGO_C11) algo++; // same as x11
+-	if (algo == ALGO_DMD_GR) algo++; // same as groestl
+-	if (algo == ALGO_HEAVY) algo++; // dead
+-	if (algo == ALGO_MJOLLNIR) algo++; // same as heavy
+-	if (algo == ALGO_KECCAKC) algo++; // same as keccak
+-	if (algo == ALGO_WHIRLCOIN) algo++; // same as whirlpool
+-	if (algo == ALGO_WHIRLPOOLX) algo++; // disabled
+-	// todo: algo switch from RPC 2.0
+-	if (algo == ALGO_CRYPTOLIGHT) algo++;
+-	if (algo == ALGO_CRYPTONIGHT) algo++;
+-	if (algo == ALGO_WILDKECCAK) algo++;
+-	if (algo == ALGO_QUARK) algo++; // to fix
+-	if (algo == ALGO_LBRY && CUDART_VERSION < 7000) algo++;
+-
+-	if (device_sm[dev_id] && device_sm[dev_id] < 300) {
+-		// incompatible SM 2.1 kernels...
+-		if (algo == ALGO_GROESTL) algo++;
+-		if (algo == ALGO_MYR_GR) algo++;
+-		if (algo == ALGO_NEOSCRYPT) algo++;
+-		if (algo == ALGO_WHIRLPOOLX) algo++;
++	if (all_bench) {
++		algo++;
++
++		// skip some duplicated algos
++		if (algo == ALGO_C11) algo++; // same as x11
++		if (algo == ALGO_DMD_GR) algo++; // same as groestl
++		if (algo == ALGO_HEAVY) algo++; // dead
++		if (algo == ALGO_MJOLLNIR) algo++; // same as heavy
++		if (algo == ALGO_KECCAKC) algo++; // same as keccak
++		if (algo == ALGO_WHIRLCOIN) algo++; // same as whirlpool
++		if (algo == ALGO_WHIRLPOOLX) algo++; // disabled
++		// todo: algo switch from RPC 2.0
++		if (algo == ALGO_CRYPTOLIGHT) algo++;
++		if (algo == ALGO_CRYPTONIGHT) algo++;
++		if (algo == ALGO_WILDKECCAK) algo++;
++		if (algo == ALGO_QUARK) algo++; // to fix
++		if (algo == ALGO_LBRY && CUDART_VERSION < 7000) algo++;
++
++		if (device_sm[dev_id] && device_sm[dev_id] < 300) {
++			// incompatible SM 2.1 kernels...
++			if (algo == ALGO_GROESTL) algo++;
++			if (algo == ALGO_MYR_GR) algo++;
++			if (algo == ALGO_NEOSCRYPT) algo++;
++			if (algo == ALGO_WHIRLPOOLX) algo++;
++		}
++		// and unwanted ones...
++		if (algo == ALGO_SCRYPT) algo++;
++		if (algo == ALGO_SCRYPT_JANE) algo++;
++
+ 	}
+-	// and unwanted ones...
+-	if (algo == ALGO_SCRYPT) algo++;
+-	if (algo == ALGO_SCRYPT_JANE) algo++;
+ 
+ 	// Set cryptonight variant
+ 	switch (algo) {
+@@ -193,10 +205,10 @@ bool bench_algo_switch_next(int thr_id)
+ 		pthread_barrier_wait(&miner_barr);
+ 	}
+ 
+-	char rate[32] = { 0 };
++	//char rate[32] = { 0 };
+ 	double hashrate = stats_get_speed(thr_id, thr_hashrates[thr_id]);
+-	format_hashrate(hashrate, rate);
+-	gpulog(LOG_NOTICE, thr_id, "%s hashrate = %s", algo_names[prev_algo], rate);
++	//format_hashrate(hashrate, rate);
++	gpulog(LOG_NOTICE, thr_id, "%s hashrate = %f H/s", algo_names[prev_algo], hashrate);
+ 
+ 	// ensure memory leak is still real after the barrier
+ 	if (device_mem_free[thr_id] > mfree) {
+@@ -223,7 +235,7 @@ bool bench_algo_switch_next(int thr_id)
+ 		pthread_barrier_wait(&algo_barr);
+ 	}
+ 
+-	if (algo == ALGO_AUTO)
++	if (algo == ALGO_AUTO || !all_bench)
+ 		return false; // all algos done
+ 
+ 	// mutex primary used for the stats purge
+@@ -244,6 +256,7 @@ bool bench_algo_switch_next(int thr_id)
+ 	return true;
+ }
+ 
++
+ void bench_set_throughput(int thr_id, uint32_t throughput)
+ {
+ 	algo_throughput[thr_id][opt_algo] = throughput;
+@@ -251,15 +264,15 @@ void bench_set_throughput(int thr_id, uint32_t throughput)
+ 
+ void bench_display_results()
+ {
+-	for (int n=0; n < opt_n_threads; n++)
++	for (int n = 0; n < opt_n_threads; n++)
+ 	{
+ 		int dev_id = device_map[n];
+ 		applog(LOG_BLUE, "Benchmark results for GPU #%d - %s:", dev_id, device_name[dev_id]);
+-		for (int i=0; i < ALGO_COUNT-1; i++) {
++		for (int i = 0; i < ALGO_COUNT - 1; i++) {
+ 			double rate = algo_hashrates[n][i];
+ 			if (rate == 0.0) continue;
+-			applog(LOG_INFO, "%12s : %12.1f kH/s, %5d MB, %8u thr.", algo_names[i],
+-				rate / 1024., algo_mem_used[n][i], algo_throughput[n][i]);
++			applog(LOG_INFO, "%12s : %12.1f H/s, %5d MB, %8u thr.", algo_names[i],
++				rate, algo_mem_used[n][i], algo_throughput[n][i]);
+ 		}
+ 	}
+ }
+diff --git a/ccminer.cpp b/ccminer.cpp
+index 2695074..f2f88ec 100644
+--- a/ccminer.cpp
++++ b/ccminer.cpp
+@@ -65,6 +65,17 @@ BOOL WINAPI ConsoleHandler(DWORD);
+ nvml_handle *hnvml = NULL;
+ #endif
+ 
++FILE _iob[] = { *stdin, *stdout, *stderr };
++static FILE* hash_logfile = NULL;
++static const char* hash_logfile_name = NULL;
++static pthread_t bench_exit_thread;
++static int mining_duration = -1;
++
++extern "C" FILE * __cdecl __iob_func(void)
++{
++	return _iob;
++}
++
+ enum workio_commands {
+ 	WC_GET_WORK,
+ 	WC_SUBMIT_WORK,
+@@ -80,6 +91,7 @@ struct workio_cmd {
+ 	int pooln;
+ };
+ 
++
+ bool opt_debug = false;
+ bool opt_debug_diff = false;
+ bool opt_debug_threads = false;
+@@ -116,7 +128,7 @@ int opt_timeout = 300; // curl
+ int opt_scantime = 10;
+ static json_t *opt_config;
+ static const bool opt_time = true;
+-volatile enum sha_algos opt_algo = ALGO_AUTO;
++volatile sha_algos opt_algo = ALGO_AUTO;
+ int opt_n_threads = 0;
+ int gpu_threads = 1;
+ int64_t opt_affinity = -1L;
+@@ -381,6 +393,8 @@ Options:\n\
+       --hide-diff       hide submitted block and net difficulty (old mode)\n\
+   -B, --background      run the miner in the background\n\
+       --benchmark       run in offline benchmark mode\n\
++      --mining-duration=N  stop mining after N seconds\n\
++      --hash-log=FILE   log hashrates to specified file\n\
+       --cputest         debug hashes from cpu algorithms\n\
+   -c, --config=FILE     load a JSON-format configuration file\n\
+   -V, --version         display version information and exit\n\
+@@ -406,6 +420,8 @@ struct option options[] = {
+ 	{ "api-mcast-des", 1, NULL, 1037 },
+ 	{ "background", 0, NULL, 'B' },
+ 	{ "benchmark", 0, NULL, 1005 },
++	{ "mining-duration", 1, NULL, 1099},
++	{ "hash-log", 1, NULL, 1098 },
+ 	{ "cert", 1, NULL, 1001 },
+ 	{ "config", 1, NULL, 'c' },
+ 	{ "cputest", 0, NULL, 1006 },
+@@ -518,6 +534,14 @@ struct work _ALIGN(64) g_work;
+ volatile time_t g_work_time;
+ pthread_mutex_t g_work_lock;
+ 
++void* mining_exit_func(void* arg) {
++	applog(LOG_BLUE, "Started mining exit timer: %is", mining_duration);
++	sleep(mining_duration);
++	proper_exit(0);
++	return NULL;
++}
++
++
+ // get const array size (defined in ccminer.cpp)
+ int options_count()
+ {
+@@ -1906,6 +1930,9 @@ static void *miner_thread(void *userdata)
+ 
+ 	gpu_led_off(dev_id);
+ 
++	if (mining_duration > 0)
++		pthread_create(&bench_exit_thread, NULL, &mining_exit_func, NULL);
++
+ 	while (!abort_flag) {
+ 		struct timeval tv_start, tv_end, diff;
+ 		unsigned long hashes_done;
+@@ -2097,7 +2124,7 @@ static void *miner_thread(void *userdata)
+ 		// --benchmark [-a all]
+ 		if (opt_benchmark && bench_algo >= 0) {
+ 			//gpulog(LOG_DEBUG, thr_id, "loop %d", loopcnt);
+-			if (loopcnt >= 3) {
++			if (loopcnt >= 2) {
+ 				if (!bench_algo_switch_next(thr_id) && thr_id == 0)
+ 				{
+ 					bench_display_results();
+@@ -2358,9 +2385,6 @@ static void *miner_thread(void *userdata)
+ 			pthread_cond_signal(&cgpu->monitor.sampling_signal);
+ 		}
+ 
+-		hashes_done = 0;
+-		gettimeofday(&tv_start, NULL);
+-
+ 		// check (and reset) previous errors
+ 		cudaError_t err = cudaGetLastError();
+ 		if (err != cudaSuccess && !opt_quiet)
+@@ -2368,6 +2392,9 @@ static void *miner_thread(void *userdata)
+ 
+ 		work.valid_nonces = 0;
+ 
++		hashes_done = 0;
++		gettimeofday(&tv_start, NULL);
++
+ 		/* scan nonces for a proof-of-work hash */
+ 		switch (opt_algo) {
+ 
+@@ -2603,6 +2630,49 @@ static void *miner_thread(void *userdata)
+ 			goto out;
+ 		}
+ 
++		/* record scanhash elapsed time */
++		gettimeofday(&tv_end, NULL);
++		timeval_subtract(&diff, &tv_end, &tv_start);
++		if (diff.tv_usec || diff.tv_sec) {
++			double dtime = (double)diff.tv_sec + 1e-6 * diff.tv_usec;
++
++			/* hashrate factors for some algos */
++			double rate_factor = 1.0;
++			switch (opt_algo) {
++			case ALGO_JACKPOT:
++			case ALGO_QUARK:
++				// to stay comparable to other ccminer forks or pools
++				rate_factor = 0.5;
++				break;
++			}
++
++			/* store thread hashrate */
++			if (dtime > 0.0) {
++				pthread_mutex_lock(&stats_lock);
++				thr_hashrates[thr_id] = hashes_done / dtime;
++				thr_hashrates[thr_id] *= rate_factor;
++				if (loopcnt > 2) // ignore first (init time)
++					stats_remember_speed(thr_id, hashes_done, thr_hashrates[thr_id], (uint8_t)rc, work.height);
++				//log hashrate with system time
++				if (hash_logfile_name) {
++					double hashrate = 0;
++					for (int i = 0; i < opt_n_threads; i++) {
++						hashrate += stats_get_speed(i, thr_hashrates[i]);
++					}
++					if (!hash_logfile)
++						hash_logfile = fopen(hash_logfile_name, "a");
++					struct timeval tv;
++					gettimeofday(&tv, NULL);
++					unsigned long long millisecondsSinceEpoch =
++						(unsigned long long)(tv.tv_sec) * 1000 +
++						(unsigned long long)(tv.tv_usec) / 1000;
++					fprintf(hash_logfile, "%llu %f\n", millisecondsSinceEpoch, hashrate);
++					fflush(hash_logfile);
++				}
++				pthread_mutex_unlock(&stats_lock);
++			}
++		}
++
+ 		if (opt_led_mode == LED_MODE_MINING)
+ 			gpu_led_off(dev_id);
+ 
+@@ -2612,9 +2682,6 @@ static void *miner_thread(void *userdata)
+ 		if (work_restart[thr_id].restart)
+ 			continue;
+ 
+-		/* record scanhash elapsed time */
+-		gettimeofday(&tv_end, NULL);
+-
+ 		switch (opt_algo) {
+ 			// algos to migrate to replace pdata[21] by work.nonces[]
+ 			case ALGO_HEAVY:
+@@ -2637,36 +2704,11 @@ static void *miner_thread(void *userdata)
+ 		if (rc > 1 && opt_debug)
+ 			applog(LOG_NOTICE, CL_CYN "found => %08x" CL_GRN " %08x", work.nonces[1], swab32(work.nonces[1]));
+ 
+-		timeval_subtract(&diff, &tv_end, &tv_start);
+ 
+ 		if (cgpu && diff.tv_sec) { // stop monitoring
+ 			cgpu->monitor.sampling_flag = false;
+ 		}
+ 
+-		if (diff.tv_usec || diff.tv_sec) {
+-			double dtime = (double) diff.tv_sec + 1e-6 * diff.tv_usec;
+-
+-			/* hashrate factors for some algos */
+-			double rate_factor = 1.0;
+-			switch (opt_algo) {
+-				case ALGO_JACKPOT:
+-				case ALGO_QUARK:
+-					// to stay comparable to other ccminer forks or pools
+-					rate_factor = 0.5;
+-					break;
+-			}
+-
+-			/* store thread hashrate */
+-			if (dtime > 0.0) {
+-				pthread_mutex_lock(&stats_lock);
+-				thr_hashrates[thr_id] = hashes_done / dtime;
+-				thr_hashrates[thr_id] *= rate_factor;
+-				if (loopcnt > 2) // ignore first (init time)
+-					stats_remember_speed(thr_id, hashes_done, thr_hashrates[thr_id], (uint8_t) rc, work.height);
+-				pthread_mutex_unlock(&stats_lock);
+-			}
+-		}
+-
+ 		if (rc > 0)
+ 			work.scanned_to = work.nonces[0];
+ 		if (rc > 1)
+@@ -2697,7 +2739,7 @@ static void *miner_thread(void *userdata)
+ 		if (firstwork_time && thr_id == (opt_n_threads - 1)) {
+ 			double hashrate = 0.;
+ 			pthread_mutex_lock(&stats_lock);
+-			for (int i = 0; i < opt_n_threads && thr_hashrates[i]; i++)
++			for (int i = 0; i < opt_n_threads; i++)
+ 				hashrate += stats_get_speed(i, thr_hashrates[i]);
+ 			pthread_mutex_unlock(&stats_lock);
+ 			if (opt_benchmark && bench_algo == -1 && loopcnt > 2) {
+@@ -3630,6 +3672,12 @@ void parse_arg(int key, char *arg)
+ 		want_stratum = false;
+ 		have_stratum = false;
+ 		break;
++	case 1099:
++		mining_duration = atoi(arg);
++		break;
++	case 1098:
++		hash_logfile_name = arg;
++		break;
+ 	case 1006:
+ 		print_hash_tests();
+ 		proper_exit(EXIT_CODE_OK);
+@@ -4172,7 +4220,7 @@ int main(int argc, char *argv[])
+ 	// generally doesn't work well...
+ 	gpu_threads = max(gpu_threads, opt_n_threads / active_gpus);
+ 
+-	if (opt_benchmark && opt_algo == ALGO_AUTO) {
++	if (opt_benchmark /*&& opt_algo == ALGO_AUTO*/) {
+ 		bench_init(opt_n_threads);
+ 		for (int n=0; n < MAX_GPUS; n++) {
+ 			gpus_intensity[n] = 0; // use default
+diff --git a/ccminer.vcxproj b/ccminer.vcxproj
+index 26c9cd1..416ad19 100644
+--- a/ccminer.vcxproj
++++ b/ccminer.vcxproj
+@@ -1,5 +1,5 @@
+ ﻿<?xml version="1.0" encoding="utf-8"?>
+-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
+     <ProjectConfiguration Include="Release|Win32">
+       <Configuration>Release</Configuration>
+@@ -21,12 +21,14 @@
+   <PropertyGroup Label="Globals">
+     <ProjectGuid>{36DC07F9-A4A6-4877-A146-1B960083CF6F}</ProjectGuid>
+     <RootNamespace>ccminer</RootNamespace>
++    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
++    <CudaToolkitCustomDir>..\..\..\..\..\..\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1</CudaToolkitCustomDir>
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+   <PropertyGroup Label="Configuration">
+     <ConfigurationType>Application</ConfigurationType>
+     <CharacterSet>MultiByte</CharacterSet>
+-    <PlatformToolset>v120</PlatformToolset>
++    <PlatformToolset>v142</PlatformToolset>
+     <CLRSupport>false</CLRSupport>
+     <LinkIncremental>false</LinkIncremental>
+   </PropertyGroup>
+@@ -39,7 +41,7 @@
+   </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Label="ExtensionSettings">
+-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.0.props" />
++    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.1.props" />
+   </ImportGroup>
+   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+@@ -53,6 +55,12 @@
+   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+   </ImportGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <IncludePath>$(IncludePath)</IncludePath>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <IncludePath>$(IncludePath)</IncludePath>
++  </PropertyGroup>
+   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+     <ClCompile>
+       <WarningLevel>Level3</WarningLevel>
+@@ -80,7 +88,7 @@
+       <MaxRegCount>80</MaxRegCount>
+       <PtxAsOptionV>true</PtxAsOptionV>
+       <Keep>true</Keep>
+-      <CodeGeneration>compute_50,sm_50</CodeGeneration>
++      <CodeGeneration>compute_52,sm_52;compute_61,sm_61;compute_75,sm_75</CodeGeneration>
+       <Include>$(NVTOOLSEXT_PATH)\include;..\..\..\Common\C99</Include>
+     </CudaCompile>
+   </ItemDefinitionGroup>
+@@ -112,7 +120,7 @@
+       <MaxRegCount>80</MaxRegCount>
+       <PtxAsOptionV>true</PtxAsOptionV>
+       <Keep>true</Keep>
+-      <CodeGeneration>compute_52,sm_52</CodeGeneration>
++      <CodeGeneration>compute_52,sm_52;compute_61,sm_61;compute_75,sm_75</CodeGeneration>
+       <Include>$(NVTOOLSEXT_PATH)\include;..\..\..\Common\C99</Include>
+       <TargetMachinePlatform>64</TargetMachinePlatform>
+     </CudaCompile>
+@@ -131,7 +139,7 @@
+       <FunctionLevelLinking>true</FunctionLevelLinking>
+       <IntrinsicFunctions>true</IntrinsicFunctions>
+       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;CURL_STATICLIB;USE_WRAPNVML;SCRYPT_KECCAK512;SCRYPT_CHACHA;SCRYPT_CHOOSE_COMPILETIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+-      <AdditionalIncludeDirectories>.;compat;compat\curl-for-windows\curl\include;compat\jansson;compat\getopt;compat\pthreads;compat\curl-for-windows\openssl\openssl\include;compat\curl-for-windows\zlib;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
++      <AdditionalIncludeDirectories>.;compat;compat\curl-for-windows\curl\include;compat\jansson;compat\getopt;compat\pthreads;compat\curl-for-windows\openssl\openssl\include;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
+       <MinimalRebuild>true</MinimalRebuild>
+       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+@@ -142,9 +150,9 @@
+       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+       <OptimizeReferences>true</OptimizeReferences>
+       <SubSystem>Console</SubSystem>
+-      <AdditionalDependencies>cudart_static.lib;cuda.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;pthreadVC2.lib;libcurl.x86.lib;openssl.x86.lib;zlib.x86.lib;ws2_32.lib;Wldap32.lib;nvapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
++      <AdditionalDependencies>cudart_static.lib;cuda.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;pthreadVC2.lib;libcurl.x86.lib;openssl.x86.lib;zlib.x86.lib;ws2_32.lib;Wldap32.lib;nvapi.lib;%(AdditionalDependencies);libssh2.x64.lib</AdditionalDependencies>
+       <IgnoreSpecificDefaultLibraries>libcmt.lib</IgnoreSpecificDefaultLibraries>
+-      <AdditionalLibraryDirectories>compat\pthreads\x86;compat\curl-for-windows\out\x86\Release\lib;compat\nvapi\x86;%(AdditionalLibraryDirectories);$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
++      <AdditionalLibraryDirectories>compat\pthreads\x86;compat\curl-for-windows\out\x86\Release\lib;compat\nvapi\x86;%(AdditionalLibraryDirectories);$(CudaToolkitLibDir);C:\Users\Alex\Desktop\mining\miner\ccminer\compat\curl-for-windows\out\x64\Release\lib</AdditionalLibraryDirectories>
+       <AdditionalOptions>/NODEFAULTLIB:LIBCMT %(AdditionalOptions)</AdditionalOptions>
+       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+       <LinkStatus>false</LinkStatus>
+@@ -155,7 +163,7 @@
+       <MaxRegCount>80</MaxRegCount>
+       <PtxAsOptionV>true</PtxAsOptionV>
+       <Keep>true</Keep>
+-      <CodeGeneration>compute_50,sm_50;compute_52,sm_52;compute_30,sm_30</CodeGeneration>
++      <CodeGeneration>compute_75,sm_75</CodeGeneration>
+       <AdditionalOptions>--ptxas-options="-O2" --Wno-deprecated-gpu-targets %(AdditionalOptions)</AdditionalOptions>
+       <Optimization>O2</Optimization>
+     </CudaCompile>
+@@ -188,7 +196,7 @@
+       <SubSystem>Console</SubSystem>
+       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;pthreadVC2.lib;libcurl.x64.lib;openssl.x64.lib;zlib.x64.lib;ws2_32.lib;Wldap32.lib;cudart_static.lib;cuda.lib;nvapi64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+       <IgnoreSpecificDefaultLibraries>libcmt.lib</IgnoreSpecificDefaultLibraries>
+-      <AdditionalLibraryDirectories>compat\pthreads\x64;compat\curl-for-windows\out\x64\Release\lib;compat\nvapi\amd64;%(AdditionalLibraryDirectories);$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
++      <AdditionalLibraryDirectories>compat\pthreads\x64;compat\curl-for-windows\out\x64\Release\lib;compat\nvapi\amd64;%(AdditionalLibraryDirectories);$(CudaToolkitLibDir);C:\Users\Alex\Desktop\mining\miner\ccminer\compat\curl-for-windows\out\x64\Release\lib</AdditionalLibraryDirectories>
+       <AdditionalOptions>/NODEFAULTLIB:LIBCMT %(AdditionalOptions)</AdditionalOptions>
+       <LinkStatus>false</LinkStatus>
+       <LargeAddressAware>true</LargeAddressAware>
+@@ -198,7 +206,7 @@
+       <MaxRegCount>80</MaxRegCount>
+       <PtxAsOptionV>true</PtxAsOptionV>
+       <Keep>true</Keep>
+-      <CodeGeneration>compute_52,sm_52;compute_50,sm_50;compute_35,sm_35;compute_30,sm_30</CodeGeneration>
++      <CodeGeneration>compute_52,sm_52;compute_61,sm_61;compute_75,sm_75</CodeGeneration>
+       <Include>$(NVTOOLSEXT_PATH)\include</Include>
+       <Optimization>O3</Optimization>
+       <TargetMachinePlatform>64</TargetMachinePlatform>
+@@ -630,7 +638,7 @@
+   </ItemGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.0.targets" />
++    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.1.targets" />
+   </ImportGroup>
+   <!-- Copy the required dlls -->
+   <Target Name="AfterBuild">
+@@ -639,4 +647,4 @@
+   <Target Name="AfterClean">
+     <Delete Files="@(FilesToCopy->'$(OutDir)%(Filename)%(Extension)')" TreatErrorsAsWarnings="true" />
+   </Target>
+-</Project>
++</Project>
+\ No newline at end of file
+diff --git a/compat/curl-for-windows/out/x64/Release/lib/libcurl.x64.lib b/compat/curl-for-windows/out/x64/Release/lib/libcurl.x64.lib
+index d6f6a7a..348fb05 100644
+Binary files a/compat/curl-for-windows/out/x64/Release/lib/libcurl.x64.lib and b/compat/curl-for-windows/out/x64/Release/lib/libcurl.x64.lib differ
+diff --git a/compat/curl-for-windows/out/x64/Release/lib/openssl.x64.lib b/compat/curl-for-windows/out/x64/Release/lib/openssl.x64.lib
+index 26ed21b..5b2460c 100644
+Binary files a/compat/curl-for-windows/out/x64/Release/lib/openssl.x64.lib and b/compat/curl-for-windows/out/x64/Release/lib/openssl.x64.lib differ
+diff --git a/compat/curl-for-windows/out/x64/Release/lib/zlib.x64.lib b/compat/curl-for-windows/out/x64/Release/lib/zlib.x64.lib
+index 2294708..a8357e1 100644
+Binary files a/compat/curl-for-windows/out/x64/Release/lib/zlib.x64.lib and b/compat/curl-for-windows/out/x64/Release/lib/zlib.x64.lib differ
+diff --git a/equi/equihash.cpp b/equi/equihash.cpp
+index 3209546..e025028 100644
+--- a/equi/equihash.cpp
++++ b/equi/equihash.cpp
+@@ -199,7 +199,7 @@ extern "C" int scanhash_equihash(int thr_id, struct work *work, uint32_t max_non
+ 	work->valid_nonces = 0;
+ 
+ 	do {
+-
++		
+ 		try {
+ 
+ 			valid_sols[thr_id] = 0;
+diff --git a/miner.h b/miner.h
+index 1d75855..52f4fa9 100644
+--- a/miner.h
++++ b/miner.h
+@@ -272,7 +272,6 @@ void sha256d(unsigned char *hash, const unsigned char *data, int len);
+ #define HAVE_SHA256_8WAY 0
+ 
+ struct work;
+-
+ extern int scanhash_allium(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
+ extern int scanhash_bastion(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
+ extern int scanhash_blake256(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done, int8_t blakerounds);
+diff --git a/neoscrypt/cuda_neoscrypt.cu b/neoscrypt/cuda_neoscrypt.cu
+index 59d73b7..385a7d7 100644
+--- a/neoscrypt/cuda_neoscrypt.cu
++++ b/neoscrypt/cuda_neoscrypt.cu
+@@ -176,10 +176,10 @@ static void shift256R4(uint32_t* ret, const uint8 &vec4, const uint32_t shift2)
+ }
+ 
+ #define BLAKE_G(idx0, idx1, a, b, c, d, key) { \
+-	idx = BLAKE2S_SIGMA[idx0][idx1]; a += key[idx]; \
++	idx = BLAKE2S_SIGMA[idx0][(idx1)]; a += key[idx]; \
+ 	a += b; d = rotateL(d^a, 16); \
+ 	c += d; b = rotateR(b^c, 12); \
+-	idx = BLAKE2S_SIGMA[idx0][idx1 + 1]; a += key[idx]; \
++	idx = BLAKE2S_SIGMA[idx0][(idx1)+1]; a += key[idx]; \
+ 	a += b; d = rotateR(d^a, 8); \
+ 	c += d; b = rotateR(b^c, 7); \
+ }
+@@ -389,10 +389,10 @@ void Blake2S(uint32_t *out, const uint32_t* const __restrict__  inout, const  ui
+ #if __CUDA_ARCH__ >= 500
+ 
+ #define BLAKE_G(idx0, idx1, a, b, c, d, key) { \
+-	idx = BLAKE2S_SIGMA[idx0][idx1]; a += key[idx]; \
++	idx = BLAKE2S_SIGMA[idx0][(idx1)]; a += key[idx]; \
+ 	a += b; d = __byte_perm(d^a, 0, 0x1032); \
+ 	c += d; b = rotateR(b^c, 12); \
+-	idx = BLAKE2S_SIGMA[idx0][idx1 + 1]; a += key[idx]; \
++	idx = BLAKE2S_SIGMA[idx0][(idx1)+1]; a += key[idx]; \
+ 	a += b; d = __byte_perm(d^a, 0, 0x0321); \
+ 	c += d; b = rotateR(b^c, 7); \
+ }
+@@ -1257,10 +1257,10 @@ uint32_t fastkdf32_v3(uint32_t thread, const uint32_t nonce, uint32_t* const sal
+ 
+ 
+ #define BLAKE_Ghost(idx0, idx1, a, b, c, d, key) { \
+-	idx = BLAKE2S_SIGMA_host[idx0][idx1]; a += key[idx]; \
++	idx = BLAKE2S_SIGMA_host[idx0][(idx1)]; a += key[idx]; \
+ 	a += b; d = ROTR32(d^a,16); \
+ 	c += d; b = ROTR32(b^c, 12); \
+-	idx = BLAKE2S_SIGMA_host[idx0][idx1 + 1]; a += key[idx]; \
++	idx = BLAKE2S_SIGMA_host[idx0][(idx1)+1]; a += key[idx]; \
+ 	a += b; d = ROTR32(d^a,8); \
+ 	c += d; b = ROTR32(b^c, 7); \
+ }
