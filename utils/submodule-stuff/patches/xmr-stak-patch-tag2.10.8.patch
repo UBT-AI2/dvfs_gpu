@@ -1,8 +1,16 @@
 diff --git a/xmrstak/backend/nvidia/autoAdjust.hpp b/xmrstak/backend/nvidia/autoAdjust.hpp
-index bf195f7..2d61bf0 100644
+index bf195f7..25d76ea 100644
 --- a/xmrstak/backend/nvidia/autoAdjust.hpp
 +++ b/xmrstak/backend/nvidia/autoAdjust.hpp
-@@ -47,17 +47,16 @@ class autoAdjust
+@@ -10,6 +10,7 @@
+ #include "xmrstak/params.hpp"
+ 
+ #include <cstdio>
++#include <cmath>
+ #include <sstream>
+ #include <string>
+ #include <vector>
+@@ -47,17 +48,16 @@ class autoAdjust
  			ctx.device_blocks = -1;
  			ctx.device_threads = -1;
  
