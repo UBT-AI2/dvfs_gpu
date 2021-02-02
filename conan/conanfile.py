@@ -19,7 +19,7 @@ class MiningConan(ConanFile):
       self.requires.add("boost/1.69.0@conan/stable")
       self.requires.add("eigen/3.3.5@conan/stable")
       self.requires.add("glog/0.3.5@bincrafters/stable")
-      self.requires.add("libcurl/7.64.1@bincrafters/stable")
+      self.requires.add("libcurl/7.74.0")
       self.requires.add("numerical_methods/1.0@bincrafters/stable")
       if self.settings.os != "Windows":
          self.requires.add("libXNVCtrl/1.0@bincrafters/stable")
