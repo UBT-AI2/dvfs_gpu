@@ -4,7 +4,7 @@ device_id=$1
 device_id_cuda=$2
 mem_clock=$3
 graph_clock=$4
-log_dir=$5
+log_dir=$(readlink -f $5)
 
 if [[ "$OSTYPE" == "msys" ]]
 then
@@ -14,6 +14,7 @@ else
 #Linux
 MINER_BINARY=./miner/binaries/linux/xmr-stak-build/xmr-stak
 fi
+MINER_BINARY=$(readlink -f ${MINER_BINARY})
 #################################################################################
 
 source ./scripts/util_functions.sh

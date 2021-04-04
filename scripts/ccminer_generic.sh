@@ -8,6 +8,7 @@ else
 #Linux
 MINER_BINARY=./miner/binaries/linux/ccminer-build/ccminer
 fi
+MINER_BINARY=$(readlink -f ${MINER_BINARY})
 ######################################################################################################
 source ./scripts/util_functions.sh
 
@@ -33,6 +34,8 @@ function ccminer_start_mining {
     done
 
     echo -e "\n##########################\nSTARTED CCMINER-${currency} $(date +%Y-%m-%d_%H-%M-%S)\n##########################\n" >> ${LOGFILE}
+    pushd $(dirname ${MINER_BINARY}) > /dev/null
     ${MINER_BINARY} ${pool_option_str} \
     -D -d ${device_id_cuda} --hash-log=${log_dir}/hash_log_${currency}_${device_id}.txt &>> ${LOGFILE}
+    popd > /dev/null
 }

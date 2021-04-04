@@ -5,7 +5,7 @@ device_id_cuda=$2
 wallet_address=$3
 worker_name=$4
 email=$(echo $5 | sed 's/@/%40/g')
-log_dir=$6
+log_dir=$(readlink -f $6)
 pool_csv=$7
 pool_pass=$8
 if [[ "$OSTYPE" == "msys" ]]
@@ -16,6 +16,7 @@ else
 #Linux
 MINER_BINARY=./miner/binaries/linux/ethminer-build/ethminer
 fi
+MINER_BINARY=$(readlink -f ${MINER_BINARY})
 LOGFILE=${log_dir}/mining_log_ethminer_gpu${device_id}.txt
 #################################################################################
 
@@ -26,6 +27,8 @@ do
 done
 
 echo -e "\n##########################\nSTARTED ETHMINER $(date +%Y-%m-%d_%H-%M-%S)\n##########################\n" >> ${LOGFILE}
+pushd $(dirname ${MINER_BINARY}) > /dev/null
 ${MINER_BINARY} --farm-recheck 2000 -U -R ${pool_option_str} \
 --cuda-devices ${device_id_cuda} --hash-logfile ${log_dir}/hash_log_ETH_${device_id}.txt &>> ${LOGFILE}
+popd > /dev/null
 
