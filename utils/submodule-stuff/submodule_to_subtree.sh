@@ -9,7 +9,7 @@
 # Run `~/subtrees.sh`
 # Enjoy!
 
-pushd ../..
+pushd $(dirname $(readlink -f $0))/../..
 
 # extract the list of submodules from .gitmodule
 cat .gitmodules |while read i

@@ -22,7 +22,7 @@ class MiningConan(ConanFile):
       self.requires.add("libcurl/7.74.0")
       self.requires.add("numerical_methods/1.0@bincrafters/stable")
       if self.settings.os != "Windows":
-         self.requires.add("libXNVCtrl/1.0@bincrafters/stable")
+         self.requires.add("libXNVCtrl/1.1@bincrafters/stable")
 	   
    def imports(self):
       self.copy("*.dll", dst="bin", src="bin")
@@ -45,5 +45,3 @@ class MiningConan(ConanFile):
       self.cpp_info.resdirs = ['scripts', 'miner', 'configs']
       self.cpp_info.libs = ['freq_core_lib', 'freq_exhaustive_lib', 'freq_optimization_lib', 
       'nvapiOC.lib', 'nvmlOC_lib', 'profit_optimization_lib']
-
-	  

@@ -28,7 +28,10 @@ namespace frequency_scaling {
 
     void nvmlInit_() {
         VLOG(0) << "NVML initialization..." << std::endl;
-        safeNVMLCall(nvmlInit());
+        nvmlReturn_t init_res = nvmlInit();
+        if (init_res != NVML_SUCCESS) {
+            THROW_NVML_ERROR("nvmlInit() failed: " + std::to_string(static_cast<int>(init_res)));
+        }
     }
 
     bool nvml_register_gpu(int device_id) {

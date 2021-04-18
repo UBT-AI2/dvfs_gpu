@@ -35,13 +35,15 @@ endif (DEBUG)
 # Download automatically, you can also just copy the conan.cmake file
 if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
    message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
-   file(DOWNLOAD "https://github.com/conan-io/cmake-conan/raw/v0.15/conan.cmake"
+   file(DOWNLOAD "https://github.com/conan-io/cmake-conan/raw/v0.16.1/conan.cmake"
                  "${CMAKE_BINARY_DIR}/conan.cmake")
 endif()
 
 include(${CMAKE_BINARY_DIR}/conan.cmake)
-conan_add_remote(NAME mining INDEX 1
-            URL https://api.bintray.com/conan/alexfiebig15/mining)
+#conan_add_remote(NAME mining INDEX 1
+#            URL https://api.bintray.com/conan/alexfiebig15/mining)
+conan_add_remote(NAME mining-new INDEX 1
+        URL https://gddconanhost.jfrog.io/artifactory/api/conan/mining-local)
 conan_cmake_run(CONANFILE conan/conanfile.py
                 BASIC_SETUP CMAKE_TARGETS
                 BUILD missing)
@@ -70,7 +72,7 @@ else(WIN32)
     if(${DRIVER-BRANCH})
         string(STRIP ${DRIVER-BRANCH} DRIVER-BRANCH)
     endif()
-    find_library(NVML_LIBRARIES nvidia-ml
+    find_library(NVML_LIBRARIES nvidia-ml libnvidia-ml.so.1
             PATHS /usr/lib/nvidia-${DRIVER-BRANCH})
 endif(WIN32)
 

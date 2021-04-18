@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-pushd ../..
+pushd $(dirname $(readlink -f $0))/../..
 git submodule update --init --recursive -- miner/ethminer miner/xmr-stak miner/ccminer
 
 pushd miner/ethminer

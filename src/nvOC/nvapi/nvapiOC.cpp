@@ -30,8 +30,8 @@ TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 
 #include <map>
 #include <X11/Xlib.h>
-#include <NVCtrl.h>
-#include <NVCtrlLib.h>
+#include <XNVCtrl/NVCtrl.h>
+#include <XNVCtrl/NVCtrlLib.h>
 
 #endif
 
@@ -222,7 +222,10 @@ namespace frequency_scaling {
         NvSetPstates = (NvAPI_GPU_SetPstates20_t) NvQueryInterface(0x0F4DAE6B);
         NvAPI_GetErrorMessage = (NvAPI_GetErrorMessage_t) NvQueryInterface(0x6C2D048C);
         //
-        safeNVAPICall(NvInit());
+        int init_res = NvInit();
+        if(init_res != 0){
+            THROW_NVAPI_ERROR("NvInit() failed: " + std::to_string(init_res));
+        }
     }
 
     bool nvapi_register_gpu(int device_id_nvapi) {
