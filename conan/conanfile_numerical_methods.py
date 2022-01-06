@@ -6,7 +6,7 @@ class NumericalMethodsConan(ConanFile):
     settings = {"os": None, "build_type": None, "compiler": None, "arch": None}
     url = "https://github.com/ethz-asl/numerical_methods.git"
     no_copy_source = True
-    requires = "eigen/3.3.5@conan/stable", "glog/0.3.5@bincrafters/stable"
+    requires = "eigen/3.3.7", "glog/0.4.0"
     generators = "cmake"
 
     def source(self):

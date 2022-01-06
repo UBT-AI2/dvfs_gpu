@@ -16,13 +16,13 @@ class MiningConan(ConanFile):
          raise ConanInvalidConfiguration("This package is not compatible with os: " + str(self.settings.os))
 
    def requirements(self):
-      self.requires.add("boost/1.69.0@conan/stable")
-      self.requires.add("eigen/3.3.5@conan/stable")
-      self.requires.add("glog/0.3.5@bincrafters/stable")
+      self.requires.add("boost/1.69.0")
+      self.requires.add("eigen/3.3.7")
+      self.requires.add("glog/0.4.0")
       self.requires.add("libcurl/7.74.0")
-      self.requires.add("numerical_methods/1.0@bincrafters/stable")
+      self.requires.add("numerical_methods/1.0@Fiebig+mining/stable")
       if self.settings.os != "Windows":
-         self.requires.add("libXNVCtrl/1.1@bincrafters/stable")
+         self.requires.add("libXNVCtrl/1.1@Fiebig+mining/stable")
 	   
    def imports(self):
       self.copy("*.dll", dst="bin", src="bin")

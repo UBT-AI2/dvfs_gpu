@@ -40,10 +40,17 @@ if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
 endif()
 
 include(${CMAKE_BINARY_DIR}/conan.cmake)
-#conan_add_remote(NAME mining INDEX 1
-#            URL https://api.bintray.com/conan/alexfiebig15/mining)
-conan_add_remote(NAME mining-new INDEX 1
-        URL https://gddconanhost.jfrog.io/artifactory/api/conan/mining-local)
+#add remotes
+conan_add_remote(NAME conancenter INDEX 0
+        URL https://center.conan.io)
+conan_add_remote(NAME gitlab-mining INDEX 1
+        URL https://gitlab.com/api/v4/projects/6102989/packages/conan)
+execute_process(COMMAND conan user gitlab+deploy-token-728917 -r gitlab-mining -p u7jryVwsrspU5m_xSeE9
+        RESULT_VARIABLE return_code)
+if(NOT "${return_code}" STREQUAL "0")
+    message(FATAL_ERROR "Conan user command failed='${return_code}'")
+endif()
+#
 conan_cmake_run(CONANFILE conan/conanfile.py
                 BASIC_SETUP CMAKE_TARGETS
                 BUILD missing)
